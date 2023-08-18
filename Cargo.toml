@@ -1,0 +1,14 @@
+[package]
+name = "dynamodb-expression"
+description = "Types to build a DynamoDB filter or condition expression"
+authors = ["Daniel Cormier"]
+version = "0.1.0"
+edition = "2021"
+documentation = "https://docs.rs/dynamodb-expression/"
+repository = "https://github.com/dcormier/dynamodb-expression-rs"
+
+[dependencies]
+
+[dev-dependencies]
+pretty_assertions = "1"
+aws-sdk-dynamodb = "0"
