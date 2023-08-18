@@ -44,6 +44,9 @@ impl Display for Function {
     }
 }
 
+/// True if the item contains the attribute specified by `path`.
+///
+/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
 pub fn attribute_exists<P>(path: P) -> Expression
 where
     P: Into<String>,
@@ -51,6 +54,9 @@ where
     Function::AttributeExists(path.into()).into()
 }
 
+/// True if the attribute specified by `path` does not exist in the item.
+///
+/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
 pub fn attribute_not_exists<P>(path: P) -> Expression
 where
     P: Into<String>,
@@ -58,6 +64,9 @@ where
     Function::AttributeNotExists(path.into()).into()
 }
 
+/// True if the attribute at the specified `path` is of a particular data type.
+///
+/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
 pub fn attribute_type<P>(path: P, attribute_type: AttributeType) -> Expression
 where
     P: Into<String>,
@@ -65,6 +74,9 @@ where
     Function::AttributeType(path.into(), attribute_type).into()
 }
 
+/// True if the attribute specified by `path` begins with a particular substring.
+///
+/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
 pub fn begins_with<P, S>(path: P, substr: S) -> Expression
 where
     P: Into<String>,
@@ -73,6 +85,15 @@ where
     Function::BeginsWith(path.into(), substr.into()).into()
 }
 
+/// True if the attribute specified by `path` is one of the following:
+/// * A `String` that contains a particular substring.
+/// * A `Set` that contains a particular element within the set.
+/// * A `List` that contains a particular element within the list.
+///
+/// The operand must be a `String` if the attribute specified by path is a `String`.
+/// If the attribute specified by path is a `Set`, the operand must be the set's element type.
+///
+/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
 pub fn contains<P, S>(path: P, operand: S) -> Expression
 where
     P: Into<String>,
@@ -81,6 +102,9 @@ where
     Function::Contains(path.into(), operand.into()).into()
 }
 
+/// Returns a number representing an attribute's size.
+///
+/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
 pub fn size<P>(path: P) -> Expression
 where
     P: Into<String>,

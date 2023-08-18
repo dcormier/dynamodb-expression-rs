@@ -120,6 +120,9 @@ impl From<&Expression> for String {
     }
 }
 
+/// Compare two values.
+///
+/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
 pub fn cmp<A, B>(a: A, cmp: Comparator, b: B) -> Expression
 where
     A: Into<String>,
@@ -128,6 +131,9 @@ where
     Expression::Comparison(a.into(), cmp, b.into())
 }
 
+/// Check if a value is between two others.
+///
+/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
 pub fn between<A, B, C>(a: A, b: B, c: C) -> Expression
 where
     A: Into<String>,
@@ -141,7 +147,7 @@ where
 ///
 /// The list can contain up to 100 values. It must have at least 1.
 ///
-/// [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
 pub fn in_<A, B, I>(a: A, b: I) -> Result<Expression, Vec<String>>
 where
     A: Into<String>,
@@ -156,17 +162,26 @@ where
     Ok(Expression::In(a.into(), b))
 }
 
-/// Note that the [`function`] module has helper functions to produce [`Expression`]s
+/// Note that the [`function`] module has helper functions to produce [`Expression`]s.
+/// These are also re-exported from the root of this crate.
 ///
 /// [`function`]: crate::function
 pub fn function(function: Function) -> Expression {
     function.into()
 }
 
+/// Negates the expression with `NOT`.
+/// E.g., `a < b` becomes `NOT a < b`.
+///
+/// Tip: you can use `!a` or `a.not()` to do this, instead.
 pub fn not(a: Expression) -> Expression {
     !a
 }
 
+/// Wraps an expression in parentheses.
+/// E.g., `a < b AND c > d` becomes `(a < b AND c > d)`.
+///
+/// Tip: you can use `a.parenthesize()` to do this, instead.
 pub fn parenthesize(a: Expression) -> Expression {
     a.parenthesize()
 }
