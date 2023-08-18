@@ -1,10 +1,10 @@
 [package]
-name = "dynamodb-expression"
+name = "dynamodb_expression"
 description = "Types to build a DynamoDB filter or condition expression"
 authors = ["Daniel Cormier"]
 version = "0.1.0"
 edition = "2021"
-documentation = "https://docs.rs/dynamodb-expression/"
+documentation = "https://docs.rs/dynamodb_expression/"
 repository = "https://github.com/dcormier/dynamodb-expression-rs"
 license = "Apache-2.0"
 
