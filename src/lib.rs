@@ -6,11 +6,15 @@ use aws_sdk_dynamodb::{
     operation::scan::ScanInput,
     types::{AttributeValue, Put},
 };
-use dynamodb_expression::{attribute_not_exists, begins_with, cmp, size, Comparator::*};
+use dynamodb_expression::{name, string_value, Comparator::*};
 
 # fn main() {
 ScanInput::builder()
-    .filter_expression(begins_with("#name", ":prefix").and(cmp("#age", GE, ":min_age")))
+    .filter_expression(
+        name("#name")
+            .begins_with(":prefix")
+            .and(name("#age").comparison(Ge, string_value(":min_age"))),
+    )
     .expression_attribute_names("#name", "name")
     .expression_attribute_values(":prefix", AttributeValue::S("Wil".into()))
     .expression_attribute_names("#age", "age")
@@ -19,7 +23,11 @@ ScanInput::builder()
     .unwrap();
 
 Put::builder()
-    .condition_expression(attribute_not_exists("#name").or(cmp(size("#name"), EQ, ":zero")))
+    .condition_expression(
+        name("#name")
+            .attribute_not_exists()
+            .or(name("#name").size().comparison(Eq, string_value(":zero"))),
+    )
     .expression_attribute_names("#name", "name")
     .expression_attribute_values(":zero", AttributeValue::N(0.to_string()))
     .build();
@@ -27,19 +35,19 @@ Put::builder()
 ```
 */
 
-// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Syntax
+extern crate alloc;
 
-pub mod attribute_type;
-pub mod comparator;
-pub mod expression;
-pub mod function;
-pub mod not;
-pub mod parenthetical;
+pub mod aws_sdk_dynamodb;
 
-pub use attribute_type::AttributeType;
-pub use comparator::Comparator;
-pub use expression::{between, cmp, in_};
+pub mod condition;
+pub mod key;
+pub mod name;
+pub mod operand;
+pub mod value;
 
-pub use function::{
-    attribute_exists, attribute_not_exists, attribute_type, begins_with, contains, size,
+pub use condition::Comparator;
+pub use name::{name, Name};
+pub use value::{
+    binary_set_value, binary_value, bool_value, null_value, num_set_value, num_value,
+    string_set_value, string_value, ScalarValue, SetValue,
 };

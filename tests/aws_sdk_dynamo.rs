@@ -2,12 +2,16 @@ use aws_sdk_dynamodb::{
     operation::scan::ScanInput,
     types::{AttributeValue, Put},
 };
-use dynamodb_expression::{attribute_not_exists, begins_with, cmp, size, Comparator::*};
+use dynamodb_expression::{name, string_value, Comparator::*};
 
 #[test]
 fn scan_input() {
     ScanInput::builder()
-        .filter_expression(begins_with("#name", ":prefix").and(cmp("#age", GE, ":min_age")))
+        .filter_expression(
+            name("#name")
+                .begins_with(":prefix")
+                .and(name("#age").comparison(Ge, string_value(":min_age"))),
+        )
         .expression_attribute_names("#name", "name")
         .expression_attribute_values(":prefix", AttributeValue::S("Wil".into()))
         .expression_attribute_names("#age", "age")
@@ -19,7 +23,11 @@ fn scan_input() {
 #[test]
 fn put() {
     Put::builder()
-        .condition_expression(attribute_not_exists("#name").or(cmp(size("#name"), EQ, ":zero")))
+        .condition_expression(
+            name("#name")
+                .attribute_not_exists()
+                .or(name("#name").size().comparison(Eq, string_value(":zero"))),
+        )
         .expression_attribute_names("#name", "name")
         .expression_attribute_values(":zero", AttributeValue::N(0.to_string()))
         .build();

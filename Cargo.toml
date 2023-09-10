@@ -4,12 +4,17 @@ description = "Types to build a DynamoDB filter or condition expression"
 authors = ["Daniel Cormier"]
 version = "0.1.0"
 edition = "2021"
-documentation = "https://docs.rs/dynamodb_expression/"
+documentation = "https://docs.rs/dynamodb-expression/"
 repository = "https://github.com/dcormier/dynamodb-expression-rs"
 license = "Apache-2.0"
+keywords = ["aws", "dynamodb", "filter", "condition"]
 
 [dependencies]
+aws-sdk-dynamodb = "0"
+base64 = "0.21"
+itermap = "0"
+num = "0"
+optempty = "0"
 
 [dev-dependencies]
 pretty_assertions = "1"
-aws-sdk-dynamodb = "0"
