@@ -192,7 +192,7 @@ impl From<Condition> for String {
 pub(crate) mod test {
     use pretty_assertions::assert_str_eq;
 
-    use crate::{name, string_value};
+    use crate::name;
 
     use super::{
         comparison::{greater_than, less_than},
@@ -201,12 +201,12 @@ pub(crate) mod test {
 
     /// `a > b`
     pub fn cmp_a_gt_b() -> Condition {
-        Condition::Comparison(greater_than(name("a"), string_value("b")))
+        Condition::Comparison(greater_than(name("a"), name("b")))
     }
 
     /// `c < d`
     pub fn cmp_c_lt_d() -> Condition {
-        Condition::Comparison(less_than(name("c"), string_value("d")))
+        Condition::Comparison(less_than(name("c"), name("d")))
     }
 
     #[test]

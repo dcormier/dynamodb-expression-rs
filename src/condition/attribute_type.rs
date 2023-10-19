@@ -1,7 +1,6 @@
 use core::fmt;
-use std::fmt::Write;
 
-use crate::Name;
+use crate::name::Name;
 
 /// True if the attribute at the specified `path` is of a particular data type.
 ///
@@ -26,11 +25,7 @@ impl AttributeType {
 
 impl fmt::Display for AttributeType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("attribute_type(")?;
-        self.path.fmt(f)?;
-        f.write_str(", ")?;
-        self.attribute_type.fmt(f)?;
-        f.write_char(')')
+        write!(f, "attribute_type({}, {})", self.path, self.attribute_type)
     }
 }
 

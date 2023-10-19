@@ -1,6 +1,6 @@
-use core::fmt::{self, Write};
+use core::fmt;
 
-use crate::Name;
+use crate::name::Name;
 
 /// True if the attribute specified by `path` does not exist in the item.
 ///
@@ -12,9 +12,7 @@ pub struct AttributeNotExists {
 
 impl fmt::Display for AttributeNotExists {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("attribute_not_exists(")?;
-        self.name.fmt(f)?;
-        f.write_char(')')
+        write!(f, "attribute_not_exists({})", self.name)
     }
 }
 

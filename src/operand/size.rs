@@ -1,4 +1,4 @@
-use core::fmt::{self, Write};
+use core::fmt;
 
 use crate::{
     condition::{Between, Comparator, Comparison, In},
@@ -20,7 +20,7 @@ impl Size {
         U: Into<Operand>,
     {
         Between {
-            op: Operand::Size(self),
+            op: self.into(),
             lower: lower.into(),
             upper: upper.into(),
         }
@@ -31,7 +31,7 @@ impl Size {
         I: IntoIterator<Item = T>,
         T: Into<Operand>,
     {
-        In::new(Operand::Size(self), items)
+        In::new(self.into(), items)
     }
 
     pub fn comparison<R>(self, cmp: Comparator, right: R) -> Comparison
@@ -39,7 +39,7 @@ impl Size {
         R: Into<Operand>,
     {
         Comparison {
-            left: Operand::from(self),
+            left: self.into(),
             cmp,
             right: right.into(),
         }
@@ -48,9 +48,7 @@ impl Size {
 
 impl fmt::Display for Size {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("size(")?;
-        self.name.fmt(f)?;
-        f.write_char(')')
+        write!(f, "size({})", self.name)
     }
 }
 

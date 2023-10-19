@@ -1,6 +1,9 @@
-use core::fmt::{self, Write};
+use core::fmt;
 
-use crate::{Name, ScalarValue};
+use crate::{
+    name::Name,
+    value::{Scalar, ValueOrRef},
+};
 
 /// True if the attribute specified by `path` is one of the following:
 /// * A `String` that contains a particular substring.
@@ -13,29 +16,25 @@ use crate::{Name, ScalarValue};
 /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Contains {
-    pub path: Name,
-    pub operand: ScalarValue,
+    pub(crate) path: Name,
+    pub(crate) operand: ValueOrRef,
 }
 
 impl Contains {
     pub fn new<P, S>(path: P, operand: S) -> Self
     where
         P: Into<Name>,
-        S: Into<ScalarValue>,
+        S: Into<Scalar>,
     {
         Self {
             path: path.into(),
-            operand: operand.into(),
+            operand: operand.into().into(),
         }
     }
 }
 
 impl fmt::Display for Contains {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("contains(")?;
-        self.path.fmt(f)?;
-        f.write_str(", ")?;
-        self.operand.fmt(f)?;
-        f.write_char(')')
+        write!(f, "contains({}, {})", self.path, self.operand)
     }
 }

@@ -6,15 +6,13 @@ use core::fmt;
 
 use crate::{
     condition::{Between, Comparator, Comparison, Condition, In},
-    Name, ScalarValue,
+    name::Name,
+    value::{Ref, Scalar, ValueOrRef},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Operand {
-    Name(Name),
-    Value(ScalarValue),
-    Condition(Box<Condition>),
-    Size(Size),
+pub struct Operand {
+    pub(crate) op: OperandType,
 }
 
 impl Operand {
@@ -63,40 +61,69 @@ impl Operand {
 
 impl fmt::Display for Operand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.op.fmt(f)
+    }
+}
+
+impl<T> From<T> for Operand
+where
+    T: Into<OperandType>,
+{
+    fn from(op: T) -> Self {
+        Self { op: op.into() }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub(crate) enum OperandType {
+    Name(Name),
+    Value(ValueOrRef),
+    Condition(Box<Condition>),
+    Size(Size),
+}
+
+impl fmt::Display for OperandType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Operand::Name(operand) => operand.fmt(f),
-            Operand::Value(operand) => operand.fmt(f),
-            Operand::Condition(operand) => operand.fmt(f),
-            Operand::Size(operand) => operand.fmt(f),
+            Self::Name(operand) => operand.fmt(f),
+            Self::Value(operand) => operand.fmt(f),
+            Self::Condition(operand) => operand.fmt(f),
+            Self::Size(operand) => operand.fmt(f),
         }
     }
 }
 
-impl From<Name> for Operand {
+impl From<Name> for OperandType {
     fn from(name: Name) -> Self {
         Self::Name(name)
     }
 }
 
-impl From<ScalarValue> for Operand {
-    fn from(value: ScalarValue) -> Self {
-        Self::Value(value)
+impl From<Scalar> for OperandType {
+    fn from(value: Scalar) -> Self {
+        Self::Value(value.into())
     }
 }
 
-impl From<Condition> for Operand {
+impl From<Ref> for OperandType {
+    fn from(value: Ref) -> Self {
+        Self::Value(value.into())
+    }
+}
+
+impl From<Condition> for OperandType {
     fn from(condition: Condition) -> Self {
-        Self::Condition(Box::from(condition))
+        Self::Condition(condition.into())
     }
 }
 
-impl From<Box<Condition>> for Operand {
+impl From<Box<Condition>> for OperandType {
     fn from(condition: Box<Condition>) -> Self {
         Self::Condition(condition)
     }
 }
 
-impl From<Size> for Operand {
+impl From<Size> for OperandType {
     fn from(size: Size) -> Self {
         Self::Size(size)
     }

@@ -1,4 +1,3 @@
-use alloc::borrow::Cow;
 use core::fmt;
 
 use crate::{
@@ -7,12 +6,12 @@ use crate::{
         Condition, Contains, In,
     },
     operand::{Operand, Size},
-    ScalarValue,
+    value::Scalar,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Name {
-    pub name: Cow<'static, str>,
+    pub(crate) name: String,
 }
 
 impl Name {
@@ -84,7 +83,7 @@ impl Name {
     /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn begins_with<T>(self, prefix: T) -> Condition
     where
-        T: Into<Cow<'static, str>>,
+        T: Into<String>,
     {
         BeginsWith::new(self.name, prefix).into()
     }
@@ -100,7 +99,7 @@ impl Name {
     /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn contains<V>(self, operand: V) -> Condition
     where
-        V: Into<ScalarValue>,
+        V: Into<Scalar>,
     {
         Contains::new(self.name, operand).into()
     }
@@ -121,7 +120,7 @@ impl fmt::Display for Name {
 
 impl<T> From<T> for Name
 where
-    T: Into<Cow<'static, str>>,
+    T: Into<String>,
 {
     fn from(name: T) -> Self {
         Self { name: name.into() }
@@ -139,7 +138,7 @@ where
 mod test {
     use pretty_assertions::assert_str_eq;
 
-    use crate::{condition::Comparator, string_value};
+    use crate::{num_value, Comparator};
 
     use super::name;
 
@@ -149,7 +148,7 @@ mod test {
             "size(a) = 0",
             name("a")
                 .size()
-                .comparison(Comparator::Eq, string_value("0"))
+                .comparison(Comparator::Eq, num_value(0))
                 .to_string()
         );
     }

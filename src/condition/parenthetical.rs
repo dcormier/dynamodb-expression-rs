@@ -1,5 +1,4 @@
 use core::fmt;
-use std::fmt::Write;
 
 use super::Condition;
 
@@ -46,9 +45,7 @@ where
 
 impl fmt::Display for Parenthetical {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_char('(')?;
-        self.condition.fmt(f)?;
-        f.write_char(')')
+        write!(f, "({})", self.condition)
     }
 }
 

@@ -15,10 +15,6 @@ pub struct Between {
 
 impl fmt::Display for Between {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.op.fmt(f)?;
-        f.write_str(" BETWEEN ")?;
-        self.lower.fmt(f)?;
-        f.write_str(" AND ")?;
-        self.upper.fmt(f)
+        write!(f, "{} BETWEEN {} AND {}", self.op, self.lower, self.upper)
     }
 }

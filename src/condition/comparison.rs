@@ -1,4 +1,4 @@
-use core::fmt::{self, Write};
+use core::fmt;
 
 use crate::operand::Operand;
 
@@ -11,11 +11,9 @@ pub struct Comparison {
 
 impl fmt::Display for Comparison {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.left.fmt(f)?;
-        f.write_char(' ')?;
-        f.write_str(self.cmp.as_str())?;
-        f.write_char(' ')?;
-        self.right.fmt(f)
+        let Self { left, cmp, right } = self;
+
+        write!(f, "{left} {cmp} {right}")
     }
 }
 
@@ -50,12 +48,12 @@ pub enum Comparator {
 impl Comparator {
     pub fn as_str(self) -> &'static str {
         match self {
-            Comparator::Eq => "=",
-            Comparator::Ne => "<>",
-            Comparator::Lt => "<",
-            Comparator::Le => "<=",
-            Comparator::Gt => ">",
-            Comparator::Ge => ">=",
+            Self::Eq => "=",
+            Self::Ne => "<>",
+            Self::Lt => "<",
+            Self::Le => "<=",
+            Self::Gt => ">",
+            Self::Ge => ">=",
         }
     }
 }

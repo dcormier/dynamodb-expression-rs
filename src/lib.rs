@@ -37,17 +37,22 @@ Put::builder()
 
 extern crate alloc;
 
-pub mod aws_sdk_dynamodb;
+// Re-export the crates publicly exposed in our API
+pub use ::aws_sdk_dynamodb;
+pub use ::num;
 
 pub mod condition;
+pub mod expression;
 pub mod key;
 pub mod name;
 pub mod operand;
+pub mod path;
+pub mod update;
 pub mod value;
 
 pub use condition::Comparator;
-pub use name::{name, Name};
+pub use expression::Expression;
+pub use name::name;
 pub use value::{
-    binary_set_value, binary_value, bool_value, null_value, num_set_value, num_value,
-    string_set_value, string_value, ScalarValue, SetValue,
+    binary_set, binary_value, bool_value, null_value, num_set, num_value, string_set, string_value,
 };

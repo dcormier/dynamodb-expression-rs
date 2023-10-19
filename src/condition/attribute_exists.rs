@@ -1,6 +1,6 @@
-use core::fmt::{self, Write};
+use core::fmt;
 
-use crate::Name;
+use crate::name::Name;
 
 /// True if the item contains the attribute specified by `path`.
 ///
@@ -12,9 +12,7 @@ pub struct AttributeExists {
 
 impl fmt::Display for AttributeExists {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("attribute_exists(")?;
-        self.name.fmt(f)?;
-        f.write_char(')')
+        write!(f, "attribute_exists({})", self.name)
     }
 }
 

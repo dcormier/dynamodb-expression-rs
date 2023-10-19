@@ -1,36 +1,34 @@
-use alloc::borrow::Cow;
-use core::fmt::{self, Write};
+use core::fmt;
 
-use crate::{string_value, Name, ScalarValue};
+use crate::{
+    name::Name,
+    value::{Scalar, ValueOrRef},
+};
 
 /// True if the attribute specified by `path` begins with a particular substring.
 ///
 /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BeginsWith {
-    pub path: Name,
-    pub substr: ScalarValue,
+    pub(crate) path: Name,
+    pub(crate) substr: ValueOrRef,
 }
 
 impl BeginsWith {
     pub fn new<P, S>(path: P, substr: S) -> Self
     where
         P: Into<Name>,
-        S: Into<Cow<'static, str>>,
+        S: Into<String>,
     {
         Self {
             path: path.into(),
-            substr: string_value(substr.into()),
+            substr: Scalar::from(substr.into()).into(),
         }
     }
 }
 
 impl fmt::Display for BeginsWith {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("begins_with(")?;
-        self.path.fmt(f)?;
-        f.write_str(", ")?;
-        self.substr.fmt(f)?;
-        f.write_char(')')
+        write!(f, "begins_with({}, {})", self.path, self.substr)
     }
 }

@@ -1,0 +1,103 @@
+use std::collections::HashMap;
+
+use aws_sdk_dynamodb::{
+    primitives::Blob,
+    types::AttributeValue::{self, Bool, Bs, Ns, Null, Ss, B, L, M, N, S},
+};
+use base64::engine::{general_purpose, Engine, GeneralPurpose};
+use itermap::IterMap;
+use itertools::Itertools;
+
+use super::DebugItem;
+
+const ATTR_ID: &str = "id";
+const ATTR_MAP: &str = "map";
+const ATTR_LIST: &str = "list";
+const ATTR_STRING: &str = "string";
+const ATTR_STRINGS: &str = "strings";
+const ATTR_NUM: &str = "num";
+const ATTR_NUMS: &str = "nums";
+const ATTR_BLOB: &str = "blob";
+const ATTR_BLOBS: &str = "blobs";
+const ATTR_BOOL: &str = "bool";
+const ATTR_NULL: &str = "null";
+
+#[allow(dead_code)]
+pub fn new_item(id: String) -> HashMap<String, AttributeValue> {
+    let mut item = into_map([
+        (ATTR_STRING, S("foo".into())),
+        (ATTR_STRINGS, Ss(into_strings(["a", "b", "c"]))),
+        (ATTR_NUM, N("42".into())),
+        (ATTR_NUMS, Ns(into_strings(["1", "2.0", "3"]))),
+        (ATTR_NULL, Null(true)),
+        (ATTR_BOOL, Bool(true)),
+        (ATTR_BLOB, B(Blob::new(base64_encode("foo")))),
+        (ATTR_BLOBS, Bs(into_blobs(["foo", "bar", "baz"]))),
+    ]);
+
+    let mut list = item.values().cloned().collect_vec();
+    // Nested list.
+    list.push(L(list.clone()));
+
+    item.insert(ATTR_LIST.into(), L(list));
+
+    // Nested map.
+    item.insert(ATTR_MAP.into(), M(item.clone()));
+    item.insert(ATTR_ID.into(), S(id));
+
+    item
+}
+
+fn into_strings<I, T>(strings: I) -> Vec<String>
+where
+    I: IntoIterator<Item = T>,
+    T: Into<String>,
+{
+    strings.into_iter().map(Into::into).collect()
+}
+
+fn into_blobs<I, T>(binaries: I) -> Vec<Blob>
+where
+    I: IntoIterator<Item = T>,
+    T: AsRef<[u8]>,
+{
+    binaries
+        .into_iter()
+        .map(base64_encode)
+        .map(Blob::new)
+        .collect()
+}
+
+fn into_map<I, K>(strings: I) -> HashMap<String, AttributeValue>
+where
+    I: IntoIterator<Item = (K, AttributeValue)>,
+    K: Into<String>,
+{
+    strings.into_iter().map_keys(Into::into).collect()
+}
+
+/// The base64 encoding used by DynamoDB.
+/// Import `base64::engine::Engine` to use it to encode or decode base64.
+pub const DYNAMODB_BASE64: GeneralPurpose = general_purpose::STANDARD;
+
+/// Produces base64 the way DynamoDB wants it.
+pub fn base64_encode<T>(b: T) -> String
+where
+    T: AsRef<[u8]>,
+{
+    DYNAMODB_BASE64.encode(b)
+}
+
+/// Decodes base64 from DynamoDB.
+pub fn base64_decode<T>(b: T) -> Result<Vec<u8>, base64::DecodeError>
+where
+    T: AsRef<[u8]>,
+{
+    DYNAMODB_BASE64.decode(b)
+}
+
+#[test]
+fn item() {
+    let item = new_item("ITEM ID".into());
+    println!("{:?}", DebugItem(item));
+}

@@ -1,12 +1,11 @@
-use alloc::borrow::Cow;
 use core::fmt;
 
 use crate::{
     condition::{
         equal, greater_than, greater_than_or_equal, less_than, less_than_or_equal, Condition,
     },
+    name::Name,
     operand::Operand,
-    Name,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -17,7 +16,7 @@ pub struct Key {
 impl Key {
     pub fn begins_with<T>(self, prefix: T) -> KeyCondition
     where
-        T: Into<Cow<'static, str>>,
+        T: Into<String>,
     {
         KeyCondition {
             condition: self.name.begins_with(prefix),

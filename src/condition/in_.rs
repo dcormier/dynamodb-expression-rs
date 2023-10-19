@@ -23,7 +23,8 @@ impl In {
 
 impl fmt::Display for In {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} IN (", self.op)?;
+        self.op.fmt(f)?;
+        f.write_str(" IN (")?;
 
         let mut first = true;
         for item in &self.items {

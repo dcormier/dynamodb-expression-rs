@@ -1,11 +1,10 @@
-mod to_builders;
+mod to_aws;
 
-use alloc::borrow::Cow;
+use std::collections::HashMap;
 
 use aws_sdk_dynamodb::types::AttributeValue;
 use itermap::IterMap;
 use optempty::EmptyIntoNone;
-use std::collections::HashMap;
 
 use crate::{
     condition::{
@@ -13,44 +12,34 @@ use crate::{
         Condition, Contains, In, Not, Or, Parenthetical,
     },
     key::KeyCondition,
-    operand::{Operand, Size},
-    value::{scalar::ScalarType, Value, ValueType},
-    Name, ScalarValue,
+    name::Name,
+    operand::{Operand, OperandType, Size},
+    update::Update,
+    value::{Ref, Value, ValueOrRef},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Expression {
     condition: Option<Condition>,
     key_condition: Option<KeyCondition>,
+    update: Option<Update>,
     filter: Option<Condition>,
     projection: Option<Vec<Name>>,
-    names: HashMap<Cow<'static, str>, Cow<'static, str>>,
-    values: HashMap<ValueType, Cow<'static, str>>,
+    names: HashMap<Name, String>,
+    values: HashMap<Value, Ref>,
 }
 
-/// For building an expression.
+// Functions and methods for building an expression.
 impl Expression {
-    // Intentionally private.
-    fn new() -> Self {
-        Self {
-            condition: None,
-            key_condition: None,
-            filter: None,
-            projection: None,
-            names: HashMap::default(),
-            values: HashMap::default(),
-        }
-    }
-
-    /// Created a new `Expression` from to be used as a condition for DynamoDB input.
+    /// Creates a new [`Expression`] with the specified condition for DynamoDB input.
     pub fn new_with_condition<T>(condition: T) -> Self
     where
         T: Into<Condition>,
     {
-        Self::new().with_condition(condition.into())
+        Self::default().with_condition(condition.into())
     }
 
-    /// Sets the condition for this expression, overwriting any previously set.
+    /// Sets the condition for this [`Expression`], overwriting any previously set.
     pub fn with_condition<T>(mut self, condition: T) -> Self
     where
         T: Into<Condition>,
@@ -60,15 +49,15 @@ impl Expression {
         self
     }
 
-    /// Created a new `Expression` from to be used as a key_condition for DynamoDB input.
+    /// Creates a new [`Expression`] with the specified key condition for DynamoDB input.
     pub fn new_with_key_condition<T>(key_condition: T) -> Self
     where
         T: Into<KeyCondition>,
     {
-        Self::new().with_key_condition(key_condition.into())
+        Self::default().with_key_condition(key_condition.into())
     }
 
-    /// Sets the key_condition for this expression, overwriting any previously set.
+    /// Sets the key condition for this [`Expression`], overwriting any previously set.
     pub fn with_key_condition<T>(mut self, key_condition: T) -> Self
     where
         T: Into<KeyCondition>,
@@ -80,15 +69,33 @@ impl Expression {
         self
     }
 
-    /// Created a new `Expression` from to be used as a filter for DynamoDB input.
+    /// Creates a new [`Expression`] with the specified update for DynamoDB input.
+    pub fn new_with_update<T>(update: T) -> Self
+    where
+        T: Into<Update>,
+    {
+        Self::default().with_update(update)
+    }
+
+    /// Sets the update expression, overwriting any previously set.
+    pub fn with_update<T>(mut self, update: T) -> Self
+    where
+        T: Into<Update>,
+    {
+        self.update = Some(update.into());
+
+        self
+    }
+
+    /// Creates a new [`Expression`] with the specified filter for DynamoDB input.
     pub fn new_with_filter<T>(filter: T) -> Self
     where
         T: Into<Condition>,
     {
-        Self::new().with_filter(filter.into())
+        Self::default().with_filter(filter.into())
     }
 
-    /// Sets the filter for this expression, overwriting any previously set.
+    /// Sets the filter for this [`Expression`], overwriting any previously set.
     pub fn with_filter<T>(mut self, filter: T) -> Self
     where
         T: Into<Condition>,
@@ -98,14 +105,16 @@ impl Expression {
         self
     }
 
+    /// Creates a new [`Expression`] with the specified projection for DynamoDB input.
     pub fn new_with_projection<I, T>(names: I) -> Self
     where
         I: IntoIterator<Item = T>,
         T: Into<Name>,
     {
-        Self::new().with_projection(names)
+        Self::default().with_projection(names)
     }
 
+    /// Sets the projection for this [`Expression`], overwriting any previously set.
     pub fn with_projection<I, T>(mut self, names: I) -> Self
     where
         I: IntoIterator<Item = T>,
@@ -141,12 +150,12 @@ impl Expression {
             .into(),
             Condition::Contains(Contains { path, operand }) => Contains {
                 path: self.process_name(path),
-                operand: self.process_value(ValueType::from(operand)),
+                operand: self.process_value(operand).into(),
             }
             .into(),
             Condition::BeginsWith(BeginsWith { path, substr }) => BeginsWith {
                 path: self.process_name(path),
-                substr: self.process_value(ValueType::from(substr)),
+                substr: self.process_value(substr).into(),
             }
             .into(),
             Condition::Between(Between { op, lower, upper }) => Between {
@@ -191,14 +200,16 @@ impl Expression {
     }
 
     fn process_operand(&mut self, operand: Operand) -> Operand {
-        match operand {
-            Operand::Name(name) => self.process_name(name).into(),
-            Operand::Size(Size { name }) => Size {
+        match operand.op {
+            OperandType::Name(name) => self.process_name(name).into(),
+            OperandType::Size(Size { name }) => Size {
                 name: self.process_name(name),
             }
             .into(),
-            Operand::Value(value) => self.process_value(ValueType::from(value)).into(),
-            Operand::Condition(condition) => self.process_condition(*condition).into(),
+            OperandType::Value(value) => Operand {
+                op: OperandType::Value(self.process_value(value).into()),
+            },
+            OperandType::Condition(condition) => self.process_condition(*condition).into(),
         }
     }
 
@@ -208,32 +219,31 @@ impl Expression {
         Name {
             name: self
                 .names
-                .entry(name.name.clone())
-                .or_insert(format!("#{}", count).into())
+                .entry(name)
+                .or_insert(format!("#{}", count))
                 .clone(),
         }
     }
 
-    fn process_value<T>(&mut self, value: T) -> ScalarValue
-    where
-        T: Into<Value>,
-    {
-        let count = self.values.len();
+    fn process_value(&mut self, value: ValueOrRef) -> Ref {
+        match value {
+            ValueOrRef::Value(value) => {
+                let count = self.values.len();
 
-        ScalarValue {
-            value: ScalarType::String(
                 self.values
-                    .entry(value.into().value)
-                    .or_insert(format!(":{}", count).into())
-                    .clone(),
-            ),
+                    .entry(value)
+                    .or_insert_with(|| count.to_string().into())
+                    .clone()
+            }
+            ValueOrRef::Ref(value) => value,
         }
     }
 }
 
-/// Methods to get the values needed for DynamoDB input builders.
+// Methods to get the values needed for DynamoDB input builders.
 impl Expression {
-    /// The string to use as a DynamoDB condition.
+    /// The string to use as a DynamoDB condition expression. Be sure to also use
+    /// `.attribute_names()` and `.attribute_values()`.
     pub fn condition_expression(&self) -> String {
         self.condition
             .as_ref()
@@ -241,7 +251,8 @@ impl Expression {
             .unwrap_or_default()
     }
 
-    /// For use on a key condition expression.
+    /// The string to use use as a DynamoDB key condition expression. Be sure to
+    /// also use `.attribute_names()` and `.attribute_values()`.
     pub fn key_condition_expression(&self) -> String {
         self.key_condition
             .as_ref()
@@ -249,7 +260,8 @@ impl Expression {
             .unwrap_or_default()
     }
 
-    /// The string to use as a DynamoDB filter.
+    /// The string to use as a DynamoDB filter expression. Be sure to also use
+    /// `.attribute_names()` and `.attribute_values()`.
     pub fn filter_expression(&self) -> String {
         self.filter
             .as_ref()
@@ -257,7 +269,8 @@ impl Expression {
             .unwrap_or_default()
     }
 
-    /// Gets the projection expression to use for a DynamoDB input.
+    /// The string to use as a DynamoDB projection expression. Be sure to also
+    /// use `.attribute_names()` and `.attribute_values()`.
     ///
     /// See: <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ProjectionExpressions.html>
     pub fn projection_expression(&self) -> String {
@@ -270,7 +283,7 @@ impl Expression {
             .join(", ")
     }
 
-    /// The expression attribute names for the DynamoDB input.
+    /// DynamoDB expression attribute names.
     pub fn attribute_names(&self) -> Option<HashMap<String, String>> {
         Some(
             self.names
@@ -283,13 +296,13 @@ impl Expression {
         .empty_into_none()
     }
 
-    /// The expression attribute values for the DynamoDB input.
+    /// DynamoDB expression attribute values.
     pub fn attribute_values(&self) -> Option<HashMap<String, AttributeValue>> {
         Some(
             self.values
                 .iter()
                 .map_values(ToString::to_string)
-                .map_keys(|k| k.clone().into())
+                .map_keys(|k| k.clone().into_attribute_value())
                 .map(|(k, v)| (v, k))
                 .collect(),
         )
