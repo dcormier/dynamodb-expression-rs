@@ -1,10 +1,11 @@
 use core::fmt;
+use std::collections::BTreeSet;
 
 use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue};
 
 use super::base64;
 
-/// A collection of DynamoDB values that are all the same type.
+/// A collection of DynamoDB values that are all the same type and unique.
 ///
 /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -38,11 +39,11 @@ impl fmt::Display for Set {
     }
 }
 
-/// A set of string values for DynamoDB
+/// A set of unique string values for DynamoDB
 ///
 /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct StringSet(Vec<String>);
+pub struct StringSet(BTreeSet<String>);
 
 impl StringSet {
     // Intentionally not using `impl From<StringSet> for AttributeValue` because
@@ -50,7 +51,7 @@ impl StringSet {
     // crate is not to make creating `AttributeValues` easier. They should try
     // `serde_dynamo`.
     fn into_attribute_value(self) -> AttributeValue {
-        AttributeValue::Ss(self.0)
+        AttributeValue::Ss(self.0.into_iter().collect())
     }
 }
 
@@ -82,6 +83,9 @@ impl fmt::Display for StringSet {
     }
 }
 
+/// A set of unique string values for DynamoDB
+///
+/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
 pub fn string_set<I, T>(set: I) -> Set
 where
     I: IntoIterator<Item = T>,
@@ -90,18 +94,18 @@ where
     Set::StringSet(set.into())
 }
 
-/// A set of numeric values for DynamoDB
+/// A set of unique numeric values for DynamoDB
 ///
 /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NumSet(Vec<String>);
+pub struct NumSet(BTreeSet<String>);
 
 impl NumSet {
-    pub fn push<T>(&mut self, num: T)
+    pub fn insert<T>(&mut self, num: T)
     where
         T: ToString + num::Num,
     {
-        self.0.push(Self::into_num(num));
+        self.0.insert(Self::into_num(num));
     }
 
     /// Converts a numeric type into a DynamoDB numeric value
@@ -117,7 +121,7 @@ impl NumSet {
     // crate is not to make creating `AttributeValues` easier. They should try
     // `serde_dynamo`.
     fn into_attribute_value(self) -> AttributeValue {
-        AttributeValue::Ns(self.0)
+        AttributeValue::Ns(self.0.into_iter().collect())
     }
 }
 
@@ -149,6 +153,9 @@ impl fmt::Display for NumSet {
     }
 }
 
+/// A set of unique numeric values for DynamoDB
+///
+/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
 pub fn num_set<I, T>(set: I) -> Set
 where
     I: IntoIterator<Item = T>,
@@ -157,11 +164,11 @@ where
     Set::NumSet(set.into())
 }
 
-/// A set of binary values for DynamoDB
+/// A set of unique binary values for DynamoDB
 ///
 /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct BinarySet(Vec<Vec<u8>>);
+pub struct BinarySet(BTreeSet<Vec<u8>>);
 
 impl BinarySet {
     // Intentionally not using `impl From<BinarySet> for AttributeValue` because
@@ -205,6 +212,9 @@ impl fmt::Display for BinarySet {
     }
 }
 
+/// A set of unique binary values for DynamoDB
+///
+/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
 pub fn binary_set<I, T>(set: I) -> Set
 where
     I: IntoIterator<Item = T>,
@@ -226,14 +236,14 @@ mod test {
     fn string_set_display() {
         let set = string_set(["foo", "bar", "!@#$%^&*()-=_+\"'{}[]\\|;:<>,./?`~"]);
         assert_eq!(
-            r#"["foo", "bar", "!@#$%^&*()-=_+\"'{}[]\\|;:<>,./?`~"]"#,
+            r#"["!@#$%^&*()-=_+\"'{}[]\\|;:<>,./?`~", "bar", "foo"]"#,
             set.to_string()
         );
 
         let deserialized: Vec<String> =
             serde_json::from_str(&set.to_string()).expect("Must be valid JSON");
         assert_eq!(
-            vec!["foo", "bar", "!@#$%^&*()-=_+\"'{}[]\\|;:<>,./?`~"],
+            vec!["!@#$%^&*()-=_+\"'{}[]\\|;:<>,./?`~", "bar", "foo"],
             deserialized
         );
     }
@@ -250,6 +260,8 @@ mod test {
 
         let set = num_set([f64::MIN, 0.0, 3.14, f64::MAX]);
         // TODO: Find out what format DynamoDB wants extreme values in. Exponents?
+        //       Yes, exponents.
+        //       https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Number
         assert_eq!(
             "[\"-17976931348623157000000000000000000000000000000000000000000000\
             0000000000000000000000000000000000000000000000000000000000000000000\
@@ -257,12 +269,12 @@ mod test {
             0000000000000000000000000000000000000000000000000000000000000000000\
             0000000000000000000000000000000000000000000000\", \
             \"0\", \
-            \"3.14\", \
             \"17976931348623157000000000000000000000000000000000000000000000000\
             0000000000000000000000000000000000000000000000000000000000000000000\
             0000000000000000000000000000000000000000000000000000000000000000000\
             0000000000000000000000000000000000000000000000000000000000000000000\
-            0000000000000000000000000000000000000000000\"]",
+            0000000000000000000000000000000000000000000\", \
+            \"3.14\"]",
             set.to_string()
         );
 
@@ -271,17 +283,17 @@ mod test {
         assert_eq!(
             vec![
                 "-17976931348623157000000000000000000000000000000000000000000000\
-        0000000000000000000000000000000000000000000000000000000000000000000\
-        0000000000000000000000000000000000000000000000000000000000000000000\
-        0000000000000000000000000000000000000000000000000000000000000000000\
-        0000000000000000000000000000000000000000000000",
+                    0000000000000000000000000000000000000000000000000000000000000000000\
+                    0000000000000000000000000000000000000000000000000000000000000000000\
+                    0000000000000000000000000000000000000000000000000000000000000000000\
+                    0000000000000000000000000000000000000000000000",
                 "0",
-                "3.14",
                 "17976931348623157000000000000000000000000000000000000000000000000\
-        0000000000000000000000000000000000000000000000000000000000000000000\
-        0000000000000000000000000000000000000000000000000000000000000000000\
-        0000000000000000000000000000000000000000000000000000000000000000000\
-        0000000000000000000000000000000000000000000"
+                    0000000000000000000000000000000000000000000000000000000000000000000\
+                    0000000000000000000000000000000000000000000000000000000000000000000\
+                    0000000000000000000000000000000000000000000000000000000000000000000\
+                    0000000000000000000000000000000000000000000",
+                "3.14",
             ],
             deserialized
         );

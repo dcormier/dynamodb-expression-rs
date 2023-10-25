@@ -1,42 +1,47 @@
-use core::{fmt, ops};
+use core::fmt;
 
-use crate::name::Name;
+use crate::path::Path;
 
 // func Remove(name NameBuilder) UpdateBuilder
 // func (ub UpdateBuilder) Remove(name NameBuilder) UpdateBuilder
 
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE>
+/// For use an in an [`Update`] expression to [remove attributes from an item][1], or
+/// [elements from a list][2].
+///
+/// Use the `From<Into<Path>>` or `FromIterator<Into<Path>>` implementations to
+/// construct.
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE
+/// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE.RemovingListElements
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Remove {
-    // TODO: Name or Path?
-    names: Vec<Name>,
+    // Path is correct here.
+    // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE.RemovingListElements
+    pub(crate) paths: Vec<Path>,
 }
 
-impl<T> FromIterator<T> for Remove
+impl<T> From<T> for Remove
 where
-    T: Into<Name>,
+    T: Into<Path>,
 {
-    fn from_iter<I>(names: I) -> Self
-    where
-        I: IntoIterator<Item = T>,
-    {
+    fn from(path: T) -> Self {
         Self {
-            names: names.into_iter().map(Into::into).collect(),
+            paths: vec![path.into()],
         }
     }
 }
 
-impl ops::Deref for Remove {
-    type Target = Vec<Name>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.names
-    }
-}
-
-impl ops::DerefMut for Remove {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.names
+impl<T> FromIterator<T> for Remove
+where
+    T: Into<Path>,
+{
+    fn from_iter<I>(paths: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+    {
+        Self {
+            paths: paths.into_iter().map(Into::into).collect(),
+        }
     }
 }
 
@@ -46,7 +51,7 @@ impl fmt::Display for Remove {
         f.write_str("REMOVE ")?;
 
         let mut first = true;
-        self.names.iter().try_for_each(|name| {
+        self.paths.iter().try_for_each(|name| {
             if first {
                 first = false;
             } else {

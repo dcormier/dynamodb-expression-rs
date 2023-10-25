@@ -1,13 +1,15 @@
 pub mod append;
+pub mod math;
 
-use core::fmt::{self, Write};
+use core::fmt;
 
 use crate::{
     path::Path,
-    value::{scalar::Num, Value},
+    value::{Value, ValueOrRef},
 };
 
-use self::append::Append;
+pub use self::append::Append;
+pub use self::math::Math;
 
 // func Set(name NameBuilder, operandBuilder OperandBuilder) UpdateBuilder
 // func (ub UpdateBuilder) Set(name NameBuilder, operandBuilder OperandBuilder) UpdateBuilder
@@ -15,11 +17,25 @@ use self::append::Append;
 /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET>
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Set {
-    actions: Vec<SetAction>,
+    pub(crate) actions: Vec<SetAction>,
+}
+
+impl Set {
+    /// Add an additional action to this `SET` expression.
+    pub fn and<T>(mut self, action: T) -> Self
+    where
+        T: Into<SetAction>,
+    {
+        self.actions.push(action.into());
+
+        self
+    }
 }
 
 impl fmt::Display for Set {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("SET ")?;
+
         let mut first = true;
         self.actions.iter().try_for_each(|action| {
             if first {
@@ -30,6 +46,31 @@ impl fmt::Display for Set {
 
             action.fmt(f)
         })
+    }
+}
+
+impl<T> From<T> for Set
+where
+    T: Into<SetAction>,
+{
+    fn from(value: T) -> Self {
+        Self {
+            actions: vec![value.into()],
+        }
+    }
+}
+
+impl<T> FromIterator<T> for Set
+where
+    T: Into<SetAction>,
+{
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+    {
+        Self {
+            actions: iter.into_iter().map(Into::into).collect(),
+        }
     }
 }
 
@@ -89,34 +130,26 @@ impl fmt::Display for SetAction {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub enum MathOp {
-    Add,
-    Sub,
-}
-
-impl fmt::Debug for MathOp {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(self, f)
-    }
-}
-
-impl fmt::Display for MathOp {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_char(match self {
-            MathOp::Add => '+',
-            MathOp::Sub => '-',
-        })
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Assign {
     /// `Path` is correct, here.
     /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingListElements>
     /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingNestedMapAttributes>
     pub(crate) path: Path,
-    pub(crate) value: Value,
+    pub(crate) value: ValueOrRef,
+}
+
+impl Assign {
+    pub fn new<P, V>(path: P, value: V) -> Self
+    where
+        P: Into<Path>,
+        V: Into<Value>,
+    {
+        Self {
+            path: path.into(),
+            value: value.into().into(),
+        }
+    }
 }
 
 impl fmt::Display for Assign {
@@ -125,34 +158,11 @@ impl fmt::Display for Assign {
     }
 }
 
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement>
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Math {
-    // TODO: Name or Path?
-    dst: Path,
-    src: Path,
-    op: MathOp,
-    value: Num,
-}
-
-impl fmt::Display for Math {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Self {
-            dst,
-            src,
-            op,
-            value,
-        } = self;
-
-        write!(f, "{dst} = {src} {op} {value}")
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct IfNotExists {
-    dst: Path,
-    src: Path,
-    value: Value,
+    pub(crate) dst: Path,
+    pub(crate) src: Path,
+    pub(crate) value: ValueOrRef,
 }
 
 impl IfNotExists {
@@ -172,11 +182,11 @@ impl IfNotExists {
         S: Into<Path>,
         V: Into<Value>,
     {
-        fn new_with_source(dst: Path, src: Path, value: Value) -> IfNotExists {
+        fn new_with_source(dst: Path, src: Path, value: ValueOrRef) -> IfNotExists {
             IfNotExists { dst, src, value }
         }
 
-        new_with_source(destination.into(), source.into(), value.into())
+        new_with_source(destination.into(), source.into(), value.into().into())
     }
 }
 

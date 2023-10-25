@@ -3,7 +3,6 @@ mod to_aws;
 use std::collections::HashMap;
 
 use aws_sdk_dynamodb::types::AttributeValue;
-use itermap::IterMap;
 use optempty::EmptyIntoNone;
 
 use crate::{
@@ -14,10 +13,13 @@ use crate::{
     key::KeyCondition,
     name::Name,
     operand::{Operand, OperandType, Size},
-    update::Update,
+    path::{Element, Path},
+    update::{set::SetAction, Update},
     value::{Ref, Value, ValueOrRef},
 };
 
+#[must_use = "An `Expression` does nothing unless applied to a fluent builder \
+from the DynamoDB"]
 #[derive(Debug, Default, Clone)]
 pub struct Expression {
     condition: Option<Condition>,
@@ -82,7 +84,7 @@ impl Expression {
     where
         T: Into<Update>,
     {
-        self.update = Some(update.into());
+        self.update = Some(self.process_update(update.into()));
 
         self
     }
@@ -126,6 +128,9 @@ impl Expression {
                 .map(|name| self.process_name(name.into()))
                 .collect(),
         );
+
+        // TODO: Empty into none, here? Test what happens with an empty projection.
+        //       If DynamoDB gives an error, then use `.empty_into_none()`, here.
 
         self
     }
@@ -213,6 +218,85 @@ impl Expression {
         }
     }
 
+    fn process_update(&mut self, update: Update) -> Update {
+        match update {
+            Update::Set(mut update) => {
+                update.actions = update
+                    .actions
+                    .into_iter()
+                    .map(|action| match action {
+                        SetAction::Assign(mut action) => {
+                            action.path = self.process_path(action.path);
+                            action.value = self.process_value(action.value).into();
+
+                            action.into()
+                        }
+                        SetAction::Math(mut action) => {
+                            action.dst = self.process_path(action.dst);
+                            action.src = self.process_path(action.src);
+                            action.num = self.process_value(action.num).into();
+
+                            action.into()
+                        }
+                        SetAction::Append(mut action) => {
+                            action.dst = self.process_path(action.dst);
+                            action.src = self.process_path(action.src);
+                            action.list = self.process_value(action.list).into();
+
+                            action.into()
+                        }
+                        SetAction::IfNotExists(mut action) => {
+                            action.dst = self.process_path(action.dst);
+                            action.src = self.process_path(action.src);
+                            action.value = self.process_value(action.value).into();
+
+                            action.into()
+                        }
+                    })
+                    .collect();
+
+                update.into()
+            }
+            Update::Remove(mut update) => {
+                update.paths = update
+                    .paths
+                    .into_iter()
+                    .map(|path| self.process_path(path))
+                    .collect();
+
+                update.into()
+            }
+            Update::Add(mut update) => {
+                update.name = self.process_name(update.name);
+                update.value = self.process_value(update.value).into();
+
+                update.into()
+            }
+            Update::Delete(mut update) => {
+                update.path = self.process_name(update.path);
+                update.subset = self.process_value(update.subset).into();
+
+                update.into()
+            }
+        }
+    }
+
+    fn process_path(&mut self, mut path: Path) -> Path {
+        path.path = path
+            .path
+            .into_iter()
+            .map(|elem| {
+                if let Element::Name(name) = elem {
+                    self.process_name(name).into()
+                } else {
+                    elem
+                }
+            })
+            .collect();
+
+        path
+    }
+
     fn process_name(&mut self, name: Name) -> Name {
         let count = self.names.len();
 
@@ -242,45 +326,46 @@ impl Expression {
 
 // Methods to get the values needed for DynamoDB input builders.
 impl Expression {
-    /// The string to use as a DynamoDB condition expression. Be sure to also use
-    /// `.attribute_names()` and `.attribute_values()`.
-    pub fn condition_expression(&self) -> String {
-        self.condition
-            .as_ref()
-            .map(ToString::to_string)
-            .unwrap_or_default()
+    /// The string to use as a DynamoDB condition expression.
+    ///
+    /// Be sure to also use `.attribute_names()` and `.attribute_values()`.
+    pub fn condition_expression(&self) -> Option<String> {
+        self.condition.as_ref().map(ToString::to_string)
     }
 
-    /// The string to use use as a DynamoDB key condition expression. Be sure to
-    /// also use `.attribute_names()` and `.attribute_values()`.
-    pub fn key_condition_expression(&self) -> String {
-        self.key_condition
-            .as_ref()
-            .map(ToString::to_string)
-            .unwrap_or_default()
+    /// The string to use use as a DynamoDB key condition expression.
+    ///
+    /// Be sure to also use `.attribute_names()` and `.attribute_values()`.
+    pub fn key_condition_expression(&self) -> Option<String> {
+        self.key_condition.as_ref().map(ToString::to_string)
     }
 
-    /// The string to use as a DynamoDB filter expression. Be sure to also use
-    /// `.attribute_names()` and `.attribute_values()`.
-    pub fn filter_expression(&self) -> String {
-        self.filter
-            .as_ref()
-            .map(ToString::to_string)
-            .unwrap_or_default()
+    /// The string to use as a DynamoDB filter expression.
+    ///
+    /// Be sure to also use `.attribute_names()` and `.attribute_values()`.
+    pub fn filter_expression(&self) -> Option<String> {
+        self.filter.as_ref().map(ToString::to_string)
+    }
+
+    /// The string to use as a DynamoDB update expression.
+    ///
+    /// Be sure to also use `.attribute_names()` and `.attribute_values()`.
+    pub fn update_expression(&self) -> Option<String> {
+        self.update.as_ref().map(ToString::to_string)
     }
 
     /// The string to use as a DynamoDB projection expression. Be sure to also
     /// use `.attribute_names()` and `.attribute_values()`.
     ///
     /// See: <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ProjectionExpressions.html>
-    pub fn projection_expression(&self) -> String {
-        self.projection
-            .as_ref()
-            .into_iter()
-            .flat_map(|projection| projection.iter())
-            .map(ToString::to_string)
-            .collect::<Vec<_>>()
-            .join(", ")
+    pub fn projection_expression(&self) -> Option<String> {
+        self.projection.as_ref().map(|projection| {
+            projection
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join(", ")
+        })
     }
 
     /// DynamoDB expression attribute names.
@@ -288,9 +373,7 @@ impl Expression {
         Some(
             self.names
                 .iter()
-                .map_keys(ToString::to_string)
-                .map_values(ToString::to_string)
-                .map(|(k, v)| (v, k))
+                .map(|(k, v)| (v.clone(), k.to_string()))
                 .collect(),
         )
         .empty_into_none()
@@ -301,9 +384,7 @@ impl Expression {
         Some(
             self.values
                 .iter()
-                .map_values(ToString::to_string)
-                .map_keys(|k| k.clone().into_attribute_value())
-                .map(|(k, v)| (v, k))
+                .map(|(k, v)| (v.to_string(), k.clone().into_attribute_value()))
                 .collect(),
         )
         .empty_into_none()

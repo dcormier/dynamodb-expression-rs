@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, LowerExp, UpperExp};
 
 use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue};
 
@@ -7,15 +7,27 @@ use super::base64;
 /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Scalar {
+    /// DynamoDB [string](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-S)
+    /// value
     String(String),
+    /// DynamoDB [numeric](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-N)
+    /// value
     Num(Num),
+    /// DynamoDB [boolean](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-BOOL)
+    /// value
     Bool(bool),
+    /// DynamoDB [binary](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-B)
+    /// value
     Binary(Vec<u8>),
+    /// DynamoDB [null](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-NULL)
+    /// value
     Null,
 }
 
 impl Scalar {
-    /// Use when you need a string value for DynamoDB.
+    /// Use when you need a
+    /// [string](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-S)
+    /// value for DynamoDB.
     pub fn new_string<T>(value: T) -> Self
     where
         T: Into<String>,
@@ -23,20 +35,26 @@ impl Scalar {
         Self::String(value.into())
     }
 
-    /// Use when you need a numeric value for DynamoDB.
+    /// Use when you need a
+    /// [numeric](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-N)
+    /// value for DynamoDB.
     pub fn new_num<N>(value: N) -> Self
     where
         N: ToString + num::Num,
     {
-        Self::Num(value.into())
+        Self::Num(Num::new(value))
     }
 
-    /// Use when you need a bool value for DynamoDB.
+    /// Use when you need a
+    /// [boolean](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-BOOL)
+    /// value for DynamoDB.
     pub fn new_bool(b: bool) -> Self {
         Self::Bool(b)
     }
 
-    /// Use when you need a binary value for DynamoDB.
+    /// Use when you need a
+    /// [binary](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-B)
+    /// value for DynamoDB.
     pub fn new_binary<B>(binary: B) -> Self
     where
         B: Into<Vec<u8>>,
@@ -44,7 +62,9 @@ impl Scalar {
         Self::Binary(binary.into())
     }
 
-    /// Use when you need a NULL value for DynamoDB.
+    /// Use when you need a
+    /// [null](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-NULL)
+    /// value for DynamoDB.
     pub fn new_null() -> Self {
         Self::Null
     }
@@ -67,11 +87,13 @@ impl Scalar {
 impl fmt::Display for Scalar {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            // TODO: Is JSON encoding this correct?
             Self::String(s) => serde_json::to_string(s).unwrap().fmt(f),
             Self::Num(n) => n.fmt(f),
             Self::Bool(b) => serde_json::Value::Bool(*b).to_string().fmt(f),
             Self::Binary(b) => serde_json::Value::String(base64(b)).to_string().fmt(f),
+
+            // TODO: I'm pretty sure this isn't right.
+            // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-NULL
             Self::Null => f.write_str("NULL"),
         }
     }
@@ -140,12 +162,48 @@ impl FromIterator<u8> for Scalar {
     }
 }
 
+/// A DynamoDB [numeric](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-N)
+/// value. Use [`Num::from`] or [`num_value`] to construct from an integer or
+/// floating point value.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Num {
     n: String,
 }
 
 impl Num {
+    // TODO: Only up to 38 digits of precision are supported. Does there
+    // need to be alternate constructors with different formatting options?
+    // Should be able to be achieved with constructors using these constraints:
+    //   * `std::fmt::LowerExp + num::Num`
+    //   * `std::fmt::UpperExp + num::Num`
+    // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Number
+    pub fn new<T>(value: T) -> Self
+    where
+        T: ToString + num::Num,
+    {
+        Self {
+            n: value.to_string(),
+        }
+    }
+
+    pub fn new_lower_exp<T>(value: T) -> Self
+    where
+        T: LowerExp + num::Num,
+    {
+        Self {
+            n: format!("{value:e}"),
+        }
+    }
+
+    pub fn new_upper_exp<T>(value: T) -> Self
+    where
+        T: UpperExp + num::Num,
+    {
+        Self {
+            n: format!("{value:E}"),
+        }
+    }
+
     // Intentionally not using `impl From<Num> for AttributeValue` because
     // I don't want to make this a public API people rely on. The purpose of this
     // crate is not to make creating `AttributeValues` easier. They should try
@@ -166,9 +224,7 @@ where
     N: ToString + num::Num,
 {
     fn from(value: N) -> Self {
-        Self {
-            n: value.to_string(),
-        }
+        Num::new(value)
     }
 }
 
@@ -201,7 +257,7 @@ where
     Scalar::new_binary(b)
 }
 
-/// Use when you need a NULL value for DynamoDB.
+/// Use when you need a null value for DynamoDB.
 pub fn null_value() -> Scalar {
     Scalar::new_null()
 }
@@ -226,11 +282,8 @@ mod test {
 
     #[test]
     fn boolean() {
-        let actual = bool_value(true);
-        assert_str_eq!("true", actual.to_string());
-
-        let actual = bool_value(false);
-        assert_str_eq!("false", actual.to_string());
+        assert_str_eq!("true", bool_value(true).to_string());
+        assert_str_eq!("false", bool_value(false).to_string());
     }
 
     #[test]
@@ -257,7 +310,6 @@ mod test {
     #[test]
     fn null() {
         let actual = null_value();
-        // TODO: Is this right?
         assert_str_eq!("NULL", actual.to_string());
     }
 }

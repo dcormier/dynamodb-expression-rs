@@ -1,6 +1,6 @@
 use core::{
     fmt::{self, Write},
-    hash, ops,
+    hash,
 };
 
 use aws_sdk_dynamodb::types::AttributeValue;
@@ -33,20 +33,6 @@ impl Map {
                 .map_values(Value::into_attribute_value)
                 .collect(),
         )
-    }
-}
-
-impl ops::Deref for Map {
-    type Target = MapType<Name, Value>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.map
-    }
-}
-
-impl ops::DerefMut for Map {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.map
     }
 }
 

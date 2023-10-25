@@ -1,29 +1,35 @@
 use core::fmt;
 
-use crate::{path::Path, value::List};
+use crate::{
+    path::Path,
+    value::{List, ValueOrRef},
+};
 
 /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements>
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Append {
     /// The field to set the newly combined list to
     // TODO: Name or Path?
-    dst: Path,
+    pub(crate) dst: Path,
 
     /// The field to get the current list from
     // TODO: Name or Path?
-    src: Path,
+    pub(crate) src: Path,
 
-    /// The value(s) to add to the list to the list
-    value: List,
+    /// The value(s) to add to the list
+    pub(crate) list: ValueOrRef,
 
     /// Whether to add the new values to the beginning or end of the source list
     before_or_after: BeforeOrAfter,
 }
 
 impl Append {
-    /// Sets up an [`Append`] where the source list to get the initial value from,
-    /// and the destination field to save the updated list to, are the same. E.g.,
-    /// `my_field = list_append(my_field, [1,2,3,4])`
+    /// Sets up an [`Append`] where the source list to get the initial value
+    /// from, and the destination field to save the updated list to, are the
+    /// same. E.g.:
+    /// ```text
+    /// my_field = list_append(my_field, [1,2,3,4])
+    /// ```
     pub fn new_with_self_to_end<P, L>(field: P, value: L) -> Self
     where
         P: Into<Path>,
@@ -33,6 +39,13 @@ impl Append {
 
         Self::new_with_source(field.clone(), field, value.into(), BeforeOrAfter::After)
     }
+
+    /// Sets up an [`Append`] where the source list to get the initial value
+    /// from, and the destination field to save the updated list to, are the
+    /// same. E.g.:
+    /// ```text
+    /// my_field = list_append([1,2,3,4], my_field)
+    /// ```
     pub fn new_with_self_to_beginning<P, L>(field: P, value: L) -> Self
     where
         P: Into<Path>,
@@ -46,7 +59,7 @@ impl Append {
     pub fn new_with_source<D, S, L>(
         destination: D,
         source: S,
-        value: L,
+        list: L,
         before_or_after: BeforeOrAfter,
     ) -> Self
     where
@@ -57,7 +70,7 @@ impl Append {
         Self {
             dst: destination.into(),
             src: source.into(),
-            value: value.into(),
+            list: list.into().into(),
             before_or_after,
         }
     }
@@ -68,15 +81,15 @@ impl fmt::Display for Append {
         let Self {
             dst,
             src,
-            value,
+            list,
             before_or_after,
         } = self;
 
         write!(f, "{dst} = list_append(")?;
 
         match before_or_after {
-            BeforeOrAfter::Before => write!(f, "{value}, {src})"),
-            BeforeOrAfter::After => write!(f, "{src}, {value})"),
+            BeforeOrAfter::Before => write!(f, "{list}, {src})"),
+            BeforeOrAfter::After => write!(f, "{src}, {list})"),
         }
     }
 }

@@ -26,3 +26,55 @@ impl fmt::Display for Update {
         }
     }
 }
+
+impl From<Set> for Update {
+    fn from(value: Set) -> Self {
+        Self::Set(value)
+    }
+}
+
+impl From<Remove> for Update {
+    fn from(value: Remove) -> Self {
+        Self::Remove(value)
+    }
+}
+
+impl From<Add> for Update {
+    fn from(value: Add) -> Self {
+        Self::Add(value)
+    }
+}
+
+impl From<Delete> for Update {
+    fn from(value: Delete) -> Self {
+        Self::Delete(value)
+    }
+}
+
+pub fn set<T>(set: T) -> Update
+where
+    T: Into<Set>,
+{
+    set.into().into()
+}
+
+pub fn remove<T>(remove: T) -> Update
+where
+    T: Into<Remove>,
+{
+    remove.into().into()
+}
+
+pub fn add<T>(add: T) -> Update
+where
+    T: Into<Add>,
+{
+    add.into().into()
+}
+
+pub fn delete<T>(delete: T) -> Update
+where
+    T: Into<Delete>,
+{
+    delete.into().into()
+}

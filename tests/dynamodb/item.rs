@@ -10,25 +10,36 @@ use itertools::Itertools;
 
 use super::DebugItem;
 
-const ATTR_ID: &str = "id";
-const ATTR_MAP: &str = "map";
-const ATTR_LIST: &str = "list";
-const ATTR_STRING: &str = "string";
-const ATTR_STRINGS: &str = "strings";
-const ATTR_NUM: &str = "num";
-const ATTR_NUMS: &str = "nums";
-const ATTR_BLOB: &str = "blob";
-const ATTR_BLOBS: &str = "blobs";
-const ATTR_BOOL: &str = "bool";
-const ATTR_NULL: &str = "null";
+pub const ATTR_ID: &str = "id";
+pub const ATTR_MAP: &str = "map";
+pub const ATTR_LIST: &str = "list";
+pub const ATTR_STRING: &str = "string";
+pub const ATTR_STRINGS: &str = "strings";
+pub const ATTR_NUM: &str = "num";
+pub const ATTR_NUMS: &str = "nums";
+pub const ATTR_BLOB: &str = "blob";
+pub const ATTR_BLOBS: &str = "blobs";
+pub const ATTR_BOOL: &str = "bool";
+pub const ATTR_NULL: &str = "null";
 
 #[allow(dead_code)]
-pub fn new_item(id: String) -> HashMap<String, AttributeValue> {
+pub fn new_item<T>(id: T) -> HashMap<String, AttributeValue>
+where
+    T: Into<String>,
+{
     let mut item = into_map([
         (ATTR_STRING, S("foo".into())),
         (ATTR_STRINGS, Ss(into_strings(["a", "b", "c"]))),
         (ATTR_NUM, N("42".into())),
-        (ATTR_NUMS, Ns(into_strings(["1", "2.0", "3"]))),
+        (
+            ATTR_NUMS,
+            Ns(into_strings([
+                "1",
+                "2.0000000000000000000000000000000000001",
+                // "2.00000000000000000000000000000000000001", // Too long.
+                "3",
+            ])),
+        ),
         (ATTR_NULL, Null(true)),
         (ATTR_BOOL, Bool(true)),
         (ATTR_BLOB, B(Blob::new(base64_encode("foo")))),
@@ -43,7 +54,7 @@ pub fn new_item(id: String) -> HashMap<String, AttributeValue> {
 
     // Nested map.
     item.insert(ATTR_MAP.into(), M(item.clone()));
-    item.insert(ATTR_ID.into(), S(id));
+    item.insert(ATTR_ID.into(), S(id.into()));
 
     item
 }
@@ -98,6 +109,6 @@ where
 
 #[test]
 fn item() {
-    let item = new_item("ITEM ID".into());
+    let item = new_item("ITEM ID");
     println!("{:?}", DebugItem(item));
 }

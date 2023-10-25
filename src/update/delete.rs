@@ -2,7 +2,7 @@ use core::fmt;
 
 use crate::{
     name::Name,
-    value::{Set, Value},
+    value::{Set, ValueOrRef},
 };
 
 // func Delete(name NameBuilder, value ValueBuilder) UpdateBuilder
@@ -12,8 +12,8 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Delete {
     // TODO: Name or Path?
-    path: Name,
-    subset: Value,
+    pub(crate) path: Name,
+    pub(crate) subset: ValueOrRef,
 }
 
 impl Delete {

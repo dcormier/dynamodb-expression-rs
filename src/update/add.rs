@@ -2,7 +2,7 @@ use core::fmt;
 
 use crate::{
     name::Name,
-    value::{scalar::Num, Set, Value},
+    value::{scalar::Num, Set, Value, ValueOrRef},
 };
 
 // func Add(name NameBuilder, value ValueBuilder) UpdateBuilder
@@ -13,7 +13,7 @@ use crate::{
 pub struct Add {
     // TODO: Name or Path?
     pub(crate) name: Name,
-    pub(crate) value: Value,
+    pub(crate) value: ValueOrRef,
 }
 
 impl Add {
@@ -25,7 +25,7 @@ impl Add {
         Self {
             name: name.into(),
             value: match value.into() {
-                AddValue::Num(num) => Value::Scalar(num.into()),
+                AddValue::Num(num) => Value::Scalar(num.into()).into(),
                 AddValue::Set(set) => set.into(),
             },
         }

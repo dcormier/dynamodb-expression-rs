@@ -17,9 +17,11 @@ itermap = "0"
 num = "0"
 optempty = "0"
 serde_json = "1"
+thiserror = "1"
+itertools = "0.11"
 
 [dev-dependencies]
 aws-config = "0.56"
 pretty_assertions = "1"
-tokio = "1"
-itertools = "0.11"
+tokio = { version = "1", features = ["macros"] }
+easy-error = "1"
