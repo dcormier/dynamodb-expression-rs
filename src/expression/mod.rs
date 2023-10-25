@@ -285,11 +285,12 @@ impl Expression {
         path.path = path
             .path
             .into_iter()
-            .map(|elem| {
-                if let Element::Name(name) = elem {
-                    self.process_name(name).into()
-                } else {
-                    elem
+            .map(|elem| match elem {
+                Element::Name(name) => self.process_name(name).into(),
+                Element::FieldIndex(mut field_index) => {
+                    field_index.name = self.process_name(field_index.name);
+
+                    field_index.into()
                 }
             })
             .collect();

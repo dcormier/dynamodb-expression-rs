@@ -4,15 +4,17 @@ mod dynamodb;
 use std::{collections::HashMap, future::Future, pin::Pin};
 
 use aws_sdk_dynamodb::{error::SdkError, operation::query::QueryError, types::AttributeValue};
+use itermap::IterMap;
 use pretty_assertions::{assert_eq, assert_ne};
 
 use dynamodb_expression::{
     expression::Expression,
     key::key,
+    path::{Element, FieldIndex, Path},
     string_value,
     update::{
         set::{Append, Assign, IfNotExists, Math},
-        Set,
+        Remove, Set, Update,
     },
 };
 
@@ -56,25 +58,43 @@ const ATTR_NEW_FIELD: &str = "new_field";
 async fn test_update(config: &Config) {
     let client = config.client().await;
     let item = fresh_item(config).await;
+    let item_key = Some([(ATTR_ID.into(), item[ATTR_ID].clone())].into());
 
     assert_eq!(None, item.get(ATTR_NEW_FIELD));
 
     let update = Expression::new_with_update(
         Set::from(Assign::new(ATTR_STRING, "abcdef"))
             .and(Math::builder(ATTR_NUM).sub().num(3.5))
-            .and(Append::builder(ATTR_LIST).list(["A new value"]))
+            .and(
+                Append::builder(ATTR_LIST)
+                    .before()
+                    .list(["A new value at the beginning"]),
+            )
+            // .and(Append::builder(ATTR_LIST).list(["A new value at the end"]))
             .and(IfNotExists::builder(ATTR_NEW_FIELD).value("A new field")),
     )
     .update_item(client)
-    .key(ATTR_ID, item[ATTR_ID].clone());
+    .set_key(item_key.clone());
 
-    println!("{:?}", update.as_input());
+    // println!("{:?}", update.as_input());
 
     update
         .table_name(&config.table_name)
         .send()
         .await
         .expect("Failed to update item");
+
+    // Once more to add another item to the end of that list.
+    // DynamoDB won't allow both in a single update expression.
+    Expression::new_with_update(Update::set(
+        Append::builder(ATTR_LIST).list(["A new value at the end"]),
+    ))
+    .update_item(client)
+    .set_key(item_key.clone())
+    .table_name(&config.table_name)
+    .send()
+    .await
+    .expect("Failed to update item");
 
     let after_update = get_item(config)
         .await
@@ -120,13 +140,39 @@ async fn test_update(config: &Config) {
         .map(AttributeValue::as_l)
         .expect("List is missing")
         .expect("The field should be a list");
-    assert!(
-        list.contains(&AttributeValue::S("A new value".into())),
-        "List is missing the new value: {:#?}",
+    assert_eq!(
+        Some(&AttributeValue::S("A new value at the beginning".into())),
+        list.first(),
+        "List is missing the new value at the beginning: {:#?}",
+        DebugList(list)
+    );
+    assert_eq!(
+        Some(&AttributeValue::S("A new value at the end".into())),
+        list.last(),
+        "List is missing the new value at th end: {:#?}",
         DebugList(list)
     );
 
-    // TODO: Test removes
+    // Remove those two items we added to the list
+    let update = Expression::new_with_update(
+        // TODO: Make this easier.
+        [(ATTR_LIST, 0), (ATTR_LIST, (list.len() - 1) as u32)]
+            .into_iter()
+            .map(FieldIndex::from)
+            .collect::<Remove>(),
+    )
+    .update_item(client)
+    .set_key(item_key.clone());
+
+    println!("{:?}", update.as_input());
+
+    update
+        .table_name(&config.table_name)
+        .send()
+        .await
+        .expect("Failed to update item");
+
+    // TODO: Assert that the resulting stored item has the fields removed
 
     // // TODO: Need to be able to create a `Remove` by just `Remove::from("foo")`.
     // Remove::from(ATTR_BLOB)
