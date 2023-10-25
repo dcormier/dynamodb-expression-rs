@@ -5,7 +5,9 @@ use crate::{
     value::{List, ValueOrRef},
 };
 
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements>
+/// Represents an expression to [append elements to a list][1].
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Append {
     /// The field to set the newly combined list to
@@ -14,64 +16,24 @@ pub struct Append {
 
     /// The field to get the current list from
     // TODO: Name or Path?
-    pub(crate) src: Path,
+    pub(crate) src: Option<Path>,
 
     /// The value(s) to add to the list
     pub(crate) list: ValueOrRef,
 
     /// Whether to add the new values to the beginning or end of the source list
-    before_or_after: BeforeOrAfter,
+    order: Order,
 }
 
 impl Append {
-    /// Sets up an [`Append`] where the source list to get the initial value
-    /// from, and the destination field to save the updated list to, are the
-    /// same. E.g.:
-    /// ```text
-    /// my_field = list_append(my_field, [1,2,3,4])
-    /// ```
-    pub fn new_with_self_to_end<P, L>(field: P, value: L) -> Self
+    pub fn builder<T>(dst: T) -> Builder
     where
-        P: Into<Path>,
-        L: Into<List>,
+        T: Into<Path>,
     {
-        let field = field.into();
-
-        Self::new_with_source(field.clone(), field, value.into(), BeforeOrAfter::After)
-    }
-
-    /// Sets up an [`Append`] where the source list to get the initial value
-    /// from, and the destination field to save the updated list to, are the
-    /// same. E.g.:
-    /// ```text
-    /// my_field = list_append([1,2,3,4], my_field)
-    /// ```
-    pub fn new_with_self_to_beginning<P, L>(field: P, value: L) -> Self
-    where
-        P: Into<Path>,
-        L: Into<List>,
-    {
-        let field = field.into();
-
-        Self::new_with_source(field.clone(), field, value.into(), BeforeOrAfter::Before)
-    }
-
-    pub fn new_with_source<D, S, L>(
-        destination: D,
-        source: S,
-        list: L,
-        before_or_after: BeforeOrAfter,
-    ) -> Self
-    where
-        D: Into<Path>,
-        S: Into<Path>,
-        L: Into<List>,
-    {
-        Self {
-            dst: destination.into(),
-            src: source.into(),
-            list: list.into().into(),
-            before_or_after,
+        Builder {
+            dst: dst.into(),
+            src: None,
+            order: None,
         }
     }
 }
@@ -82,42 +44,117 @@ impl fmt::Display for Append {
             dst,
             src,
             list,
-            before_or_after,
+            order,
         } = self;
+
+        // If no source field is specified, default to using the destination.
+        let src = src.as_ref().unwrap_or(dst);
 
         write!(f, "{dst} = list_append(")?;
 
-        match before_or_after {
-            BeforeOrAfter::Before => write!(f, "{list}, {src})"),
-            BeforeOrAfter::After => write!(f, "{src}, {list})"),
+        match order {
+            Order::Before => write!(f, "{list}, {src})"),
+            Order::After => write!(f, "{src}, {list})"),
         }
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum BeforeOrAfter {
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+enum Order {
+    /// Put the new elements before the existing elements.
     Before,
+
+    /// Add the new elements after the existing elements.
+    #[default]
     After,
+}
+
+#[must_use = "Consume the `Builder` using its `.list()` method"]
+#[derive(Debug, Clone)]
+pub struct Builder {
+    dst: Path,
+    src: Option<Path>,
+    order: Option<Order>,
+}
+
+/// Builds an [`Append`] instance. Create an instance of this by using [`Append::builder`].
+impl Builder {
+    /// Sets the source field to read the initial value from.
+    ///
+    /// Defaults to the destination field.
+    pub fn src<T>(mut self, src: T) -> Self
+    where
+        T: Into<Path>,
+    {
+        self.src = Some(src.into());
+
+        self
+    }
+
+    /// The new values will be appended to the end of the existing values.
+    ///
+    /// This is the default.
+    pub fn after(mut self) -> Self {
+        self.order = Some(Order::After);
+
+        self
+    }
+
+    /// The new values will be placed before the existing values.
+    ///
+    /// Defaults to appending new values after existing values.
+    pub fn before(mut self) -> Self {
+        self.order = Some(Order::Before);
+
+        self
+    }
+
+    /// Sets the new value(s) to concatenate with the specified field.
+    ///
+    /// Builds the [`Append`] instance.
+    pub fn list<T>(self, list: T) -> Append
+    where
+        T: Into<List>,
+    {
+        let Self {
+            dst,
+            src,
+            order: op,
+        } = self;
+
+        Append {
+            dst,
+            src,
+            order: op.unwrap_or_default(),
+            list: list.into().into(),
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
     use pretty_assertions::assert_str_eq;
 
-    use super::{Append, BeforeOrAfter};
+    use super::Append;
 
     #[test]
     fn display() {
-        let append = Append::new_with_source("foo", "bar", ["a", "b"], BeforeOrAfter::After);
+        let append = Append::builder("foo").src("bar").after().list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(bar, ["a", "b"])"#, append.to_string());
 
-        let append = Append::new_with_source("foo", "bar", ["a", "b"], BeforeOrAfter::Before);
+        let append = Append::builder("foo").src("bar").list(["a", "b"]);
+        assert_str_eq!(r#"foo = list_append(bar, ["a", "b"])"#, append.to_string());
+
+        let append = Append::builder("foo").src("bar").before().list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(["a", "b"], bar)"#, append.to_string());
 
-        let append = Append::new_with_self_to_end("foo", ["a", "b"]);
+        let append = Append::builder("foo").after().list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(foo, ["a", "b"])"#, append.to_string());
 
-        let append = Append::new_with_self_to_beginning("foo", ["a", "b"]);
+        let append = Append::builder("foo").list(["a", "b"]);
+        assert_str_eq!(r#"foo = list_append(foo, ["a", "b"])"#, append.to_string());
+
+        let append = Append::builder("foo").before().list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(["a", "b"], foo)"#, append.to_string());
     }
 }

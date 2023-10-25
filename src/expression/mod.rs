@@ -233,21 +233,21 @@ impl Expression {
                         }
                         SetAction::Math(mut action) => {
                             action.dst = self.process_path(action.dst);
-                            action.src = self.process_path(action.src);
+                            action.src = action.src.map(|src| self.process_path(src));
                             action.num = self.process_value(action.num).into();
 
                             action.into()
                         }
                         SetAction::Append(mut action) => {
                             action.dst = self.process_path(action.dst);
-                            action.src = self.process_path(action.src);
+                            action.src = action.src.map(|src| self.process_path(src));
                             action.list = self.process_value(action.list).into();
 
                             action.into()
                         }
                         SetAction::IfNotExists(mut action) => {
                             action.dst = self.process_path(action.dst);
-                            action.src = self.process_path(action.src);
+                            action.src = action.src.map(|src| self.process_path(src));
                             action.value = self.process_value(action.value).into();
 
                             action.into()

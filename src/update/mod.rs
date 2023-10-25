@@ -16,6 +16,36 @@ pub enum Update {
     Delete(Delete),
 }
 
+impl Update {
+    pub fn set<T>(set: T) -> Self
+    where
+        T: Into<Set>,
+    {
+        set.into().into()
+    }
+
+    pub fn remove<T>(remove: T) -> Self
+    where
+        T: Into<Remove>,
+    {
+        remove.into().into()
+    }
+
+    pub fn add<T>(add: T) -> Self
+    where
+        T: Into<Add>,
+    {
+        add.into().into()
+    }
+
+    pub fn delete<T>(delete: T) -> Self
+    where
+        T: Into<Delete>,
+    {
+        delete.into().into()
+    }
+}
+
 impl fmt::Display for Update {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -49,32 +79,4 @@ impl From<Delete> for Update {
     fn from(value: Delete) -> Self {
         Self::Delete(value)
     }
-}
-
-pub fn set<T>(set: T) -> Update
-where
-    T: Into<Set>,
-{
-    set.into().into()
-}
-
-pub fn remove<T>(remove: T) -> Update
-where
-    T: Into<Remove>,
-{
-    remove.into().into()
-}
-
-pub fn add<T>(add: T) -> Update
-where
-    T: Into<Add>,
-{
-    add.into().into()
-}
-
-pub fn delete<T>(delete: T) -> Update
-where
-    T: Into<Delete>,
-{
-    delete.into().into()
 }

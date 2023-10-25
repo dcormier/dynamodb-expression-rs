@@ -1,4 +1,5 @@
 pub mod append;
+pub mod if_not_exists;
 pub mod math;
 
 use core::fmt;
@@ -9,6 +10,7 @@ use crate::{
 };
 
 pub use self::append::Append;
+pub use self::if_not_exists::IfNotExists;
 pub use self::math::Math;
 
 // func Set(name NameBuilder, operandBuilder OperandBuilder) UpdateBuilder
@@ -74,6 +76,9 @@ where
     }
 }
 
+/// Represents an action to take in a DynamoDB update expression for [`SET` statements][1].
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SetAction {
     // TODO: This needs to support paths like:
@@ -130,11 +135,13 @@ impl fmt::Display for SetAction {
     }
 }
 
+/// Represents assigning a value of a [field][1], [list][2], or [map][3].
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.ModifyingAttributes
+/// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingListElements
+/// [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingNestedMapAttributes
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Assign {
-    /// `Path` is correct, here.
-    /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingListElements>
-    /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingNestedMapAttributes>
     pub(crate) path: Path,
     pub(crate) value: ValueOrRef,
 }
@@ -155,45 +162,5 @@ impl Assign {
 impl fmt::Display for Assign {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} = {}", self.path, self.value)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct IfNotExists {
-    pub(crate) dst: Path,
-    pub(crate) src: Path,
-    pub(crate) value: ValueOrRef,
-}
-
-impl IfNotExists {
-    /// For setting a field if it does not exist
-    pub fn new_for_self<P, V>(path: P, value: V) -> Self
-    where
-        P: Clone + Into<Path>,
-        V: Into<Value>,
-    {
-        Self::new_with_source(path.clone(), path, value)
-    }
-
-    /// For setting a field if a (potentially different) field does not exist.
-    pub fn new_with_source<D, S, V>(destination: D, source: S, value: V) -> Self
-    where
-        D: Into<Path>,
-        S: Into<Path>,
-        V: Into<Value>,
-    {
-        fn new_with_source(dst: Path, src: Path, value: ValueOrRef) -> IfNotExists {
-            IfNotExists { dst, src, value }
-        }
-
-        new_with_source(destination.into(), source.into(), value.into().into())
-    }
-}
-
-impl fmt::Display for IfNotExists {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Self { dst, src, value } = self;
-
-        write!(f, "{dst} = if_not_exists({src}, {value})")
     }
 }

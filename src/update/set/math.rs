@@ -10,7 +10,7 @@ use crate::{
 pub struct Math {
     // TODO: Name or Path for these?
     pub(crate) dst: Path,
-    pub(crate) src: Path,
+    pub(crate) src: Option<Path>,
     op: MathOp,
     pub(crate) num: ValueOrRef,
 }
@@ -34,6 +34,9 @@ impl Math {
 impl fmt::Display for Math {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let Self { dst, src, op, num } = self;
+
+        // If no source field is specified, default to using the destination field.
+        let src = src.as_ref().unwrap_or(dst);
 
         write!(f, "{dst} = {src} {op} {num}")
     }
@@ -60,6 +63,7 @@ impl fmt::Display for MathOp {
     }
 }
 
+#[must_use = "Consume the `Builder` using its `.add()` or `.sub()` methods"]
 #[derive(Debug, Clone)]
 pub struct Builder {
     dst: Path,
@@ -90,22 +94,18 @@ impl Builder {
     }
 
     fn with_op(self, op: MathOp) -> BuilderOp {
-        let Self { dst, src } = self;
-
-        BuilderOp {
-            src: src.unwrap_or(dst.clone()),
-            dst,
-            op,
-        }
+        BuilderOp { builder: self, op }
     }
 }
 
-/// Builds a [`Math`] instance. Create an instance of this by using
-/// [`Builder::sub`] or [`Builder::add`].
+/// Builds a [`Math`] instance.
+/// Consume this by using the [`BuilderOp::num`] method.
+///
+/// Create an instance of this by starting with [`Math::builder`].
+#[must_use = "Consume the `BuilderOp` using its `.num()` method"]
 #[derive(Debug, Clone)]
 pub struct BuilderOp {
-    dst: Path,
-    src: Path,
+    builder: Builder,
     op: MathOp,
 }
 
@@ -117,7 +117,8 @@ impl BuilderOp {
     where
         T: Into<Num>,
     {
-        let Self { dst, src, op } = self;
+        let Self { builder, op } = self;
+        let Builder { dst, src } = builder;
 
         Math {
             dst,

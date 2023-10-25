@@ -11,7 +11,6 @@ pub use aws_sdk_dynamodb::types::AttributeValue;
 
 use aws_sdk_dynamodb::types::AttributeValue::{Bs, Ns, Ss, B, L, M};
 use itermap::IterMap;
-use itertools::Itertools;
 
 use super::item::base64_encode;
 
@@ -33,6 +32,24 @@ where
             .map_values(DebugAttributeValue)
             .collect::<BTreeMap<_, _>>()
             .fmt(f)
+    }
+}
+
+pub struct DebugList<I, T>(pub I)
+where
+    I: Clone + IntoIterator<Item = T>,
+    T: Borrow<AttributeValue>;
+
+impl<I, T> fmt::Debug for DebugList<I, T>
+where
+    I: Clone + IntoIterator<Item = T>,
+    T: Borrow<AttributeValue>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_list()
+            // TODO: Improve or remove this. We don't want to always clone.
+            .entries(self.0.clone().into_iter().map(DebugAttributeValue))
+            .finish()
     }
 }
 
@@ -70,7 +87,8 @@ where
             // For variants that contain more `AttributeValue`s, write those nicely, too.
             L(l) => f
                 .debug_tuple("L")
-                .field(&l.iter().map(DebugAttributeValue).collect_vec())
+                // .field(&l.iter().map(DebugAttributeValue).collect_vec())
+                .field(&DebugList(l.iter()))
                 .finish(),
             M(m) => f
                 .debug_tuple("M")

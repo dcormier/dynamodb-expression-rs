@@ -4,7 +4,6 @@ mod dynamodb;
 use std::{collections::HashMap, future::Future, pin::Pin};
 
 use aws_sdk_dynamodb::{error::SdkError, operation::query::QueryError, types::AttributeValue};
-use easy_error::ErrorExt;
 use pretty_assertions::{assert_eq, assert_ne};
 
 use dynamodb_expression::{
@@ -12,13 +11,14 @@ use dynamodb_expression::{
     key::key,
     string_value,
     update::{
-        set::{self, Assign, Math},
-        Remove, Set, Update,
+        set::{Append, Assign, IfNotExists, Math},
+        Set,
     },
 };
 
 use crate::dynamodb::{
-    item::{new_item, ATTR_ID, ATTR_NUM},
+    debug::DebugList,
+    item::{new_item, ATTR_BLOB, ATTR_ID, ATTR_LIST, ATTR_NULL, ATTR_NUM},
     partial_eq::PartialEqItem,
 };
 
@@ -50,12 +50,20 @@ async fn update() {
     test("update", |config| Box::pin(test_update(config))).await;
 }
 
+/// A name for a field that doesn't exist in generated item from the helper functions.
+const ATTR_NEW_FIELD: &str = "new_field";
+
 async fn test_update(config: &Config) {
     let client = config.client().await;
     let item = fresh_item(config).await;
+
+    assert_eq!(None, item.get(ATTR_NEW_FIELD));
+
     let update = Expression::new_with_update(
-        Set::from(Assign::new(ATTR_STRING, "abcdef")).and(Math::builder(ATTR_NUM).sub().num(3.5)),
-        // .and(Remove::from("ATTR_")),
+        Set::from(Assign::new(ATTR_STRING, "abcdef"))
+            .and(Math::builder(ATTR_NUM).sub().num(3.5))
+            .and(Append::builder(ATTR_LIST).list(["A new value"]))
+            .and(IfNotExists::builder(ATTR_NEW_FIELD).value("A new field")),
     )
     .update_item(client)
     .key(ATTR_ID, item[ATTR_ID].clone());
@@ -73,26 +81,55 @@ async fn test_update(config: &Config) {
         .expect("Failed to get item")
         .expect("Where is the item?");
 
+    // println!("Got item: {:#?}", DebugItem(&after_update));
+
     assert_ne!(item.get(ATTR_STRING), after_update.get(ATTR_STRING));
     assert_eq!(
         "abcdef",
         after_update
             .get(ATTR_STRING)
             .map(AttributeValue::as_s)
-            .expect("Should have gotten that field")
+            .expect("Field is missing")
             .expect("That field should be a String"),
         "Assigning a new value to the field didn't work"
     );
+
     assert_ne!(item.get(ATTR_NUM), after_update.get(ATTR_NUM));
     assert_eq!(
         "38.5",
         after_update
             .get(ATTR_NUM)
             .map(AttributeValue::as_n)
-            .expect("Should have gotten that field")
+            .expect("Field is missing")
             .expect("That field should be a Number"),
         "Subtraction didn't work"
     );
+
+    assert_eq!(
+        "A new field",
+        after_update
+            .get(ATTR_NEW_FIELD)
+            .map(AttributeValue::as_s)
+            .expect("Field is missing")
+            .expect("The field should be a string"),
+        "The new field was not added to the item as expected"
+    );
+
+    let list = after_update
+        .get(ATTR_LIST)
+        .map(AttributeValue::as_l)
+        .expect("List is missing")
+        .expect("The field should be a list");
+    assert!(
+        list.contains(&AttributeValue::S("A new value".into())),
+        "List is missing the new value: {:#?}",
+        DebugList(list)
+    );
+
+    // TODO: Test removes
+
+    // // TODO: Need to be able to create a `Remove` by just `Remove::from("foo")`.
+    // Remove::from(ATTR_BLOB)
 }
 
 /// Wraps a test function in code to set up and tear down the DynamoDB table.
