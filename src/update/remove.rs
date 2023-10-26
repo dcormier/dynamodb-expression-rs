@@ -46,7 +46,6 @@ where
 }
 
 impl fmt::Display for Remove {
-    // TODO: Test this
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("REMOVE ")?;
 

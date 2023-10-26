@@ -6,9 +6,6 @@ use std::{
     fmt,
 };
 
-// Re-export the AWS SDK we're using
-pub use aws_sdk_dynamodb::types::AttributeValue;
-
 use aws_sdk_dynamodb::{
     primitives::Blob,
     types::AttributeValue::{Bs, Ns, Ss, L, M},
@@ -17,6 +14,9 @@ use itermap::IterMap;
 use itertools::Itertools;
 
 use super::{DebugAttributeValue, DebugItem};
+
+// Re-export the AWS SDK we're using
+pub use aws_sdk_dynamodb::{self, types::AttributeValue};
 
 /// Provides an equality comparison that accounts for DynamoDB's [unordered sets][1].
 ///

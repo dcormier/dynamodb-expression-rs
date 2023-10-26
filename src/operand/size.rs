@@ -34,6 +34,7 @@ impl Size {
         In::new(self.into(), items)
     }
 
+    // TODO: Operator-specific methods instead of this.
     pub fn comparison<R>(self, cmp: Comparator, right: R) -> Comparison
     where
         R: Into<Operand>,

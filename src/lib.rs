@@ -44,7 +44,7 @@ pub use ::num;
 pub mod condition;
 pub mod expression;
 pub mod key;
-pub mod name;
+mod name;
 pub mod operand;
 pub mod path;
 pub mod update;
@@ -52,7 +52,7 @@ pub mod value;
 
 pub use condition::Comparator;
 pub use expression::Expression;
-pub use name::name;
+pub use name::{name, Name};
 pub use value::{
     binary_set, binary_value, bool_value, null_value, num_set, num_value, string_set, string_value,
 };

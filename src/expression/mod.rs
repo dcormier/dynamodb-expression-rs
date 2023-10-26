@@ -211,8 +211,8 @@ impl Expression {
                 name: self.process_name(name),
             }
             .into(),
-            OperandType::Value(value) => Operand {
-                op: OperandType::Value(self.process_value(value).into()),
+            OperandType::Scalar(value) => Operand {
+                op: OperandType::Scalar(self.process_value(value).into()),
             },
             OperandType::Condition(condition) => self.process_condition(*condition).into(),
         }
@@ -287,10 +287,10 @@ impl Expression {
             .into_iter()
             .map(|elem| match elem {
                 Element::Name(name) => self.process_name(name).into(),
-                Element::FieldIndex(mut field_index) => {
-                    field_index.name = self.process_name(field_index.name);
+                Element::IndexedField(mut indexed_field) => {
+                    indexed_field.name = self.process_name(indexed_field.name);
 
-                    field_index.into()
+                    indexed_field.into()
                 }
             })
             .collect();

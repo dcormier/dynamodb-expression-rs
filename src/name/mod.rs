@@ -18,6 +18,7 @@ impl Name {
     /// Compare two values.
     ///
     /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    // TODO: Operator-specific methods instead of this.
     pub fn comparison<R>(self, cmp: Comparator, right: R) -> Condition
     where
         R: Into<Operand>,
@@ -118,20 +119,47 @@ impl fmt::Display for Name {
     }
 }
 
-impl<T> From<T> for Name
-where
-    T: Into<String>,
-{
-    fn from(name: T) -> Self {
-        Self { name: name.into() }
+// // This would be ideal, but I think trait specialization is needed for this
+// // to be workable without causing problems for things that want to do
+// // `impl<T: Into<Name>> From<T> for OtherType`.
+// impl<T> From<T> for Name
+// where
+//     T: Into<String>,
+// {
+//     fn from(name: T) -> Self {
+//         Self { name: name.into() }
+//     }
+// }
+
+impl From<String> for Name {
+    fn from(name: String) -> Self {
+        Self { name }
+    }
+}
+
+impl From<&String> for Name {
+    fn from(name: &String) -> Self {
+        Self::from(name.to_owned())
+    }
+}
+
+impl From<&str> for Name {
+    fn from(name: &str) -> Self {
+        Self::from(name.to_owned())
+    }
+}
+
+impl From<&&str> for Name {
+    fn from(name: &&str) -> Self {
+        Self::from(name.to_owned())
     }
 }
 
 pub fn name<T>(name: T) -> Name
 where
-    T: Into<Name>,
+    T: Into<String>,
 {
-    name.into()
+    name.into().into()
 }
 
 #[cfg(test)]

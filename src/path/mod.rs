@@ -1,5 +1,6 @@
 use core::{
     fmt::{self, Write},
+    mem,
     str::FromStr,
 };
 
@@ -7,12 +8,15 @@ use itertools::Itertools;
 
 use super::name::Name;
 
-/// Represents a DynamoDB [document path][1].
+/// Represents a DynamoDB [document path][1]. For example, `foo[3][7].bar[2].baz`.
 ///
-/// Attribute names are automatically handles as extension attribute names,
-/// allowing for names that would not otherwise be permitted by DynamoDB.
+/// When used in an [`Expression`], attribute names in a `Path` are
+/// automatically handled as [expression attribute names][2], allowing for names
+/// that would not otherwise be permitted by DynamoDB. For example,
+/// `foo[3][7].bar[2].baz` would become something similar to `#0[3][7].#1[2].#2`.
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
+/// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Path {
     pub path: Vec<Element>,
@@ -68,14 +72,17 @@ impl FromStr for Path {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
 #[error("invalid document path")]
 pub struct PathParseError;
 
+/// Represents one segment in a [`Path`]. For example, in the DynamoDB document
+/// path `foo[3][7].bar[2].baz`, the `Element`s would be `foo[3][7]`, `bar[2]`,
+/// and `baz`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Element {
     Name(Name),
-    FieldIndex(FieldIndex),
+    IndexedField(IndexedField),
 }
 
 impl Element {
@@ -86,30 +93,15 @@ impl Element {
         Self::Name(name.into())
     }
 
-    pub fn indexed<N, I>(name: N, indexes: I) -> Self
+    pub fn indexed_field<N, I>(name: N, indexes: I) -> Self
     where
         N: Into<Name>,
         I: Indexes,
     {
-        Self::FieldIndex(FieldIndex {
+        Self::IndexedField(IndexedField {
             name: name.into(),
             indexes: indexes.into_indexes(),
         })
-    }
-}
-
-impl<T> From<T> for Element
-where
-    T: Into<Name>,
-{
-    fn from(name: T) -> Self {
-        Self::Name(name.into())
-    }
-}
-
-impl From<FieldIndex> for Element {
-    fn from(value: FieldIndex) -> Self {
-        Self::FieldIndex(value)
     }
 }
 
@@ -117,7 +109,7 @@ impl fmt::Display for Element {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Element::Name(name) => name.fmt(f),
-            Element::FieldIndex(field_index) => field_index.fmt(f),
+            Element::IndexedField(field_index) => field_index.fmt(f),
         }
     }
 }
@@ -140,8 +132,8 @@ impl FromStr for Element {
                         return Err(PathParseError);
                     }
 
-                    name = Some(remaining);
-                    remaining = "";
+                    // No more braces. Consume the rest of the string.
+                    name = Some(mem::take(&mut remaining));
                     break;
                 }
                 (None, Some(_close)) => return Err(PathParseError),
@@ -180,16 +172,14 @@ impl FromStr for Element {
             Self::Name(input.into())
         } else {
             if !remaining.is_empty() {
-                // Something like `foo[0]bar`
+                // Shouldn't be able to get there.
+                // If we do, something above changed and there's a bug.
                 return Err(PathParseError);
             }
 
-            let name = name.ok_or(PathParseError).map_err(|err| {
-                println!("No name found");
-                err
-            })?;
+            let name = name.ok_or(PathParseError)?;
 
-            Self::FieldIndex(FieldIndex {
+            Self::IndexedField(IndexedField {
                 name: name.into(),
                 indexes,
             })
@@ -197,13 +187,69 @@ impl FromStr for Element {
     }
 }
 
+impl From<IndexedField> for Element {
+    fn from(value: IndexedField) -> Self {
+        Self::IndexedField(value)
+    }
+}
+
+impl<N, P> From<(N, P)> for Element
+where
+    N: Into<Name>,
+    P: Indexes,
+{
+    fn from((name, indexes): (N, P)) -> Self {
+        Self::IndexedField((name, indexes).into())
+    }
+}
+
+// This would be ideal, but I think trait specialization is needed for this to be workable.
+// impl<T> From<T> for Element
+// where
+//     T: Into<String>,
+// {
+//     fn from(name: T) -> Self {
+//         Self { name: name.into() }
+//     }
+// }
+
+impl From<Name> for Element {
+    fn from(name: Name) -> Self {
+        Self::Name(name)
+    }
+}
+
+impl From<String> for Element {
+    fn from(name: String) -> Self {
+        Self::Name(name.into())
+    }
+}
+
+impl From<&String> for Element {
+    fn from(name: &String) -> Self {
+        Self::Name(name.into())
+    }
+}
+
+impl From<&str> for Element {
+    fn from(name: &str) -> Self {
+        Self::Name(name.into())
+    }
+}
+
+impl From<&&str> for Element {
+    fn from(name: &&str) -> Self {
+        Self::Name(name.into())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct FieldIndex {
+pub struct IndexedField {
     pub(crate) name: Name,
     indexes: Vec<u32>,
 }
 
-impl fmt::Display for FieldIndex {
+impl fmt::Display for IndexedField {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.name.fmt(f)?;
         self.indexes
@@ -212,7 +258,7 @@ impl fmt::Display for FieldIndex {
     }
 }
 
-impl<N, P> From<(N, P)> for FieldIndex
+impl<N, P> From<(N, P)> for IndexedField
 where
     N: Into<Name>,
     P: Indexes,
@@ -263,9 +309,9 @@ impl<const N: usize> Indexes for &[u32; N] {
 mod test {
     use pretty_assertions::{assert_eq, assert_str_eq};
 
-    use crate::name::Name;
+    use crate::Name;
 
-    use super::{Element, Path};
+    use super::{Element, IndexedField, Path, PathParseError};
 
     #[test]
     fn parse_path() {
@@ -273,13 +319,13 @@ mod test {
         assert_eq!(Path::from(Element::from(Name::from("foo"))), path);
 
         let path: Path = "foo[0]".parse().unwrap();
-        assert_eq!(Path::from(Element::indexed("foo", [0])), path);
+        assert_eq!(Path::from(Element::indexed_field("foo", [0])), path);
 
         let path: Path = "foo[0][3]".parse().unwrap();
-        assert_eq!(Path::from(Element::indexed("foo", [0, 3])), path);
+        assert_eq!(Path::from(Element::indexed_field("foo", [0, 3])), path);
 
         let path: Path = "foo[42][37][9]".parse().unwrap();
-        assert_eq!(Path::from(Element::indexed("foo", [42, 37, 9])), path);
+        assert_eq!(Path::from(Element::indexed_field("foo", [42, 37, 9])), path);
 
         let path: Path = "foo.bar".parse().unwrap();
         assert_eq!(
@@ -289,27 +335,30 @@ mod test {
 
         let path: Path = "foo[42].bar".parse().unwrap();
         assert_eq!(
-            Path::from_iter([Element::indexed("foo", 42), Element::name("bar")]),
+            Path::from_iter([Element::indexed_field("foo", 42), Element::name("bar")]),
             path
         );
 
         let path: Path = "foo.bar[37]".parse().unwrap();
         assert_eq!(
-            Path::from_iter([Element::name("foo"), Element::indexed("bar", 37)]),
+            Path::from_iter([Element::name("foo"), Element::indexed_field("bar", 37)]),
             path
         );
 
         let path: Path = "foo[42].bar[37]".parse().unwrap();
         assert_eq!(
-            Path::from_iter([Element::indexed("foo", 42), Element::indexed("bar", 37)]),
+            Path::from_iter([
+                Element::indexed_field("foo", 42),
+                Element::indexed_field("bar", 37)
+            ]),
             path
         );
 
         let path: Path = "foo[42][7].bar[37]".parse().unwrap();
         assert_eq!(
             Path::from_iter([
-                Element::indexed("foo", [42, 7]),
-                Element::indexed("bar", 37)
+                Element::indexed_field("foo", [42, 7]),
+                Element::indexed_field("bar", 37)
             ]),
             path
         );
@@ -317,8 +366,8 @@ mod test {
         let path: Path = "foo[42].bar[37][9]".parse().unwrap();
         assert_eq!(
             Path::from_iter([
-                Element::indexed("foo", 42),
-                Element::indexed("bar", [37, 9])
+                Element::indexed_field("foo", 42),
+                Element::indexed_field("bar", [37, 9])
             ]),
             path
         );
@@ -326,8 +375,8 @@ mod test {
         let path: Path = "foo[42][7].bar[37][9]".parse().unwrap();
         assert_eq!(
             Path::from_iter([
-                Element::indexed("foo", [42, 7]),
-                Element::indexed("bar", [37, 9])
+                Element::indexed_field("foo", [42, 7]),
+                Element::indexed_field("bar", [37, 9])
             ]),
             path
         );
@@ -340,7 +389,7 @@ mod test {
                     Ok(path) => {
                         panic!("Should not have parsed invalid input {input:?} into: {path:?}");
                     }
-                    Err(_err) => { /* Got the expected error */ }
+                    Err(PathParseError) => { /* Got the expected error */ }
                 }
             }
         }
@@ -351,6 +400,14 @@ mod test {
         "[0]".parse::<Path>().unwrap_err();
     }
 
+    /// Demonstration/proof of how a `Path` can be expressed to prove usability.
+    #[test]
+    fn express_path() {
+        let _: IndexedField = ("foo", 0).into();
+        let _: Element = ("foo", 0).into();
+        let _: Path = ("foo", 0).into();
+    }
+
     #[test]
     fn display_name() {
         let path = Element::name("foo");
@@ -359,13 +416,13 @@ mod test {
 
     #[test]
     fn display_indexed() {
-        let path = Element::indexed("foo", 42);
+        let path = Element::indexed_field("foo", 42);
         assert_str_eq!("foo[42]", path.to_string());
 
-        let path = Element::indexed("foo", [42]);
+        let path = Element::indexed_field("foo", [42]);
         assert_str_eq!("foo[42]", path.to_string());
 
-        let path = Element::indexed("foo", &([42, 37, 9])[..]);
+        let path = Element::indexed_field("foo", &([42, 37, 9])[..]);
         assert_str_eq!("foo[42][37][9]", path.to_string());
     }
 
@@ -374,13 +431,13 @@ mod test {
         let path: Path = ["foo", "bar"].into_iter().collect();
         assert_str_eq!("foo.bar", path.to_string());
 
-        let path = Path::from_iter([Element::name("foo"), Element::indexed("bar", 42)]);
+        let path = Path::from_iter([Element::name("foo"), Element::indexed_field("bar", 42)]);
         assert_str_eq!("foo.bar[42]", path.to_string());
 
         // TODO: I'm not sure this is a legal path based on these examples:
         //       https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
         //       Test whether it's valid and remove this comment or handle it appropriately.
-        let path = Path::from_iter([Element::indexed("foo", 42), Element::name("bar")]);
+        let path = Path::from_iter([Element::indexed_field("foo", 42), Element::name("bar")]);
         assert_str_eq!("foo[42].bar", path.to_string());
     }
 }

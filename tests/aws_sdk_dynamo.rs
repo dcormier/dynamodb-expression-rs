@@ -3,14 +3,16 @@ mod dynamodb;
 
 use std::{collections::HashMap, future::Future, pin::Pin};
 
-use aws_sdk_dynamodb::{error::SdkError, operation::query::QueryError, types::AttributeValue};
-use itermap::IterMap;
+use aws_sdk_dynamodb::{
+    error::SdkError,
+    operation::query::QueryError,
+    types::{AttributeValue, ReturnValue},
+};
 use pretty_assertions::{assert_eq, assert_ne};
 
 use dynamodb_expression::{
     expression::Expression,
     key::key,
-    path::{Element, FieldIndex, Path},
     string_value,
     update::{
         set::{Append, Assign, IfNotExists, Math},
@@ -70,6 +72,7 @@ async fn test_update(config: &Config) {
                     .before()
                     .list(["A new value at the beginning"]),
             )
+            // DynamoDB won't let you append to the same list twice in the same update expression.
             // .and(Append::builder(ATTR_LIST).list(["A new value at the end"]))
             .and(IfNotExists::builder(ATTR_NEW_FIELD).value("A new field")),
     )
@@ -86,20 +89,18 @@ async fn test_update(config: &Config) {
 
     // Once more to add another item to the end of that list.
     // DynamoDB won't allow both in a single update expression.
-    Expression::new_with_update(Update::set(
+    let after_update = Expression::new_with_update(Update::set(
         Append::builder(ATTR_LIST).list(["A new value at the end"]),
     ))
     .update_item(client)
     .set_key(item_key.clone())
     .table_name(&config.table_name)
+    .return_values(ReturnValue::AllNew)
     .send()
     .await
-    .expect("Failed to update item");
-
-    let after_update = get_item(config)
-        .await
-        .expect("Failed to get item")
-        .expect("Where is the item?");
+    .expect("Failed to update item")
+    .attributes
+    .expect("Where is the item?");
 
     // println!("Got item: {:#?}", DebugItem(&after_update));
 
@@ -155,10 +156,8 @@ async fn test_update(config: &Config) {
 
     // Remove those two items we added to the list
     let update = Expression::new_with_update(
-        // TODO: Make this easier.
         [(ATTR_LIST, 0), (ATTR_LIST, (list.len() - 1) as u32)]
             .into_iter()
-            .map(FieldIndex::from)
             .collect::<Remove>(),
     )
     .update_item(client)
@@ -166,16 +165,38 @@ async fn test_update(config: &Config) {
 
     println!("{:?}", update.as_input());
 
-    update
+    let list_cleaned = update
         .table_name(&config.table_name)
+        .return_values(ReturnValue::AllNew)
         .send()
         .await
-        .expect("Failed to update item");
+        .expect("Failed to update item")
+        // Grab the updated item
+        .attributes
+        .expect("Where is the item?")
+        // Specifically, grab the list.
+        .remove(ATTR_LIST)
+        .map(|list| {
+            if let AttributeValue::L(list) = list {
+                list
+            } else {
+                panic!("The field should be a list")
+            }
+        })
+        .expect("List is missing")
+        .clone();
 
-    // TODO: Assert that the resulting stored item has the fields removed
-
-    // // TODO: Need to be able to create a `Remove` by just `Remove::from("foo")`.
-    // Remove::from(ATTR_BLOB)
+    assert_eq!(list.len() - 2, list_cleaned.len());
+    assert!(
+        !list_cleaned.contains(&AttributeValue::S("A new value at the beginning".into())),
+        "Value was not removed from the beginning. The list: {:#?}",
+        DebugList(list_cleaned.iter()),
+    );
+    assert!(
+        !list_cleaned.contains(&AttributeValue::S("A new value at the end".into())),
+        "Value was not removed from the end. The list: {:#?}",
+        DebugList(list_cleaned.iter()),
+    );
 }
 
 /// Wraps a test function in code to set up and tear down the DynamoDB table.

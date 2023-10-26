@@ -19,6 +19,7 @@ impl Operand {
     /// Compare two values.
     ///
     /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    // TODO: Operator-specific methods instead of this.
     pub fn comparison<R>(self, cmp: Comparator, right: R) -> Condition
     where
         R: Into<Operand>,
@@ -77,7 +78,7 @@ where
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum OperandType {
     Name(Name),
-    Value(ValueOrRef),
+    Scalar(ValueOrRef),
     Condition(Box<Condition>),
     Size(Size),
 }
@@ -86,7 +87,7 @@ impl fmt::Display for OperandType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Name(operand) => operand.fmt(f),
-            Self::Value(operand) => operand.fmt(f),
+            Self::Scalar(operand) => operand.fmt(f),
             Self::Condition(operand) => operand.fmt(f),
             Self::Size(operand) => operand.fmt(f),
         }
@@ -101,13 +102,13 @@ impl From<Name> for OperandType {
 
 impl From<Scalar> for OperandType {
     fn from(value: Scalar) -> Self {
-        Self::Value(value.into())
+        Self::Scalar(value.into())
     }
 }
 
 impl From<Ref> for OperandType {
     fn from(value: Ref) -> Self {
-        Self::Value(value.into())
+        Self::Scalar(value.into())
     }
 }
 

@@ -57,7 +57,6 @@ impl fmt::Display for List {
             }
 
             if let Value::Scalar(Scalar::String(s)) = v {
-                // TODO: Is JSON encoding this the right thing?
                 serde_json::to_string(s).unwrap().fmt(f)
             } else {
                 v.fmt(f)
