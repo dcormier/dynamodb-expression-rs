@@ -10,10 +10,68 @@ use super::name::Name;
 
 /// Represents a DynamoDB [document path][1]. For example, `foo[3][7].bar[2].baz`.
 ///
+/// Create an instance using the
+///
 /// When used in an [`Expression`], attribute names in a `Path` are
 /// automatically handled as [expression attribute names][2], allowing for names
 /// that would not otherwise be permitted by DynamoDB. For example,
-/// `foo[3][7].bar[2].baz` would become something similar to `#0[3][7].#1[2].#2`.
+/// `foo[3][7].bar[2].baz` would become something similar to `#0[3][7].#1[2].#2`,
+/// and the names would be in the `expression_attribute_names`.
+///
+/// See also: [`Name`]
+///
+/// # Examples
+///
+/// Each of these are ways to create a `Path` instance for `foo[3][7].bar[2].baz`.
+/// ```
+/// use dynamodb_expression::{path::Element, Path};
+/// # use pretty_assertions::assert_eq;
+/// #
+/// # let expected: Path = [
+/// #     Element::from(("foo", [3, 7])),
+/// #     Element::from(("bar", 2)),
+/// #     Element::from("baz"),
+/// # ]
+/// # .into_iter()
+/// # .collect();
+///
+/// let path: Path = "foo[3][7].bar[2].baz".parse().unwrap();
+/// # assert_eq!(expected, path);
+///
+/// // `Path` implements `FromIterator` for anything that is `Into<Element>`.
+/// let path = Path::from_iter([("foo", vec![3, 7]), ("bar", vec![2]), ("baz", vec![])]);
+/// # assert_eq!(expected, path);
+///
+/// // Of course, that means you can `.collect()` into a `Path`.
+/// let path: Path = [("foo", vec![3, 7]), ("bar", vec![2]), ("baz", vec![])]
+///     .into_iter()
+///     .collect();
+/// # assert_eq!(expected, path);
+///
+/// // `Element` can be converted into from strings (`String`, `&str`, `&String`),
+/// // as well as string/index tuples. In this case an "index" is an array, slice,
+/// // `Vec` of, or a single `u32`.
+/// let path: Path = [
+///     Element::from(("foo", [3, 7])),
+///     Element::from(("bar", 2)),
+///     Element::from("baz"),
+/// ]
+/// .into_iter()
+/// .collect();
+/// # assert_eq!(expected, path);
+///
+/// let path: Path = [
+///     Element::indexed_field("foo", [3, 7]),
+///     Element::indexed_field("bar", 2),
+///     Element::name("baz"),
+/// ]
+/// .into_iter()
+/// .collect();
+/// # assert_eq!(expected, path);
+/// ```
+///
+/// // TODO: Doc examples for creating instances. From, parse, literals.
+/// //       Including for `IndexedField`s.
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
@@ -76,9 +134,11 @@ impl FromStr for Path {
 #[error("invalid document path")]
 pub struct PathParseError;
 
-/// Represents one segment in a [`Path`]. For example, in the DynamoDB document
-/// path `foo[3][7].bar[2].baz`, the `Element`s would be `foo[3][7]`, `bar[2]`,
-/// and `baz`.
+/// Represents one segment in a DynamoDB document [`Path`]. For example, in
+/// `foo[3][7].bar[2].baz`, the `Element`s would be `foo[3][7]`, `bar[2]`, and
+/// `baz`.
+///
+/// See [`Path`] for more.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Element {
     Name(Name),
@@ -98,10 +158,15 @@ impl Element {
         N: Into<Name>,
         I: Indexes,
     {
-        Self::IndexedField(IndexedField {
-            name: name.into(),
-            indexes: indexes.into_indexes(),
-        })
+        let indexes = indexes.into_indexes();
+        if indexes.is_empty() {
+            Self::name(name)
+        } else {
+            Self::IndexedField(IndexedField {
+                name: name.into(),
+                indexes: indexes.into_indexes(),
+            })
+        }
     }
 }
 
@@ -189,7 +254,11 @@ impl FromStr for Element {
 
 impl From<IndexedField> for Element {
     fn from(value: IndexedField) -> Self {
-        Self::IndexedField(value)
+        if value.indexes.is_empty() {
+            Self::Name(value.name)
+        } else {
+            Self::IndexedField(value)
+        }
     }
 }
 
@@ -199,7 +268,12 @@ where
     P: Indexes,
 {
     fn from((name, indexes): (N, P)) -> Self {
-        Self::IndexedField((name, indexes).into())
+        let indexes = indexes.into_indexes();
+        if indexes.is_empty() {
+            Self::Name(name.into())
+        } else {
+            Self::IndexedField((name, indexes).into())
+        }
     }
 }
 
@@ -243,6 +317,11 @@ impl From<&&str> for Element {
     }
 }
 
+/// Represents a segment of a DynamoDB document [`Path`] that is a name with one
+/// or more indexes. For example, in `foo[3][7].bar[2].baz`, the segments
+/// `foo[3][7]` and `bar[2]` would both be represented as an `IndexedField`.
+///
+/// See [`Path`] for more.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct IndexedField {
     pub(crate) name: Name,

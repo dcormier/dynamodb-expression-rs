@@ -53,6 +53,7 @@ pub mod value;
 pub use condition::Comparator;
 pub use expression::Expression;
 pub use name::{name, Name};
+pub use path::Path;
 pub use value::{
     binary_set, binary_value, bool_value, null_value, num_set, num_value, string_set, string_value,
 };

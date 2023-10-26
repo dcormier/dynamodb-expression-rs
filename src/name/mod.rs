@@ -9,6 +9,23 @@ use crate::{
     value::Scalar,
 };
 
+/// Represents a DynamoDB [attribute name][1]. This will most commonly be used
+/// for [top-level attributes][2].
+///
+/// Create an instance using the [`name()`] convenience function, or convert
+/// [`From`] a `String` or `&str`.
+///
+/// When used in an [`Expression`], attribute `Name`s are automatically handled
+/// as [expression attribute names][3], allowing for names that would not
+/// otherwise be permitted by DynamoDB. For example, `foo` would become
+/// something similar to `#0` in the expression, and the name would be in the
+/// `expression_attribute_names`.
+///
+/// See also: [`Path`]
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html
+/// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.TopLevelAttributes
+/// [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Name {
     pub(crate) name: String,
@@ -155,6 +172,7 @@ impl From<&&str> for Name {
     }
 }
 
+/// A convenience function for creating a [`Name`] instance.
 pub fn name<T>(name: T) -> Name
 where
     T: Into<String>,
