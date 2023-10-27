@@ -12,19 +12,19 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use dynamodb_expression::{name, update::Math};
+/// use dynamodb_expression::{path::Path, update::Math};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let math = Math::builder("foo").add(4);
 /// assert_eq!("foo = foo + 4", math.to_string());
 ///
-/// let math_2 = name("foo").math().add(4);
+/// let math_2 = Path::from("foo").math().add(4);
 /// assert_eq!(math, math_2);
 ///
 /// let math = Math::builder("foo").src("bar").sub(7);
 /// assert_eq!("foo = bar - 7", math.to_string());
 ///
-/// let math_2 = name("foo").math().src("bar").sub(7);
+/// let math_2 = Path::from("foo").math().src("bar").sub(7);
 /// assert_eq!(math, math_2);
 /// ```
 ///

@@ -124,22 +124,21 @@ mod test {
     #[ignore = "This is just to help with formatting the example for `Update`"]
     fn example() {
         use crate::{
-            name,
             path::Path,
             update::{Remove, Update},
         };
         use pretty_assertions::assert_eq;
 
-        let update = Update::set(name("foo").math().add(7));
+        let update = Update::set(Path::from("foo").math().add(7));
         assert_eq!("SET foo = foo + 7", update.to_string());
 
-        let update = Update::set(name("foo").if_not_exists().value("a value"));
+        let update = Update::set(Path::from("foo").if_not_exists().value("a value"));
         assert_eq!(
             r#"SET foo = if_not_exists(foo, "a value")"#,
             update.to_string()
         );
 
-        let update = Update::remove(name("foo").remove());
+        let update = Update::remove(Path::from("foo").remove());
         assert_eq!(r#"REMOVE foo"#, update.to_string());
 
         let update = Update::remove("foo[3].bar[0]".parse::<Path>().unwrap().remove());

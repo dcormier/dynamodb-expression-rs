@@ -7,16 +7,16 @@ use aws_sdk_dynamodb::{
 use pretty_assertions::assert_eq;
 
 use dynamodb_expression::{
-    expression::Expression, key::key, name, num_value, ref_value, string_value, Comparator::*,
+    expression::Expression, key::key, num_value, path::Path, ref_value, string_value, Comparator::*,
 };
 
 #[test]
 fn scan_input() {
     ScanInput::builder()
         .filter_expression(
-            name("#name")
+            Path::from("#name")
                 .begins_with(":prefix")
-                .and(name("#age").comparison(Ge, string_value(":min_age"))),
+                .and(Path::from("#age").comparison(Ge, string_value(":min_age"))),
         )
         .expression_attribute_names("#name", "name")
         .expression_attribute_values(":prefix", AttributeValue::S("Wil".into()))
@@ -30,9 +30,11 @@ fn scan_input() {
 fn put() {
     Put::builder()
         .condition_expression(
-            name("#name")
+            Path::from("#name")
                 .attribute_not_exists()
-                .or(name("#name").size().comparison(Eq, string_value(":zero"))),
+                .or(Path::from("#name")
+                    .size()
+                    .comparison(Eq, string_value(":zero"))),
         )
         .expression_attribute_names("#name", "name")
         .expression_attribute_values(":zero", AttributeValue::N(0.to_string()))
@@ -62,9 +64,9 @@ fn query() {
     // Building the `QueryInput` using this crate to help with the filter expression.
     let qi_2 = QueryInput::builder()
         .filter_expression(
-            name("#0")
+            Path::from("#0")
                 .attribute_exists()
-                .and(name("#1").comparison(Ge, ref_value("0"))),
+                .and(Path::from("#1").comparison(Ge, ref_value("0"))),
         )
         .projection_expression("#0, #1")
         .key_condition_expression("#2 = :1")
@@ -81,9 +83,9 @@ fn query() {
 
     // Building the `QueryInput` by leveraging this crate to its fullest.
     let qi_3: QueryInput = Expression::new_with_filter(
-        name("name")
+        Path::from("name")
             .attribute_exists()
-            .and(name("age").comparison(Ge, num_value(2.5))),
+            .and(Path::from("age").comparison(Ge, num_value(2.5))),
     )
     .with_projection(["name", "age"])
     .with_key_condition(key("id").equal(num_value(42)))

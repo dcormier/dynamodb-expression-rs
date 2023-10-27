@@ -7,6 +7,11 @@ use core::{
 use itertools::Itertools;
 
 use crate::{
+    condition::{
+        attribute_type::Type, AttributeType, BeginsWith, Between, Comparison, Condition, Contains,
+        In,
+    },
+    operand::{Operand, Size},
     update::{
         add::AddValue,
         set::{
@@ -15,8 +20,8 @@ use crate::{
         },
         Add, Assign, Delete, IfNotExists, ListAppend, Math, Remove,
     },
-    value::{self, Value},
-    Name,
+    value::{self, Scalar, Value},
+    Comparator, Name,
 };
 
 /// Represents a DynamoDB [document path][1]. For example, `foo[3][7].bar[2].baz`.
@@ -129,12 +134,112 @@ use crate::{
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
 /// [`Expression`]: crate::expression::Expression
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Path {
     pub elements: Vec<Element>,
 }
 
-// This block is for methods related to update expressions.
+/// Methods relating to building condition and filter expressions.
+impl Path {
+    /// Compare two values.
+    ///
+    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    // TODO: Operator-specific methods instead of this.
+    pub fn comparison<R>(self, cmp: Comparator, right: R) -> Condition
+    where
+        R: Into<Operand>,
+    {
+        Condition::Comparison(Comparison {
+            left: self.into(),
+            cmp,
+            right: right.into(),
+        })
+    }
+
+    /// `self BETWEEN b AND c` - true if `self` is greater than or equal to `b`, and less than or equal to `c`.
+    ///
+    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    pub fn between<L, U>(self, lower: L, upper: U) -> Condition
+    where
+        L: Into<Operand>,
+        U: Into<Operand>,
+    {
+        Condition::Between(Between {
+            op: self.into(),
+            lower: lower.into(),
+            upper: upper.into(),
+        })
+    }
+
+    /// `self IN (b[, ..])` — true if `self` is equal to any value in the list.
+    ///
+    /// The list can contain up to 100 values. It must have at least 1.
+    ///
+    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    pub fn in_<I, T>(self, items: I) -> Condition
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<Operand>,
+    {
+        In::new(self.into(), items).into()
+    }
+
+    /// True if the item contains the attribute specified by `path`.
+    ///
+    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    pub fn attribute_exists(self) -> Condition {
+        Condition::AttributeExists(self.into())
+    }
+
+    /// True if the attribute specified by `path` does not exist in the item.
+    ///
+    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    pub fn attribute_not_exists(self) -> Condition {
+        Condition::AttributeNotExists(self.into())
+    }
+
+    /// True if the attribute at the specified `path` is of a particular data type.
+    ///
+    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    pub fn attribute_type(self, attribute_type: Type) -> Condition {
+        AttributeType::new(self, attribute_type).into()
+    }
+
+    /// True if the attribute specified by `path` begins with a particular substring.
+    ///
+    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    pub fn begins_with<T>(self, prefix: T) -> Condition
+    where
+        T: Into<String>,
+    {
+        BeginsWith::new(self, prefix).into()
+    }
+
+    /// True if the attribute specified by `path` is one of the following:
+    /// * A `String` that contains a particular substring.
+    /// * A `Set` that contains a particular element within the set.
+    /// * A `List` that contains a particular element within the list.
+    ///
+    /// The operand must be a `String` if the attribute specified by path is a `String`.
+    /// If the attribute specified by path is a `Set`, the operand must be the set's element type.
+    ///
+    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    pub fn contains<V>(self, operand: V) -> Condition
+    where
+        V: Into<Scalar>,
+    {
+        Contains::new(self, operand).into()
+    }
+
+    /// Returns a number representing an attribute's size.
+    ///
+    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    pub fn size(self) -> Size {
+        self.into()
+    }
+}
+
+/// Methods relating to building update expressions.
 impl Path {
     /// See [`Assign`]
     pub fn assign<T>(self, value: T) -> Assign
@@ -265,7 +370,7 @@ pub struct PathParseError;
 /// `baz`.
 ///
 /// See [`Path`] for more.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Element {
     Name(Name),
     IndexedField(IndexedField),
@@ -449,7 +554,7 @@ impl From<&&str> for Element {
 /// `IndexedField`.
 ///
 /// See [`Path`] for more.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IndexedField {
     pub(crate) name: Name,
     indexes: Vec<u32>,
@@ -514,6 +619,8 @@ impl<const N: usize> Indexes for &[u32; N] {
 #[cfg(test)]
 mod test {
     use pretty_assertions::{assert_eq, assert_str_eq};
+
+    use crate::{num_value, Comparator};
 
     use super::{Element, IndexedField, Path, PathParseError};
 
@@ -631,5 +738,16 @@ mod test {
         //       Test whether it's valid and remove this comment or handle it appropriately.
         let path = Path::from_iter([Element::indexed_field("foo", 42), Element::name("bar")]);
         assert_str_eq!("foo[42].bar", path.to_string());
+    }
+
+    #[test]
+    fn size() {
+        assert_str_eq!(
+            "size(a) = 0",
+            Path::from("a")
+                .size()
+                .comparison(Comparator::Eq, num_value(0))
+                .to_string()
+        );
     }
 }

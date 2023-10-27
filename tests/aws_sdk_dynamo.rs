@@ -13,18 +13,15 @@ use pretty_assertions::{assert_eq, assert_ne};
 use dynamodb_expression::{
     expression::Expression,
     key::key,
-    name, string_value,
+    path::Path,
+    string_value,
     update::{Remove, Set, Update},
 };
 
 use crate::dynamodb::{
     debug::DebugList,
-    item::{new_item, ATTR_BLOB, ATTR_ID, ATTR_LIST, ATTR_NULL, ATTR_NUM},
+    item::{new_item, ATTR_BLOB, ATTR_ID, ATTR_LIST, ATTR_NULL, ATTR_NUM, ATTR_STRING},
     partial_eq::PartialEqItem,
-};
-
-use self::dynamodb::{
-    item::ATTR_STRING,
     setup::{clean_table, delete_table},
     Config,
 };
@@ -62,17 +59,25 @@ async fn test_update(config: &Config) {
     assert_eq!(None, item.get(ATTR_NEW_FIELD));
 
     let update = Expression::new_with_update(
-        Set::from(name(ATTR_STRING).assign("abcdef"))
-            .and(name(ATTR_NUM).math().sub(3.5))
+        Set::from(Path::from(ATTR_STRING).assign("abcdef"))
+            .and(Path::from(ATTR_NUM).math().sub(3.5))
             .and(
-                name(ATTR_LIST)
+                Path::from(ATTR_LIST)
                     .list_append()
                     .before()
                     .list(["A new value at the beginning"]),
             )
             // DynamoDB won't let you append to the same list twice in the same update expression.
-            // .and(name(ATTR_LIST).list_append().list(["A new value at the end"]))
-            .and(name(ATTR_NEW_FIELD).if_not_exists().value("A new field")),
+            // .and(
+            //     Path::from(ATTR_LIST)
+            //         .list_append()
+            //         .list(["A new value at the end"]),
+            // )
+            .and(
+                Path::from(ATTR_NEW_FIELD)
+                    .if_not_exists()
+                    .value("A new field"),
+            ),
     )
     .update_item(client)
     .set_key(item_key.clone());
@@ -88,7 +93,7 @@ async fn test_update(config: &Config) {
     // Once more to add another item to the end of that list.
     // DynamoDB won't allow both in a single update expression.
     let after_update = Expression::new_with_update(Update::set(
-        name(ATTR_LIST)
+        Path::from(ATTR_LIST)
             .list_append()
             .list(["A new value at the end"]),
     ))

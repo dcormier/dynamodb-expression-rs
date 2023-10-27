@@ -356,16 +356,16 @@ impl Expression {
 mod test {
     use pretty_assertions::{assert_eq, assert_ne};
 
-    use crate::{key::key, name, num_value, Comparator::*};
+    use crate::{key::key, num_value, path::Path, Comparator::*};
 
     use super::Expression;
 
     #[test]
     fn scan_input() {
         let expression = Expression::new_with_filter(
-            name("name")
+            Path::from("name")
                 .begins_with("prefix")
-                .and(name("age").comparison(Ge, num_value(25))),
+                .and(Path::from("age").comparison(Ge, num_value(25))),
         )
         .with_projection(["name", "age"]);
         assert_eq!(None, expression.condition);
@@ -393,9 +393,9 @@ mod test {
     #[test]
     fn query_input() {
         let expression = Expression::new_with_filter(
-            name("name")
+            Path::from("name")
                 .attribute_exists()
-                .and(name("age").comparison(Ge, num_value(2.5))),
+                .and(Path::from("age").comparison(Ge, num_value(2.5))),
         )
         .with_projection(["name", "age"])
         .with_key_condition(key("id").equal(num_value(42)));
@@ -424,9 +424,9 @@ mod test {
     #[test]
     fn update() {
         let expression = Expression::new_with_condition(
-            name("name")
+            Path::from("name")
                 .attribute_exists()
-                .and(name("age").comparison(Ge, num_value(25))),
+                .and(Path::from("age").comparison(Ge, num_value(25))),
         );
 
         let condition = expression

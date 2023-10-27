@@ -4,13 +4,17 @@ use crate::{
     condition::{
         equal, greater_than, greater_than_or_equal, less_than, less_than_or_equal, Condition,
     },
-    name::Name,
     operand::Operand,
+    path::Path,
 };
 
+/// Used to build a [key condition expression][1].
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Key {
-    name: Name,
+    // TODO: Is `Path` the right thing, here?
+    path: Path,
 }
 
 impl Key {
@@ -19,7 +23,7 @@ impl Key {
         T: Into<String>,
     {
         KeyCondition {
-            condition: self.name.begins_with(prefix),
+            condition: self.path.begins_with(prefix),
         }
     }
 
@@ -29,7 +33,7 @@ impl Key {
         U: Into<Operand>,
     {
         KeyCondition {
-            condition: self.name.between(lower, upper),
+            condition: self.path.between(lower, upper),
         }
     }
 
@@ -38,7 +42,7 @@ impl Key {
         T: Into<Operand>,
     {
         KeyCondition {
-            condition: equal(self.name, right).into(),
+            condition: equal(self.path, right).into(),
         }
     }
 
@@ -47,7 +51,7 @@ impl Key {
         T: Into<Operand>,
     {
         KeyCondition {
-            condition: greater_than(self.name, right).into(),
+            condition: greater_than(self.path, right).into(),
         }
     }
 
@@ -56,7 +60,7 @@ impl Key {
         T: Into<Operand>,
     {
         KeyCondition {
-            condition: greater_than_or_equal(self.name, right).into(),
+            condition: greater_than_or_equal(self.path, right).into(),
         }
     }
 
@@ -65,7 +69,7 @@ impl Key {
         T: Into<Operand>,
     {
         KeyCondition {
-            condition: less_than(self.name, right).into(),
+            condition: less_than(self.path, right).into(),
         }
     }
 
@@ -74,25 +78,25 @@ impl Key {
         T: Into<Operand>,
     {
         KeyCondition {
-            condition: less_than_or_equal(self.name, right).into(),
+            condition: less_than_or_equal(self.path, right).into(),
         }
     }
 }
 
 impl<T> From<T> for Key
 where
-    T: Into<Name>,
+    T: Into<Path>,
 {
-    fn from(name: T) -> Self {
-        Self { name: name.into() }
+    fn from(path: T) -> Self {
+        Self { path: path.into() }
     }
 }
 
-pub fn key<T>(name: T) -> Key
+pub fn key<T>(path: T) -> Key
 where
-    T: Into<Name>,
+    T: Into<Path>,
 {
-    Key::from(name.into())
+    Key::from(path.into())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

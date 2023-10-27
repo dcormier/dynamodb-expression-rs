@@ -10,23 +10,23 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use dynamodb_expression::{name, num_value, update::ListAppend};
+/// use dynamodb_expression::{num_value, path::Path, update::ListAppend};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let list_append = ListAppend::builder("foo").list([7, 8, 9].map(num_value));
 /// assert_eq!("foo = list_append(foo, [7, 8, 9])", list_append.to_string());
 ///
-/// let list_append_2 = name("foo").list_append().list([7, 8, 9].map(num_value));
+/// let list_append_2 = Path::from("foo").list_append().list([7, 8, 9].map(num_value));
 /// assert_eq!(list_append, list_append_2);
 /// ```
 ///
 /// If you want to add the new values to the _beginning_ of the list instead,
 /// use the [`.before()`] method.
 /// ```
-/// use dynamodb_expression::{name, num_value, update::ListAppend};
+/// use dynamodb_expression::{num_value, path::Path, update::ListAppend};
 /// # use pretty_assertions::assert_eq;
 ///
-/// let list_append = name("foo").list_append().before().list([1, 2, 3].map(num_value));
+/// let list_append = Path::from("foo").list_append().before().list([1, 2, 3].map(num_value));
 /// assert_eq!("foo = list_append([1, 2, 3], foo)", list_append.to_string());
 /// ```
 ///
