@@ -7,7 +7,31 @@ use crate::{
 
 /// Represents an update expression to [append elements to a list][1].
 ///
+/// # Examples
+///
+/// ```
+/// use dynamodb_expression::{name, num_value, update::ListAppend};
+/// # use pretty_assertions::assert_eq;
+///
+/// let list_append = ListAppend::builder("foo").list([7, 8, 9].map(num_value));
+/// assert_eq!("foo = list_append(foo, [7, 8, 9])", list_append.to_string());
+///
+/// let list_append_2 = name("foo").list_append().list([7, 8, 9].map(num_value));
+/// assert_eq!(list_append, list_append_2);
+/// ```
+///
+/// If you want to add the new values to the _beginning_ of the list instead,
+/// use the [`.before()`] method.
+/// ```
+/// use dynamodb_expression::{name, num_value, update::ListAppend};
+/// # use pretty_assertions::assert_eq;
+///
+/// let list_append = name("foo").list_append().before().list([1, 2, 3].map(num_value));
+/// assert_eq!("foo = list_append([1, 2, 3], foo)", list_append.to_string());
+/// ```
+///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements
+/// [`.before()`]: Builder::before
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ListAppend {
     /// The field to set the newly combined list to
@@ -69,6 +93,7 @@ enum Order {
     After,
 }
 
+/// Builds an [`ListAppend`] instance. Create an instance of this by using [`ListAppend::builder`].
 #[must_use = "Consume the `Builder` using its `.list()` method"]
 #[derive(Debug, Clone)]
 pub struct Builder {
@@ -77,7 +102,6 @@ pub struct Builder {
     order: Option<Order>,
 }
 
-/// Builds an [`Append`] instance. Create an instance of this by using [`Append::builder`].
 impl Builder {
     /// Sets the source field to read the initial value from.
     ///
@@ -111,7 +135,7 @@ impl Builder {
 
     /// Sets the new value(s) to concatenate with the specified field.
     ///
-    /// Builds the [`Append`] instance.
+    /// Builds the [`ListAppend`] instance.
     pub fn list<T>(self, list: T) -> ListAppend
     where
         T: Into<List>,

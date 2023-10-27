@@ -5,8 +5,25 @@ use crate::{
     value::{Value, ValueOrRef},
 };
 
+/// Represents an update expression to [set an attribute if it doesn't exist][1].
+///
+/// # Examples
+///
+/// ```
+/// use dynamodb_expression::{name, num_value, update::IfNotExists};
+/// # use pretty_assertions::assert_eq;
+///
+/// let if_not_exists = IfNotExists::builder("foo").value(num_value(7));
+/// assert_eq!("foo = if_not_exists(foo, 7)", if_not_exists.to_string());
+///
+/// let if_not_exists_2 = name("foo").if_not_exists().value(num_value(7));
+/// assert_eq!(if_not_exists, if_not_exists_2);
+/// ```
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.PreventingAttributeOverwrites
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct IfNotExists {
+    // TODO: Is `Path` the right thing, here?
     pub(crate) dst: Path,
     pub(crate) src: Option<Path>,
     pub(crate) value: ValueOrRef,
@@ -35,6 +52,7 @@ impl fmt::Display for IfNotExists {
     }
 }
 
+/// Builds an [`IfNotExists`] instance. Create an instance of this by using [`IfNotExists::builder`].
 #[must_use = "Consume the `Builder` using its `.value()` method"]
 #[derive(Debug, Clone)]
 pub struct Builder {
@@ -42,7 +60,6 @@ pub struct Builder {
     src: Option<Path>,
 }
 
-/// Builds an [`IfNotExists`] instance. Create an instance of this by using [`IfNotExists::builder`].
 impl Builder {
     /// Sets the source field check for existence. Defaults to the destination field.
     pub fn src<T>(mut self, src: T) -> Self

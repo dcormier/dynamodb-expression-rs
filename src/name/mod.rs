@@ -9,10 +9,7 @@ use crate::{
     operand::{Operand, Size},
     update::{
         add::AddValue,
-        set::{
-            if_not_exists::Builder as IfNotExistsBuilder,
-            list_append::Builder as ListAppendBuilder, math::Builder as MathBuilder,
-        },
+        set::{if_not_exists, list_append, math},
         Add, Assign, Delete, IfNotExists, ListAppend, Math, Remove,
     },
     value::{self, Scalar, Value},
@@ -191,17 +188,17 @@ impl Name {
     }
 
     /// Sets this as the destination in a [`Math`] builder for an update expression.
-    pub fn math(self) -> MathBuilder {
+    pub fn math(self) -> math::Builder {
         Math::builder(self)
     }
 
     /// Sets this as the destination in a [`ListAppend`] builder for an update expression.
-    pub fn list_append(self) -> ListAppendBuilder {
+    pub fn list_append(self) -> list_append::Builder {
         ListAppend::builder(self)
     }
 
     /// Sets this as the destination in an [`IfNotExists`] builder for an update expression.
-    pub fn if_not_exists(self) -> IfNotExistsBuilder {
+    pub fn if_not_exists(self) -> if_not_exists::Builder {
         IfNotExists::builder(self)
     }
 

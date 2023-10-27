@@ -12,14 +12,20 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use dynamodb_expression::update::Math;
+/// use dynamodb_expression::{name, update::Math};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let math = Math::builder("foo").add(4);
 /// assert_eq!("foo = foo + 4", math.to_string());
 ///
+/// let math_2 = name("foo").math().add(4);
+/// assert_eq!(math, math_2);
+///
 /// let math = Math::builder("foo").src("bar").sub(7);
 /// assert_eq!("foo = bar - 7", math.to_string());
+///
+/// let math_2 = name("foo").math().src("bar").sub(7);
+/// assert_eq!(math, math_2);
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement
@@ -60,7 +66,7 @@ impl fmt::Display for Math {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub enum MathOp {
+enum MathOp {
     Add,
     Sub,
 }
@@ -80,9 +86,7 @@ impl fmt::Display for MathOp {
     }
 }
 
-/// Builds a [`Math`] instance. Create an instance of this by using [`Math::builder()`].
-///
-/// [`Math::builder()`]: crate::update:set::math::Math::builder
+/// Builds a [`Math`] instance. Create an instance of this by using [`Math::builder`].
 #[must_use = "Consume the `Builder` using its `.add()` or `.sub()` methods"]
 #[derive(Debug, Clone)]
 pub struct Builder {

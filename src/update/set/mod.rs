@@ -1,7 +1,6 @@
-// TODO: Should these just be public?
-pub(crate) mod if_not_exists;
-pub(crate) mod list_append;
-pub(crate) mod math;
+pub mod if_not_exists;
+pub mod list_append;
+pub mod math;
 
 pub use self::if_not_exists::IfNotExists;
 pub use self::list_append::ListAppend;
