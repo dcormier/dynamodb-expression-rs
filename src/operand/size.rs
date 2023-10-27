@@ -2,7 +2,8 @@ use core::fmt;
 
 use crate::{
     condition::{Between, Comparator, Comparison, In},
-    operand::{Name, Operand},
+    operand::Operand,
+    path::Path,
 };
 
 /// Returns a number representing an attribute's size.
@@ -10,7 +11,9 @@ use crate::{
 /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Size {
-    pub(crate) name: Name,
+    // `Path` is correct here
+    // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Syntax
+    pub(crate) path: Path,
 }
 
 impl Size {
@@ -49,15 +52,15 @@ impl Size {
 
 impl fmt::Display for Size {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "size({})", self.name)
+        write!(f, "size({})", self.path)
     }
 }
 
 impl<T> From<T> for Size
 where
-    T: Into<Name>,
+    T: Into<Path>,
 {
-    fn from(name: T) -> Self {
-        Self { name: name.into() }
+    fn from(path: T) -> Self {
+        Self { path: path.into() }
     }
 }

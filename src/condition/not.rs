@@ -2,6 +2,11 @@ use core::fmt;
 
 use crate::condition::Condition;
 
+/// A [logical `NOT`][1] operation.
+///
+/// See: [`Condition`]
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Not {
     pub(crate) condition: Box<Condition>,

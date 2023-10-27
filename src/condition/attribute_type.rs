@@ -1,20 +1,22 @@
 use core::fmt;
 
-use crate::name::Name;
+use crate::path::Path;
 
 /// True if the attribute at the specified `path` is of a particular data type.
 ///
 /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AttributeType {
-    pub(crate) path: Name,
+    // `Path` is correct here
+    // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Syntax
+    pub(crate) path: Path,
     pub(crate) attribute_type: Type,
 }
 
 impl AttributeType {
     pub fn new<P>(path: P, attribute_type: Type) -> Self
     where
-        P: Into<Name>,
+        P: Into<Path>,
     {
         Self {
             path: path.into(),

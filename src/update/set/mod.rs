@@ -81,13 +81,6 @@ where
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SetAction {
-    // TODO: This needs to support paths like:
-    // "SET RelatedItems = :ri, ProductReviews = :pr"
-    // "SET RelatedItems[1] = :ri"
-    // "SET #pr.#5star[1] = :r5, #pr.#3star = :r3"
-    // See:
-    //      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingNestedMapAttributes
-    //      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html
     Assign(Assign),
 
     /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement>

@@ -7,6 +7,7 @@ use core::fmt;
 use crate::{
     condition::{Between, Comparator, Comparison, Condition, In},
     name::Name,
+    path::Path,
     value::{Ref, Scalar, ValueOrRef},
 };
 
@@ -77,7 +78,7 @@ where
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum OperandType {
-    Name(Name),
+    Path(Path),
     Scalar(ValueOrRef),
     Condition(Box<Condition>),
     Size(Size),
@@ -86,7 +87,7 @@ pub(crate) enum OperandType {
 impl fmt::Display for OperandType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Name(operand) => operand.fmt(f),
+            Self::Path(operand) => operand.fmt(f),
             Self::Scalar(operand) => operand.fmt(f),
             Self::Condition(operand) => operand.fmt(f),
             Self::Size(operand) => operand.fmt(f),
@@ -94,9 +95,16 @@ impl fmt::Display for OperandType {
     }
 }
 
+// TODO: Is this one needed?
 impl From<Name> for OperandType {
     fn from(name: Name) -> Self {
-        Self::Name(name)
+        Self::Path(name.into())
+    }
+}
+
+impl From<Path> for OperandType {
+    fn from(path: Path) -> Self {
+        Self::Path(path)
     }
 }
 

@@ -31,7 +31,7 @@ pub struct Expression {
     values: HashMap<Value, Ref>,
 }
 
-// Functions and methods for building an expression.
+/// Functions and methods for building an `Expression`.
 impl Expression {
     /// Creates a new [`Expression`] with the specified condition for DynamoDB input.
     pub fn new_with_condition<T>(condition: T) -> Self
@@ -137,29 +137,29 @@ impl Expression {
 
     fn process_condition(&mut self, condition: Condition) -> Condition {
         match condition {
-            Condition::AttributeExists(AttributeExists { name }) => AttributeExists {
-                name: self.process_name(name),
+            Condition::AttributeExists(AttributeExists { path }) => AttributeExists {
+                path: self.process_path(path),
             }
             .into(),
-            Condition::AttributeNotExists(AttributeNotExists { name }) => AttributeNotExists {
-                name: self.process_name(name),
+            Condition::AttributeNotExists(AttributeNotExists { path }) => AttributeNotExists {
+                path: self.process_path(path),
             }
             .into(),
             Condition::AttributeType(AttributeType {
                 path,
                 attribute_type,
             }) => AttributeType {
-                path: self.process_name(path),
+                path: self.process_path(path),
                 attribute_type,
             }
             .into(),
             Condition::Contains(Contains { path, operand }) => Contains {
-                path: self.process_name(path),
+                path: self.process_path(path),
                 operand: self.process_value(operand).into(),
             }
             .into(),
             Condition::BeginsWith(BeginsWith { path, substr }) => BeginsWith {
-                path: self.process_name(path),
+                path: self.process_path(path),
                 substr: self.process_value(substr).into(),
             }
             .into(),
@@ -206,9 +206,9 @@ impl Expression {
 
     fn process_operand(&mut self, operand: Operand) -> Operand {
         match operand.op {
-            OperandType::Name(name) => self.process_name(name).into(),
-            OperandType::Size(Size { name }) => Size {
-                name: self.process_name(name),
+            OperandType::Path(path) => self.process_path(path).into(),
+            OperandType::Size(Size { path: name }) => Size {
+                path: self.process_path(name),
             }
             .into(),
             OperandType::Scalar(value) => Operand {
@@ -305,7 +305,7 @@ impl Expression {
             name: self
                 .names
                 .entry(name)
-                .or_insert(format!("#{}", count))
+                .or_insert(format!("#{count}"))
                 .clone(),
         }
     }
@@ -325,7 +325,7 @@ impl Expression {
     }
 }
 
-// Methods to get the values needed for DynamoDB input builders.
+/// Methods to get the values needed for DynamoDB input builders.
 impl Expression {
     /// The string to use as a DynamoDB condition expression.
     ///

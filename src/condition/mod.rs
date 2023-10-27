@@ -29,6 +29,9 @@ pub use parenthetical::Parenthetical;
 
 use core::{fmt, ops};
 
+/// Represents a [DynamoDB condition or filter expression][1].
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Syntax
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Condition {
     AttributeExists(AttributeExists),
@@ -46,6 +49,9 @@ pub enum Condition {
 }
 
 impl Condition {
+    /// A [logical `AND`][1] operation
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
     pub fn and<R>(self, right: R) -> Self
     where
         R: Into<Condition>,
@@ -56,6 +62,9 @@ impl Condition {
         })
     }
 
+    /// A [logical `OR`][1] operation
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
     pub fn or<R>(self, right: R) -> Self
     where
         R: Into<Condition>,
@@ -66,15 +75,18 @@ impl Condition {
         })
     }
 
+    /// A [logical `NOT`][1] operation
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
     #[allow(clippy::should_implement_trait)]
     pub fn not(self) -> Self {
         Self::Not(Not::from(self))
     }
 
-    /// Wraps an expression in parentheses.
-    /// E.g., `a < b AND c > d` becomes `(a < b AND c > d)`.
+    /// Wraps a condition in [parentheses][1].
+    /// For example, `a < b AND c > d` becomes `(a < b AND c > d)`.
     ///
-    /// Tip: you can use `a.parenthesize()` to do this, instead.
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Parentheses
     pub fn parenthesize(self) -> Self {
         Self::Parenthetical(self.into())
     }
@@ -83,6 +95,9 @@ impl Condition {
 impl ops::Not for Condition {
     type Output = Condition;
 
+    /// A [logical `NOT`][1] operation
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
     fn not(self) -> Self::Output {
         Condition::not(self)
     }

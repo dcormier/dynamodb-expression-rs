@@ -1,7 +1,7 @@
 use core::fmt;
 
 use crate::{
-    name::Name,
+    path::Path,
     value::{Scalar, ValueOrRef},
 };
 
@@ -10,14 +10,16 @@ use crate::{
 /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BeginsWith {
-    pub(crate) path: Name,
+    // `Path` is correct here
+    // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Syntax
+    pub(crate) path: Path,
     pub(crate) substr: ValueOrRef,
 }
 
 impl BeginsWith {
     pub fn new<P, S>(path: P, substr: S) -> Self
     where
-        P: Into<Name>,
+        P: Into<Path>,
         S: Into<String>,
     {
         Self {
