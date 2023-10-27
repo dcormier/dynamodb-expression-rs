@@ -7,7 +7,7 @@ use aws_sdk_dynamodb::{
 use pretty_assertions::assert_eq;
 
 use dynamodb_expression::{
-    expression::Expression, key::key, name, num_value, string_value, Comparator::*,
+    expression::Expression, key::key, name, num_value, ref_value, string_value, Comparator::*,
 };
 
 #[test]
@@ -61,12 +61,11 @@ fn query() {
 
     // Building the `QueryInput` using this crate to help with the filter expression.
     let qi_2 = QueryInput::builder()
-        .filter_expression(name("#0").attribute_exists().and(name("#1").comparison(
-            Ge,
-            // TODO: Using `name()` here isn't right. May need a `ref_value()`.
-            //       Can't use `string_value()` because it'll put it in quotes.
-            name(":0"),
-        )))
+        .filter_expression(
+            name("#0")
+                .attribute_exists()
+                .and(name("#1").comparison(Ge, ref_value("0"))),
+        )
         .projection_expression("#0, #1")
         .key_condition_expression("#2 = :1")
         .expression_attribute_names("#0", "name")

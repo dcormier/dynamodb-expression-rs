@@ -2,14 +2,26 @@ use core::fmt;
 
 use crate::path::Path;
 
-// func Remove(name NameBuilder) UpdateBuilder
-// func (ub UpdateBuilder) Remove(name NameBuilder) UpdateBuilder
-
-/// For use an in an [`Update`] expression to [remove attributes from an item][1], or
-/// [elements from a list][2].
+/// For use an in an [`Update`](crate::update::Update) expression to
+/// [remove attributes from an item][1], or [elements from a list][2].
 ///
-/// Use the `From<Into<Path>>` or `FromIterator<Into<Path>>` implementations to
-/// construct.
+/// # Examples
+///
+/// ```
+/// use dynamodb_expression::{path::Path, update::{Remove, Update}};
+///
+/// let update = Remove::from("foo");
+/// assert_eq!(r#"REMOVE foo"#, update.to_string());
+///
+/// let update = Remove::from("foo[8]".parse::<Path>().unwrap());
+/// assert_eq!(r#"REMOVE foo[8]"#, update.to_string());
+///
+/// let update = Remove::from_iter(["foo", "bar", "baz"]);
+/// assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
+///
+/// let update = ["foo", "bar", "baz"].into_iter().collect::<Remove>();
+/// assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
+/// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE.RemovingListElements

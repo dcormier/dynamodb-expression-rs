@@ -1,32 +1,53 @@
 use core::fmt;
 
 use crate::{
-    name::Name,
-    value::{scalar::Num, Set, Value, ValueOrRef},
+    path::Path,
+    value::{scalar::Num, Ref, Set, Value, ValueOrRef},
 };
 
-// func Add(name NameBuilder, value ValueBuilder) UpdateBuilder
-// func (ub UpdateBuilder) Add(name NameBuilder, value ValueBuilder) UpdateBuilder
-
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.ADD>
+/// Represents an [`ADD` statement][1] in a [DynamoDB update expression][2].
+///
+/// The [DynamoDB documentation recommends][1] against using `ADD`:
+///
+/// > In general, we recommend using `SET` rather than `ADD`.
+///
+/// See also: [`Update`], [`Set`].
+///
+/// # Examples
+///
+/// ```
+/// use dynamodb_expression::{path::Path, update::Add, value::Num};
+///
+/// let update = Add::new("foo", Num::from(1));
+/// assert_eq!("ADD foo 1", update.to_string());
+///
+/// let update = Add::new("foo[4]".parse::<Path>().unwrap(), Num::from(1));
+/// assert_eq!("ADD foo[4] 1", update.to_string());
+/// ```
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.ADD
+/// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
+/// [`Update`]: crate::update::Update
+/// [`Set`]: crate::update::Set
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Add {
     // TODO: Name or Path?
-    pub(crate) name: Name,
+    pub(crate) path: Path,
     pub(crate) value: ValueOrRef,
 }
 
 impl Add {
-    pub fn new<N, V>(name: N, value: V) -> Self
+    pub fn new<N, V>(path: N, value: V) -> Self
     where
-        N: Into<Name>,
+        N: Into<Path>,
         V: Into<AddValue>,
     {
         Self {
-            name: name.into(),
+            path: path.into(),
             value: match value.into() {
                 AddValue::Num(num) => Value::Scalar(num.into()).into(),
                 AddValue::Set(set) => set.into(),
+                AddValue::Ref(value_ref) => value_ref.into(),
             },
         }
     }
@@ -34,15 +55,18 @@ impl Add {
 
 impl fmt::Display for Add {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ADD {} {}", self.name, self.value)
+        write!(f, "ADD {} {}", self.path, self.value)
     }
 }
 
 /// A value that can be used for the `ADD` operation in a DynamoDB update request.
+///
+/// See: [`Add`]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AddValue {
     Set(Set),
     Num(Num),
+    Ref(Ref),
 }
 
 impl fmt::Display for AddValue {
@@ -50,6 +74,7 @@ impl fmt::Display for AddValue {
         match self {
             Self::Set(value) => value.fmt(f),
             Self::Num(value) => value.fmt(f),
+            Self::Ref(value) => value.fmt(f),
         }
     }
 }
@@ -63,5 +88,11 @@ impl From<Set> for AddValue {
 impl From<Num> for AddValue {
     fn from(value: Num) -> Self {
         Self::Num(value)
+    }
+}
+
+impl From<Ref> for AddValue {
+    fn from(value: Ref) -> Self {
+        Self::Ref(value)
     }
 }

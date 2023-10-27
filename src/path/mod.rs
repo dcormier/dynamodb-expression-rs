@@ -6,11 +6,22 @@ use core::{
 
 use itertools::Itertools;
 
-use super::name::Name;
+use crate::{
+    update::{
+        add::AddValue,
+        set::{
+            if_not_exists::Builder as IfNotExistsBuilder,
+            list_append::Builder as ListAppendBuilder, math::Builder as MathBuilder,
+        },
+        Add, Assign, Delete, IfNotExists, ListAppend, Math, Remove,
+    },
+    value::{self, Value},
+    Name,
+};
 
 /// Represents a DynamoDB [document path][1]. For example, `foo[3][7].bar[2].baz`.
 ///
-/// Create an instance using the
+/// Anything that can be turned into a `Name` can be turned into a [`Path`]
 ///
 /// When used in an [`Expression`], attribute names in a `Path` are
 /// automatically handled as [expression attribute names][2], allowing for names
@@ -24,9 +35,15 @@ use super::name::Name;
 ///
 /// Each of these are ways to create a `Path` instance for `foo[3][7].bar[2].baz`.
 /// ```
-/// use dynamodb_expression::{path::Element, Path};
+/// use dynamodb_expression::{Name, path::{Element, Path}};
 /// # use pretty_assertions::assert_eq;
-/// #
+///
+/// // Anything that can be converted into a `Name` can be turned into a `Path`
+/// let path: Path = "foo".into();
+/// let path: Path = String::from("foo").into();
+/// let path: Path = (&String::from("foo")).into();
+/// let path: Path = (&"foo").into();
+///
 /// # let expected: Path = [
 /// #     Element::from(("foo", [3, 7])),
 /// #     Element::from(("bar", 2)),
@@ -34,7 +51,8 @@ use super::name::Name;
 /// # ]
 /// # .into_iter()
 /// # .collect();
-///
+/// #
+/// // A `Path` can be parsed from a string
 /// let path: Path = "foo[3][7].bar[2].baz".parse().unwrap();
 /// # assert_eq!(expected, path);
 ///
@@ -83,17 +101,93 @@ use super::name::Name;
 /// # assert_eq!(expected, path);
 /// ```
 ///
+/// `Name` and `Path` can be converted between each other.
+/// ```
+/// use dynamodb_expression::{Name, path::Path};
+///
+/// // A `Name` can be converted into a `Path`
+/// let name = Name::from("foo");
+/// let path = Path::from(name);
+/// assert_eq!(Path::from("foo"), path);
+///
+/// // A `Path` consisting of a single, unindexed field can be converted into a `Name`.
+/// let path = Path::from("foo");
+/// let name = Name::try_from(path).unwrap();
+/// assert_eq!(Name::from("foo"), name);
+///
+/// // If the `Path` has more elements, or has indexes, it cannot be converted
+/// // and the original `Path` is returned.
+/// let path: Path = "foo[0]".parse().unwrap();
+/// let err = Name::try_from(path.clone()).unwrap_err();
+/// assert_eq!(path, err);
+///
+/// let path: Path = "foo.bar".parse().unwrap();
+/// let err = Name::try_from(path.clone()).unwrap_err();
+/// assert_eq!(path, err);
+/// ```
+///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
+/// [`Expression`]: crate::expression::Expression
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Path {
-    pub path: Vec<Element>,
+    pub elements: Vec<Element>,
+}
+
+// This block is for methods related to update expressions.
+impl Path {
+    /// See [`Assign`]
+    pub fn assign<T>(self, value: T) -> Assign
+    where
+        T: Into<Value>,
+    {
+        Assign::new(self, value)
+    }
+
+    /// Sets this as the destination in a [`Math`] builder.
+    pub fn math(self) -> MathBuilder {
+        Math::builder(self)
+    }
+
+    /// Sets this as the destination in a [`ListAppend`] builder.
+    pub fn list_append(self) -> ListAppendBuilder {
+        ListAppend::builder(self)
+    }
+
+    /// Sets this as the destination in an [`IfNotExists`] builder.
+    pub fn if_not_exists(self) -> IfNotExistsBuilder {
+        IfNotExists::builder(self)
+    }
+
+    /// See [`Delete`]
+    pub fn delete<T>(self, set: T) -> Delete
+    where
+        T: Into<value::Set>,
+    {
+        Delete::new(self, set)
+    }
+
+    /// See [`Add`]
+    #[allow(clippy::should_implement_trait)]
+    pub fn add<T>(self, value: T) -> Add
+    where
+        T: Into<AddValue>,
+    {
+        Add::new(self, value)
+    }
+
+    /// See [`Remove`]
+    ///
+    /// [`Remove`]: crate::update::Remove
+    pub fn remove(self) -> Remove {
+        self.into()
+    }
 }
 
 impl fmt::Display for Path {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut first = true;
-        self.path.iter().try_for_each(|elem| {
+        self.elements.iter().try_for_each(|elem| {
             if first {
                 first = false;
             } else {
@@ -111,7 +205,7 @@ where
 {
     fn from(value: T) -> Self {
         Path {
-            path: vec![value.into()],
+            elements: vec![value.into()],
         }
     }
 }
@@ -125,7 +219,7 @@ where
         I: IntoIterator<Item = T>,
     {
         Self {
-            path: iter.into_iter().map(Into::into).collect(),
+            elements: iter.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -135,8 +229,29 @@ impl FromStr for Path {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self {
-            path: s.split('.').map(str::parse).try_collect()?,
+            elements: s.split('.').map(str::parse).try_collect()?,
         })
+    }
+}
+
+impl TryFrom<Path> for Name {
+    type Error = Path;
+
+    /// If the [`Path`] is just a single [`Name`] element, this will return `Ok`
+    /// with that `Name`. Otherwise, the original `Path` is returned in the `Err`.
+    fn try_from(path: Path) -> Result<Self, Self::Error> {
+        let element: [_; 1] = path
+            .elements
+            .try_into()
+            .map_err(|elements| Path { elements })?;
+
+        if let [Element::Name(name)] = element {
+            Ok(name)
+        } else {
+            Err(Path {
+                elements: element.into(),
+            })
+        }
     }
 }
 
@@ -490,12 +605,15 @@ mod test {
     fn display_indexed() {
         // Also tests that `Element::indexed_field()` can accept a few different types of input.
 
+        // From a u32
         let path = Element::indexed_field("foo", 42);
         assert_str_eq!("foo[42]", path.to_string());
 
+        // From an array of u32
         let path = Element::indexed_field("foo", [42]);
         assert_str_eq!("foo[42]", path.to_string());
 
+        // From a slice of u32
         let path = Element::indexed_field("foo", &([42, 37, 9])[..]);
         assert_str_eq!("foo[42][37][9]", path.to_string());
     }

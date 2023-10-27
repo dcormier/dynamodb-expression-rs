@@ -33,14 +33,17 @@ impl From<Ref> for ValueOrRef {
     }
 }
 
-/// A reference to a DynamoDB value stored in the collected expression values.
+/// A reference to a DynamoDB value stored in expression attribute values.
 /// Automatically prefixed with `:`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct Ref(String);
+pub struct Ref(String);
 
-impl From<String> for Ref {
-    fn from(value: String) -> Self {
-        Self(value)
+impl<T> From<T> for Ref
+where
+    T: Into<String>,
+{
+    fn from(value: T) -> Self {
+        Self(value.into())
     }
 }
 
@@ -49,6 +52,15 @@ impl fmt::Display for Ref {
         f.write_char(':')?;
         self.0.fmt(f)
     }
+}
+
+/// A reference to a DynamoDB value stored in expression attribute values.
+/// Automatically prefixed with `:`.
+pub fn ref_value<T>(value: T) -> Ref
+where
+    T: Into<String>,
+{
+    Ref::from(value)
 }
 
 #[cfg(test)]

@@ -1,3 +1,7 @@
+//! Types related to [DynamoDB update expressions][1]. For more, see [`Update`].
+//!
+//! [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
+
 pub mod add;
 pub mod delete;
 pub mod remove;
@@ -5,9 +9,38 @@ pub mod set;
 
 use core::fmt;
 
-pub use self::{add::Add, delete::Delete, remove::Remove, set::Set};
+pub use self::{
+    add::Add,
+    delete::Delete,
+    remove::Remove,
+    set::{Assign, IfNotExists, ListAppend, Math, Set, SetAction},
+};
 
-/// See: <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html>
+/// Represents a [DynamoDB update expression][1].
+///
+/// # Examples
+///
+/// ```
+/// use dynamodb_expression::{
+///     path::Path,
+///     update::{IfNotExists, Math, Remove, Update},
+/// };
+/// # use pretty_assertions::assert_eq;
+///
+/// let update = Update::set(Math::builder("foo").add(7));
+/// assert_eq!("SET foo = foo + 7", update.to_string());
+///
+/// let update = Update::set(IfNotExists::builder("foo").value("a value"));
+/// assert_eq!(
+///     r#"SET foo = if_not_exists(foo, "a value")"#,
+///     update.to_string()
+/// );
+///
+/// let update = Update::remove("foo[3].bar[0]".parse::<Path>().unwrap());
+/// assert_eq!(r#"REMOVE foo[3].bar[0]"#, update.to_string());
+/// ```
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Update {
     Set(Set),
@@ -17,6 +50,7 @@ pub enum Update {
 }
 
 impl Update {
+    /// A new update expression for a [`Set`] statement.
     pub fn set<T>(set: T) -> Self
     where
         T: Into<Set>,
@@ -24,6 +58,7 @@ impl Update {
         set.into().into()
     }
 
+    /// A new update expression for a [`Remove`] statement.
     pub fn remove<T>(remove: T) -> Self
     where
         T: Into<Remove>,
@@ -31,6 +66,7 @@ impl Update {
         remove.into().into()
     }
 
+    /// A new update expression for an [`Add`] statement.
     pub fn add<T>(add: T) -> Self
     where
         T: Into<Add>,
@@ -38,6 +74,7 @@ impl Update {
         add.into().into()
     }
 
+    /// A new update expression for a [`Delete`] statement.
     pub fn delete<T>(delete: T) -> Self
     where
         T: Into<Delete>,
@@ -78,5 +115,37 @@ impl From<Add> for Update {
 impl From<Delete> for Update {
     fn from(value: Delete) -> Self {
         Self::Delete(value)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    #[ignore = "This is just to help with formatting the example for `Update`"]
+    fn example() {
+        use crate::{
+            name,
+            path::Path,
+            update::{Remove, Update},
+        };
+        use pretty_assertions::assert_eq;
+
+        let update = Update::set(name("foo").math().add(7));
+        assert_eq!("SET foo = foo + 7", update.to_string());
+
+        let update = Update::set(name("foo").if_not_exists().value("a value"));
+        assert_eq!(
+            r#"SET foo = if_not_exists(foo, "a value")"#,
+            update.to_string()
+        );
+
+        let update = Update::remove(name("foo").remove());
+        assert_eq!(r#"REMOVE foo"#, update.to_string());
+
+        let update = Update::remove("foo[3].bar[0]".parse::<Path>().unwrap().remove());
+        assert_eq!(r#"REMOVE foo[3].bar[0]"#, update.to_string());
+
+        let update = Update::remove(["foo", "bar", "baz"].into_iter().collect::<Remove>());
+        assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
     }
 }

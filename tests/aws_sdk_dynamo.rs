@@ -13,11 +13,8 @@ use pretty_assertions::{assert_eq, assert_ne};
 use dynamodb_expression::{
     expression::Expression,
     key::key,
-    string_value,
-    update::{
-        set::{Append, Assign, IfNotExists, Math},
-        Remove, Set, Update,
-    },
+    name, string_value,
+    update::{Remove, Set, Update},
 };
 
 use crate::dynamodb::{
@@ -65,16 +62,17 @@ async fn test_update(config: &Config) {
     assert_eq!(None, item.get(ATTR_NEW_FIELD));
 
     let update = Expression::new_with_update(
-        Set::from(Assign::new(ATTR_STRING, "abcdef"))
-            .and(Math::builder(ATTR_NUM).sub().num(3.5))
+        Set::from(name(ATTR_STRING).assign("abcdef"))
+            .and(name(ATTR_NUM).math().sub(3.5))
             .and(
-                Append::builder(ATTR_LIST)
+                name(ATTR_LIST)
+                    .list_append()
                     .before()
                     .list(["A new value at the beginning"]),
             )
             // DynamoDB won't let you append to the same list twice in the same update expression.
-            // .and(Append::builder(ATTR_LIST).list(["A new value at the end"]))
-            .and(IfNotExists::builder(ATTR_NEW_FIELD).value("A new field")),
+            // .and(name(ATTR_LIST).list_append().list(["A new value at the end"]))
+            .and(name(ATTR_NEW_FIELD).if_not_exists().value("A new field")),
     )
     .update_item(client)
     .set_key(item_key.clone());
@@ -90,7 +88,9 @@ async fn test_update(config: &Config) {
     // Once more to add another item to the end of that list.
     // DynamoDB won't allow both in a single update expression.
     let after_update = Expression::new_with_update(Update::set(
-        Append::builder(ATTR_LIST).list(["A new value at the end"]),
+        name(ATTR_LIST)
+            .list_append()
+            .list(["A new value at the end"]),
     ))
     .update_item(client)
     .set_key(item_key.clone())

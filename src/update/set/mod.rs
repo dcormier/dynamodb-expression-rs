@@ -1,6 +1,11 @@
-pub mod append;
-pub mod if_not_exists;
-pub mod math;
+// TODO: Should these just be public?
+pub(crate) mod if_not_exists;
+pub(crate) mod list_append;
+pub(crate) mod math;
+
+pub use self::if_not_exists::IfNotExists;
+pub use self::list_append::ListAppend;
+pub use self::math::Math;
 
 use core::fmt;
 
@@ -8,10 +13,6 @@ use crate::{
     path::Path,
     value::{Value, ValueOrRef},
 };
-
-pub use self::append::Append;
-pub use self::if_not_exists::IfNotExists;
-pub use self::math::Math;
 
 // func Set(name NameBuilder, operandBuilder OperandBuilder) UpdateBuilder
 // func (ub UpdateBuilder) Set(name NameBuilder, operandBuilder OperandBuilder) UpdateBuilder
@@ -94,7 +95,7 @@ pub enum SetAction {
     Math(Math),
 
     /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements>
-    Append(Append),
+    ListAppend(ListAppend),
 
     /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.PreventingAttributeOverwrites>
     IfNotExists(IfNotExists),
@@ -112,9 +113,9 @@ impl From<Math> for SetAction {
     }
 }
 
-impl From<Append> for SetAction {
-    fn from(append: Append) -> Self {
-        Self::Append(append)
+impl From<ListAppend> for SetAction {
+    fn from(append: ListAppend) -> Self {
+        Self::ListAppend(append)
     }
 }
 
@@ -129,7 +130,7 @@ impl fmt::Display for SetAction {
         match self {
             SetAction::Assign(action) => action.fmt(f),
             SetAction::Math(action) => action.fmt(f),
-            SetAction::Append(action) => action.fmt(f),
+            SetAction::ListAppend(action) => action.fmt(f),
             SetAction::IfNotExists(action) => action.fmt(f),
         }
     }

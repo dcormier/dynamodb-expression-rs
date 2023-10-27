@@ -1,7 +1,7 @@
 use core::fmt;
 
 use crate::{
-    name::Name,
+    path::Path,
     value::{Set, ValueOrRef},
 };
 
@@ -12,14 +12,14 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Delete {
     // TODO: Name or Path?
-    pub(crate) path: Name,
+    pub(crate) path: Path,
     pub(crate) subset: ValueOrRef,
 }
 
 impl Delete {
     pub fn new<P, S>(path: P, subset: S) -> Self
     where
-        P: Into<Name>,
+        P: Into<Path>,
         S: Into<Set>,
     {
         Self {

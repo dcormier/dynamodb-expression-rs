@@ -5,7 +5,24 @@ use crate::{
     value::{scalar::Num, ValueOrRef},
 };
 
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement>
+/// Represents a [DynamoDB math operation][1] used as a part of an update expression.
+///
+/// See also: [`Update`](crate::update::Update)
+///
+/// # Examples
+///
+/// ```
+/// use dynamodb_expression::update::Math;
+/// # use pretty_assertions::assert_eq;
+///
+/// let math = Math::builder("foo").add(4);
+/// assert_eq!("foo = foo + 4", math.to_string());
+///
+/// let math = Math::builder("foo").src("bar").sub(7);
+/// assert_eq!("foo = bar - 7", math.to_string());
+/// ```
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Math {
     // TODO: Name or Path for these?
@@ -63,6 +80,9 @@ impl fmt::Display for MathOp {
     }
 }
 
+/// Builds a [`Math`] instance. Create an instance of this by using [`Math::builder()`].
+///
+/// [`Math::builder()`]: crate::update:set::math::Math::builder
 #[must_use = "Consume the `Builder` using its `.add()` or `.sub()` methods"]
 #[derive(Debug, Clone)]
 pub struct Builder {
@@ -70,7 +90,6 @@ pub struct Builder {
     src: Option<Path>,
 }
 
-/// Builds a [`Math`] instance. Create an instance of this by using [`Math::builder`].
 impl Builder {
     /// Sets the source field to read the initial value from.
     /// Defaults to the destination field.
@@ -84,41 +103,28 @@ impl Builder {
     }
 
     /// Sets addition as the operation to perform.
-    pub fn add(self) -> BuilderOp {
-        self.with_op(MathOp::Add)
-    }
-
-    /// Sets subtraction as the operation to perform.
-    pub fn sub(self) -> BuilderOp {
-        self.with_op(MathOp::Sub)
-    }
-
-    fn with_op(self, op: MathOp) -> BuilderOp {
-        BuilderOp { builder: self, op }
-    }
-}
-
-/// Builds a [`Math`] instance.
-/// Consume this by using the [`BuilderOp::num`] method.
-///
-/// Create an instance of this by starting with [`Math::builder`].
-#[must_use = "Consume the `BuilderOp` using its `.num()` method"]
-#[derive(Debug, Clone)]
-pub struct BuilderOp {
-    builder: Builder,
-    op: MathOp,
-}
-
-impl BuilderOp {
-    /// Sets the number to add/subtract against the specified field.
-    ///
-    /// Builds the [`Math`] instance.
-    pub fn num<T>(self, num: T) -> Math
+    #[allow(clippy::should_implement_trait)]
+    pub fn add<T>(self, num: T) -> Math
     where
         T: Into<Num>,
     {
-        let Self { builder, op } = self;
-        let Builder { dst, src } = builder;
+        self.with_op(MathOp::Add, num)
+    }
+
+    /// Sets subtraction as the operation to perform.
+    #[allow(clippy::should_implement_trait)]
+    pub fn sub<T>(self, num: T) -> Math
+    where
+        T: Into<Num>,
+    {
+        self.with_op(MathOp::Sub, num)
+    }
+
+    fn with_op<T>(self, op: MathOp, num: T) -> Math
+    where
+        T: Into<Num>,
+    {
+        let Self { dst, src } = self;
 
         Math {
             dst,

@@ -1,4 +1,5 @@
 use core::fmt;
+use std::{convert::Infallible, str::FromStr};
 
 use crate::{
     condition::{
@@ -6,26 +7,75 @@ use crate::{
         Condition, Contains, In,
     },
     operand::{Operand, Size},
-    value::Scalar,
+    update::{
+        add::AddValue,
+        set::{
+            if_not_exists::Builder as IfNotExistsBuilder,
+            list_append::Builder as ListAppendBuilder, math::Builder as MathBuilder,
+        },
+        Add, Assign, Delete, IfNotExists, ListAppend, Math, Remove,
+    },
+    value::{self, Scalar, Value},
 };
 
 /// Represents a DynamoDB [attribute name][1]. This will most commonly be used
 /// for [top-level attributes][2].
 ///
-/// Create an instance using the [`name()`] convenience function, or convert
-/// [`From`] a `String` or `&str`.
+/// Anything that can be turned into a `Name` can be turned into a [`Path`].
 ///
-/// When used in an [`Expression`], attribute `Name`s are automatically handled
-/// as [expression attribute names][3], allowing for names that would not
-/// otherwise be permitted by DynamoDB. For example, `foo` would become
-/// something similar to `#0` in the expression, and the name would be in the
-/// `expression_attribute_names`.
+/// When used in an [`Expression`], attribute `Name`s are
+/// automatically handled as [expression attribute names][3], allowing for names
+/// that would not otherwise be permitted by DynamoDB. For example, `foo` would
+/// become something similar to `#0` in the expression, and the name would be in
+/// the `expression_attribute_names`.
 ///
-/// See also: [`Path`]
+/// ```
+/// use dynamodb_expression::{Name, name};
+///
+/// // The `name()` function will turn anything that's `Into<String>` into a `Name`.
+/// let name: Name = name("foo");
+///
+/// // A variety of strings can be turned into a `Name`.
+/// let name: Name = "foo".into();
+/// let name: Name = String::from("foo").into();
+/// let name: Name = (&String::from("foo")).into();
+/// let name: Name = (&"foo").into();
+///
+/// // `Name` also implements `FromStr`, so `parse()` can be used.
+/// let name: Name = "foo".parse().unwrap();
+/// ```
+///
+/// `Name` and `Path` can be converted between each other.
+/// ```
+/// use dynamodb_expression::{Name, path::Path};
+///
+/// // A `Name` can be converted into a `Path`
+/// let name = Name::from("foo");
+/// let path = Path::from(name);
+/// assert_eq!(Path::from("foo"), path);
+///
+/// // A `Path` consisting of a single, unindexed field can be converted into a `Name`.
+/// let path = Path::from("foo");
+/// let name = Name::try_from(path).unwrap();
+/// assert_eq!(Name::from("foo"), name);
+///
+/// // If the `Path` has more elements, or has indexes, it cannot be converted
+/// // and the original `Path` is returned.
+/// let path: Path = "foo[0]".parse().unwrap();
+/// let err = Name::try_from(path.clone()).unwrap_err();
+/// assert_eq!(path, err);
+///
+/// let path: Path = "foo.bar".parse().unwrap();
+/// let err = Name::try_from(path.clone()).unwrap_err();
+/// assert_eq!(path, err);
+/// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.TopLevelAttributes
 /// [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
+/// [`parse()`]: str::parse
+/// [`Expression`]: crate::expression::Expression
+/// [`Path`]: crate::path::Path
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Name {
     pub(crate) name: String,
@@ -130,9 +180,67 @@ impl Name {
     }
 }
 
+// This block is for methods related to update expressions.
+impl Name {
+    /// For building an update expression. See [`Assign`].
+    pub fn assign<T>(self, value: T) -> Assign
+    where
+        T: Into<Value>,
+    {
+        Assign::new(self, value)
+    }
+
+    /// Sets this as the destination in a [`Math`] builder for an update expression.
+    pub fn math(self) -> MathBuilder {
+        Math::builder(self)
+    }
+
+    /// Sets this as the destination in a [`ListAppend`] builder for an update expression.
+    pub fn list_append(self) -> ListAppendBuilder {
+        ListAppend::builder(self)
+    }
+
+    /// Sets this as the destination in an [`IfNotExists`] builder for an update expression.
+    pub fn if_not_exists(self) -> IfNotExistsBuilder {
+        IfNotExists::builder(self)
+    }
+
+    /// For building an update expression. See [`Delete`].
+    pub fn delete<T>(self, set: T) -> Delete
+    where
+        T: Into<value::Set>,
+    {
+        Delete::new(self, set)
+    }
+
+    /// For building an update expression. See [`Add`].
+    #[allow(clippy::should_implement_trait)]
+    pub fn add<T>(self, value: T) -> Add
+    where
+        T: Into<AddValue>,
+    {
+        Add::new(self, value)
+    }
+
+    /// For building an update expression. See [`Remove`].
+    ///
+    /// [`Remove`]: crate::update::Remove
+    pub fn remove(self) -> Remove {
+        self.into()
+    }
+}
+
 impl fmt::Display for Name {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.name)
+    }
+}
+
+impl FromStr for Name {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::from(s))
     }
 }
 

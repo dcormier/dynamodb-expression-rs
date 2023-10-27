@@ -5,11 +5,11 @@ use crate::{
     value::{List, ValueOrRef},
 };
 
-/// Represents an expression to [append elements to a list][1].
+/// Represents an update expression to [append elements to a list][1].
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Append {
+pub struct ListAppend {
     /// The field to set the newly combined list to
     // TODO: Name or Path?
     pub(crate) dst: Path,
@@ -25,7 +25,7 @@ pub struct Append {
     order: Order,
 }
 
-impl Append {
+impl ListAppend {
     pub fn builder<T>(dst: T) -> Builder
     where
         T: Into<Path>,
@@ -38,7 +38,7 @@ impl Append {
     }
 }
 
-impl fmt::Display for Append {
+impl fmt::Display for ListAppend {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let Self {
             dst,
@@ -112,7 +112,7 @@ impl Builder {
     /// Sets the new value(s) to concatenate with the specified field.
     ///
     /// Builds the [`Append`] instance.
-    pub fn list<T>(self, list: T) -> Append
+    pub fn list<T>(self, list: T) -> ListAppend
     where
         T: Into<List>,
     {
@@ -122,7 +122,7 @@ impl Builder {
             order: op,
         } = self;
 
-        Append {
+        ListAppend {
             dst,
             src,
             order: op.unwrap_or_default(),
@@ -135,26 +135,32 @@ impl Builder {
 mod test {
     use pretty_assertions::assert_str_eq;
 
-    use super::Append;
+    use super::ListAppend;
 
     #[test]
     fn display() {
-        let append = Append::builder("foo").src("bar").after().list(["a", "b"]);
+        let append = ListAppend::builder("foo")
+            .src("bar")
+            .after()
+            .list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(bar, ["a", "b"])"#, append.to_string());
 
-        let append = Append::builder("foo").src("bar").list(["a", "b"]);
+        let append = ListAppend::builder("foo").src("bar").list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(bar, ["a", "b"])"#, append.to_string());
 
-        let append = Append::builder("foo").src("bar").before().list(["a", "b"]);
+        let append = ListAppend::builder("foo")
+            .src("bar")
+            .before()
+            .list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(["a", "b"], bar)"#, append.to_string());
 
-        let append = Append::builder("foo").after().list(["a", "b"]);
+        let append = ListAppend::builder("foo").after().list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(foo, ["a", "b"])"#, append.to_string());
 
-        let append = Append::builder("foo").list(["a", "b"]);
+        let append = ListAppend::builder("foo").list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(foo, ["a", "b"])"#, append.to_string());
 
-        let append = Append::builder("foo").before().list(["a", "b"]);
+        let append = ListAppend::builder("foo").before().list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(["a", "b"], foo)"#, append.to_string());
     }
 }

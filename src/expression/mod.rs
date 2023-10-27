@@ -238,7 +238,7 @@ impl Expression {
 
                             action.into()
                         }
-                        SetAction::Append(mut action) => {
+                        SetAction::ListAppend(mut action) => {
                             action.dst = self.process_path(action.dst);
                             action.src = action.src.map(|src| self.process_path(src));
                             action.list = self.process_value(action.list).into();
@@ -267,13 +267,13 @@ impl Expression {
                 update.into()
             }
             Update::Add(mut update) => {
-                update.name = self.process_name(update.name);
+                update.path = self.process_path(update.path);
                 update.value = self.process_value(update.value).into();
 
                 update.into()
             }
             Update::Delete(mut update) => {
-                update.path = self.process_name(update.path);
+                update.path = self.process_path(update.path);
                 update.subset = self.process_value(update.subset).into();
 
                 update.into()
@@ -282,8 +282,8 @@ impl Expression {
     }
 
     fn process_path(&mut self, mut path: Path) -> Path {
-        path.path = path
-            .path
+        path.elements = path
+            .elements
             .into_iter()
             .map(|elem| match elem {
                 Element::Name(name) => self.process_name(name).into(),
