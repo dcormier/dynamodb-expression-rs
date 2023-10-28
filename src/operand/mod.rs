@@ -6,8 +6,7 @@ use core::fmt;
 
 use crate::{
     condition::{Between, Comparator, Comparison, Condition, In},
-    name::Name,
-    path::Path,
+    path::{Name, Path},
     value::{Ref, Scalar, ValueOrRef},
 };
 

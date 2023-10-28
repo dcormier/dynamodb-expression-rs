@@ -11,9 +11,8 @@ use crate::{
         Condition, Contains, In, Not, Or, Parenthetical,
     },
     key::KeyCondition,
-    name::Name,
     operand::{Operand, OperandType, Size},
-    path::{Element, Path},
+    path::{Element, Name, Path},
     update::{set::SetAction, Update},
     value::{Ref, Value, ValueOrRef},
 };

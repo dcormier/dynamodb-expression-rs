@@ -216,12 +216,18 @@ pub(crate) mod test {
 
     /// `a > b`
     pub fn cmp_a_gt_b() -> Condition {
-        Condition::Comparison(greater_than(Path::from("a"), Path::from("b")))
+        Condition::Comparison(greater_than(
+            "a".parse::<Path>().unwrap(),
+            "b".parse::<Path>().unwrap(),
+        ))
     }
 
     /// `c < d`
     pub fn cmp_c_lt_d() -> Condition {
-        Condition::Comparison(less_than(Path::from("c"), Path::from("d")))
+        Condition::Comparison(less_than(
+            "c".parse::<Path>().unwrap(),
+            "d".parse::<Path>().unwrap(),
+        ))
     }
 
     #[test]

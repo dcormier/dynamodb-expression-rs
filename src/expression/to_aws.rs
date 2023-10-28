@@ -354,6 +354,8 @@ impl Expression {
 
 #[cfg(test)]
 mod test {
+    use core::str::FromStr;
+
     use pretty_assertions::{assert_eq, assert_ne};
 
     use crate::{key::key, num_value, path::Path, Comparator::*};
@@ -363,9 +365,11 @@ mod test {
     #[test]
     fn scan_input() {
         let expression = Expression::new_with_filter(
-            Path::from("name")
+            "name"
+                .parse::<Path>()
+                .unwrap()
                 .begins_with("prefix")
-                .and(Path::from("age").comparison(Ge, num_value(25))),
+                .and("age".parse::<Path>().unwrap().comparison(Ge, num_value(25))),
         )
         .with_projection(["name", "age"]);
         assert_eq!(None, expression.condition);
@@ -393,12 +397,16 @@ mod test {
     #[test]
     fn query_input() {
         let expression = Expression::new_with_filter(
-            Path::from("name")
-                .attribute_exists()
-                .and(Path::from("age").comparison(Ge, num_value(2.5))),
+            "name".parse::<Path>().unwrap().attribute_exists().and(
+                "age"
+                    .parse::<Path>()
+                    .unwrap()
+                    .comparison(Ge, num_value(2.5)),
+            ),
         )
         .with_projection(["name", "age"])
-        .with_key_condition(key("id").equal(num_value(42)));
+        // TODO: Perhaps a method on `Path` to construct a key condition?
+        .with_key_condition(key(Path::from_str("id").unwrap()).equal(num_value(42)));
         assert_eq!(None, expression.condition);
 
         let filter = expression
@@ -424,9 +432,11 @@ mod test {
     #[test]
     fn update() {
         let expression = Expression::new_with_condition(
-            Path::from("name")
+            "name"
+                .parse::<Path>()
+                .unwrap()
                 .attribute_exists()
-                .and(Path::from("age").comparison(Ge, num_value(25))),
+                .and("age".parse::<Path>().unwrap().comparison(Ge, num_value(25))),
         );
 
         let condition = expression

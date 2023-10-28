@@ -1,6 +1,13 @@
+mod element;
+mod name;
+
+pub use self::{
+    element::{Element, IndexedField, Indexes},
+    name::{name, Name},
+};
+
 use core::{
     fmt::{self, Write},
-    mem,
     str::FromStr,
 };
 
@@ -21,7 +28,7 @@ use crate::{
         Add, Assign, Delete, IfNotExists, ListAppend, Math, Remove,
     },
     value::{self, Scalar, Value},
-    Comparator, Name,
+    Comparator,
 };
 
 /// Represents a DynamoDB [document path][1]. For example, `foo[3][7].bar[2].baz`.
@@ -40,23 +47,17 @@ use crate::{
 ///
 /// Each of these are ways to create a `Path` instance for `foo[3][7].bar[2].baz`.
 /// ```
-/// use dynamodb_expression::{Name, path::{Element, Path}};
+/// use dynamodb_expression::{path::{Element, Path}};
 /// # use pretty_assertions::assert_eq;
-///
-/// // Anything that can be converted into a `Name` can be turned into a `Path`
-/// let path: Path = "foo".into();
-/// let path: Path = String::from("foo").into();
-/// let path: Path = (&String::from("foo")).into();
-/// let path: Path = (&"foo").into();
-///
+/// #
 /// # let expected: Path = [
-/// #     Element::from(("foo", [3, 7])),
-/// #     Element::from(("bar", 2)),
-/// #     Element::from("baz"),
+/// #     Element::indexed_field("foo", [3, 7]),
+/// #     Element::indexed_field("bar", 2),
+/// #     Element::name("baz"),
 /// # ]
 /// # .into_iter()
 /// # .collect();
-/// #
+///
 /// // A `Path` can be parsed from a string
 /// let path: Path = "foo[3][7].bar[2].baz".parse().unwrap();
 /// # assert_eq!(expected, path);
@@ -71,9 +72,9 @@ use crate::{
 ///     .collect();
 /// # assert_eq!(expected, path);
 ///
-/// // `Element` can be converted into from strings (`String`, `&String`, `&str`,
-/// // `&&str`; just trust me on that last one), as well as string/index tuples.
-/// // In this case, an "index" is an array, slice, `Vec` of, or a single `u32`.
+/// // `Element` can be converted into from `Into<String>`, as well as
+/// // string/index tuples. In this case, an "index" is an array, slice,
+/// // `Vec` of, or a single `u32`.
 /// let path: Path = [
 ///     Element::from(("foo", [3, 7])),
 ///     Element::from(("bar", 2)),
@@ -106,17 +107,28 @@ use crate::{
 /// # assert_eq!(expected, path);
 /// ```
 ///
+/// If you have a document path where an [attribute name includes a period][3]
+/// (`.`), you will need to explicitly create the [`Element`]s for that `Path`.
+/// ```
+/// # use dynamodb_expression::path::{Element, Path};
+/// # use pretty_assertions::assert_eq;
+/// let path: Path = Element::name("foo.bar").into();
+/// # assert_eq!(Path::from_iter([Element::name("foo.bar")]), path);
+/// let path = Path::from_iter([Element::indexed_field("foo", 3), Element::name("bar.baz")]);
+/// # assert_eq!("foo[3].bar.baz", path.to_string());
+/// ```
+///
 /// `Name` and `Path` can be converted between each other.
 /// ```
-/// use dynamodb_expression::{Name, path::Path};
+/// use dynamodb_expression::path::{Element, Name, Path};
 ///
 /// // A `Name` can be converted into a `Path`
 /// let name = Name::from("foo");
 /// let path = Path::from(name);
-/// assert_eq!(Path::from("foo"), path);
+/// assert_eq!(Path::from(Element::name("foo")), path);
 ///
 /// // A `Path` consisting of a single, unindexed field can be converted into a `Name`.
-/// let path = Path::from("foo");
+/// let path: Path = "foo".parse().unwrap();
 /// let name = Name::try_from(path).unwrap();
 /// assert_eq!(Name::from("foo"), name);
 ///
@@ -133,6 +145,7 @@ use crate::{
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
+/// [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.TopLevelAttributes
 /// [`Expression`]: crate::expression::Expression
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Path {
@@ -334,7 +347,7 @@ impl FromStr for Path {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self {
-            elements: s.split('.').map(str::parse).try_collect()?,
+            elements: s.split('.').map(Element::from_str).try_collect()?,
         })
     }
 }
@@ -365,269 +378,18 @@ impl TryFrom<Path> for Name {
 #[error("invalid document path")]
 pub struct PathParseError;
 
-/// Represents one element of a DynamoDB document [`Path`]. For example, in
-/// `foo[3][7].bar[2].baz`, the `Element`s would be `foo[3][7]`, `bar[2]`, and
-/// `baz`.
-///
-/// See [`Path`] for more.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Element {
-    Name(Name),
-    IndexedField(IndexedField),
-}
-
-impl Element {
-    pub fn name<N>(name: N) -> Self
-    where
-        N: Into<Name>,
-    {
-        Self::Name(name.into())
-    }
-
-    pub fn indexed_field<N, I>(name: N, indexes: I) -> Self
-    where
-        N: Into<Name>,
-        I: Indexes,
-    {
-        let indexes = indexes.into_indexes();
-        if indexes.is_empty() {
-            Self::name(name)
-        } else {
-            Self::IndexedField(IndexedField {
-                name: name.into(),
-                indexes: indexes.into_indexes(),
-            })
-        }
-    }
-}
-
-impl fmt::Display for Element {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Element::Name(name) => name.fmt(f),
-            Element::IndexedField(field_index) => field_index.fmt(f),
-        }
-    }
-}
-
-impl FromStr for Element {
-    type Err = PathParseError;
-
-    fn from_str(input: &str) -> Result<Self, Self::Err> {
-        let mut remaining = input;
-        let mut name = None;
-        let mut indexes = Vec::new();
-        while !remaining.is_empty() {
-            let open = remaining.find('[');
-            let close = remaining.find(']');
-
-            match (open, close) {
-                (None, None) => {
-                    if name.is_some() {
-                        // `bar` in `foo[0]bar`
-                        return Err(PathParseError);
-                    }
-
-                    // No more braces. Consume the rest of the string.
-                    name = Some(mem::take(&mut remaining));
-                    break;
-                }
-                (None, Some(_close)) => return Err(PathParseError),
-                (Some(_open), None) => return Err(PathParseError),
-                (Some(open), Some(close)) => {
-                    if open >= close {
-                        // `foo][`
-                        return Err(PathParseError);
-                    }
-
-                    if name.is_none() {
-                        if open > 0 {
-                            name = Some(&remaining[..open]);
-                        } else {
-                            // The string starts with a '['. E.g.:
-                            // `[]foo`
-                            return Err(PathParseError);
-                        }
-                    } else if open > 0 {
-                        // We've already got the name but we just found another after a closing bracket.
-                        // E.g, `bar[0]` in `foo[7]bar[0]`
-                        return Err(PathParseError);
-                    }
-
-                    let index: u32 = remaining[open + 1..close]
-                        .parse()
-                        .map_err(|_| PathParseError)?;
-                    indexes.push(index);
-
-                    remaining = &remaining[close + 1..];
-                }
-            }
-        }
-
-        Ok(if indexes.is_empty() {
-            Self::Name(input.into())
-        } else {
-            if !remaining.is_empty() {
-                // Shouldn't be able to get there.
-                // If we do, something above changed and there's a bug.
-                return Err(PathParseError);
-            }
-
-            let name = name.ok_or(PathParseError)?;
-
-            Self::IndexedField(IndexedField {
-                name: name.into(),
-                indexes,
-            })
-        })
-    }
-}
-
-impl From<IndexedField> for Element {
-    fn from(value: IndexedField) -> Self {
-        if value.indexes.is_empty() {
-            Self::Name(value.name)
-        } else {
-            Self::IndexedField(value)
-        }
-    }
-}
-
-impl<N, P> From<(N, P)> for Element
-where
-    N: Into<Name>,
-    P: Indexes,
-{
-    fn from((name, indexes): (N, P)) -> Self {
-        let indexes = indexes.into_indexes();
-        if indexes.is_empty() {
-            Self::Name(name.into())
-        } else {
-            Self::IndexedField((name, indexes).into())
-        }
-    }
-}
-
-// This would be ideal, but I think trait specialization is needed for this to be workable.
-// impl<T> From<T> for Element
-// where
-//     T: Into<String>,
-// {
-//     fn from(name: T) -> Self {
-//         Self { name: name.into() }
-//     }
-// }
-
-impl From<Name> for Element {
-    fn from(name: Name) -> Self {
-        Self::Name(name)
-    }
-}
-
-impl From<String> for Element {
-    fn from(name: String) -> Self {
-        Self::Name(name.into())
-    }
-}
-
-impl From<&String> for Element {
-    fn from(name: &String) -> Self {
-        Self::Name(name.into())
-    }
-}
-
-impl From<&str> for Element {
-    fn from(name: &str) -> Self {
-        Self::Name(name.into())
-    }
-}
-
-impl From<&&str> for Element {
-    fn from(name: &&str) -> Self {
-        Self::Name(name.into())
-    }
-}
-
-/// Represents a type of [`Element`] of a DynamoDB document [`Path`] that is a
-/// name with one or more indexes. For example, in `foo[3][7].bar[2].baz`, the
-/// elements `foo[3][7]` and `bar[2]` would both be represented as an
-/// `IndexedField`.
-///
-/// See [`Path`] for more.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct IndexedField {
-    pub(crate) name: Name,
-    indexes: Vec<u32>,
-}
-
-impl fmt::Display for IndexedField {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.name.fmt(f)?;
-        self.indexes
-            .iter()
-            .try_for_each(|index| write!(f, "[{}]", index))
-    }
-}
-
-impl<N, P> From<(N, P)> for IndexedField
-where
-    N: Into<Name>,
-    P: Indexes,
-{
-    fn from((name, indexes): (N, P)) -> Self {
-        Self {
-            name: name.into(),
-            indexes: indexes.into_indexes(),
-        }
-    }
-}
-
-pub trait Indexes {
-    fn into_indexes(self) -> Vec<u32>;
-}
-
-impl Indexes for u32 {
-    fn into_indexes(self) -> Vec<u32> {
-        vec![self]
-    }
-}
-
-impl Indexes for Vec<u32> {
-    fn into_indexes(self) -> Vec<u32> {
-        self
-    }
-}
-
-impl Indexes for &[u32] {
-    fn into_indexes(self) -> Vec<u32> {
-        self.to_vec()
-    }
-}
-
-impl<const N: usize> Indexes for [u32; N] {
-    fn into_indexes(self) -> Vec<u32> {
-        self.to_vec()
-    }
-}
-
-impl<const N: usize> Indexes for &[u32; N] {
-    fn into_indexes(self) -> Vec<u32> {
-        self.to_vec()
-    }
-}
-
 #[cfg(test)]
 mod test {
     use pretty_assertions::{assert_eq, assert_str_eq};
 
     use crate::{num_value, Comparator};
 
-    use super::{Element, IndexedField, Path, PathParseError};
+    use super::{Element, IndexedField, Name, Path, PathParseError};
 
     #[test]
     fn parse_path() {
         let path: Path = "foo".parse().unwrap();
-        assert_eq!(Path::from("foo"), path);
+        assert_eq!(Path::from(Name::from("foo")), path);
 
         let path: Path = "foo[0]".parse().unwrap();
         assert_eq!(Path::from(("foo", 0)), path);
@@ -639,7 +401,7 @@ mod test {
         assert_eq!(Path::from(("foo", [42, 37, 9])), path);
 
         let path: Path = "foo.bar".parse().unwrap();
-        assert_eq!(Path::from_iter(["foo", "bar"]), path);
+        assert_eq!(Path::from_iter(["foo", "bar"].map(Name::from)), path);
 
         let path: Path = "foo[42].bar".parse().unwrap();
         assert_eq!(
@@ -727,7 +489,7 @@ mod test {
 
     #[test]
     fn display_path() {
-        let path: Path = ["foo", "bar"].into_iter().collect();
+        let path: Path = ["foo", "bar"].into_iter().map(Name::from).collect();
         assert_str_eq!("foo.bar", path.to_string());
 
         let path = Path::from_iter([Element::name("foo"), Element::indexed_field("bar", 42)]);
@@ -744,7 +506,8 @@ mod test {
     fn size() {
         assert_str_eq!(
             "size(a) = 0",
-            Path::from("a")
+            "a".parse::<Path>()
+                .unwrap()
                 .size()
                 .comparison(Comparator::Eq, num_value(0))
                 .to_string()

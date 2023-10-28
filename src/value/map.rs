@@ -6,7 +6,7 @@ use core::{
 use aws_sdk_dynamodb::types::AttributeValue;
 use itermap::IterMap;
 
-use crate::name::Name;
+use crate::path::Name;
 
 use super::Value;
 
