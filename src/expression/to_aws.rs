@@ -354,11 +354,9 @@ impl Expression {
 
 #[cfg(test)]
 mod test {
-    use core::str::FromStr;
-
     use pretty_assertions::{assert_eq, assert_ne};
 
-    use crate::{key::key, num_value, path::Path};
+    use crate::{key::Key, num_value, path::Path};
 
     use super::Expression;
 
@@ -406,8 +404,7 @@ mod test {
             ),
         )
         .with_projection(["name", "age"])
-        // TODO: Perhaps a method on `Path` to construct a key condition?
-        .with_key_condition(key(Path::from_str("id").unwrap()).equal(num_value(42)));
+        .with_key_condition(Key::from("id").equal(num_value(42)));
         assert_eq!(None, expression.condition);
 
         let filter = expression

@@ -12,7 +12,7 @@ use pretty_assertions::{assert_eq, assert_ne};
 
 use dynamodb_expression::{
     expression::Expression,
-    key::key,
+    key::Key,
     path::Path,
     string_value,
     update::{Remove, Set, SetAction},
@@ -259,7 +259,7 @@ fn item_key(item: &HashMap<String, AttributeValue>) -> HashMap<String, Attribute
 async fn get_item(
     config: &Config,
 ) -> Result<Option<HashMap<String, AttributeValue>>, SdkError<QueryError>> {
-    Expression::new_with_key_condition(key(ATTR_ID).equal(string_value(ITEM_ID)))
+    Expression::new_with_key_condition(Key::from(ATTR_ID).equal(string_value(ITEM_ID)))
         .query(config.client().await)
         .table_name(config.table_name.clone())
         .send()

@@ -18,6 +18,7 @@ use crate::{
         attribute_type::Type, equal, greater_than, greater_than_or_equal, less_than,
         less_than_or_equal, not_equal, AttributeType, BeginsWith, Between, Condition, Contains, In,
     },
+    key::Key,
     operand::{Operand, Size},
     update::{
         add::AddValue,
@@ -345,6 +346,15 @@ impl Path {
     ///
     /// [`Remove`]: crate::update::Remove
     pub fn remove(self) -> Remove {
+        self.into()
+    }
+}
+
+impl Path {
+    /// Turns this [`Path`] into a [`Key`], for building a [key condition expression][1].
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
+    pub fn key(self) -> Key {
         self.into()
     }
 }

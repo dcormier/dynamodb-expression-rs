@@ -10,7 +10,11 @@ use crate::{
 
 /// Used to build a [key condition expression][1].
 ///
+/// An instance can be constructed using the [`Path::key`] method, or the
+/// [`From<Into<Path>>` implementation].
+///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
+/// [`From<Into<Path>>` implementation]: Key::from
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Key {
     // TODO: Is `Path` the right thing, here?
@@ -87,18 +91,17 @@ impl<T> From<T> for Key
 where
     T: Into<Path>,
 {
+    /// Convert something that implements `Into<Path>` into a [`Key`].
     fn from(path: T) -> Self {
         Self { path: path.into() }
     }
 }
 
-pub fn key<T>(path: T) -> Key
-where
-    T: Into<Path>,
-{
-    Key::from(path.into())
-}
-
+/// Represents a DynamoDB [key condition expression].
+///
+/// See also: [`Key`]
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct KeyCondition {
     pub(crate) condition: Condition,

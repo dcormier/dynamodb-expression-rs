@@ -7,7 +7,7 @@ use aws_sdk_dynamodb::{
 use pretty_assertions::assert_eq;
 
 use dynamodb_expression::{
-    expression::Expression, key::key, num_value, path::Path, ref_value, string_value, Comparator::*,
+    expression::Expression, key::Key, num_value, path::Path, ref_value, string_value, Comparator::*,
 };
 
 #[test]
@@ -88,7 +88,7 @@ fn query() {
             .and(Path::from("age").greater_than_or_equal(num_value(2.5))),
     )
     .with_projection(["name", "age"])
-    .with_key_condition(key("id").equal(num_value(42)))
+    .with_key_condition(Key::from("id").equal(num_value(42)))
     .to_query_input_builder()
     .table_name("the_table")
     .build()
