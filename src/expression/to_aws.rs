@@ -358,18 +358,19 @@ mod test {
 
     use pretty_assertions::{assert_eq, assert_ne};
 
-    use crate::{key::key, num_value, path::Path, Comparator::*};
+    use crate::{key::key, num_value, path::Path};
 
     use super::Expression;
 
     #[test]
     fn scan_input() {
         let expression = Expression::new_with_filter(
-            "name"
-                .parse::<Path>()
-                .unwrap()
-                .begins_with("prefix")
-                .and("age".parse::<Path>().unwrap().comparison(Ge, num_value(25))),
+            "name".parse::<Path>().unwrap().begins_with("prefix").and(
+                "age"
+                    .parse::<Path>()
+                    .unwrap()
+                    .greater_than_or_equal(num_value(25)),
+            ),
         )
         .with_projection(["name", "age"]);
         assert_eq!(None, expression.condition);
@@ -401,7 +402,7 @@ mod test {
                 "age"
                     .parse::<Path>()
                     .unwrap()
-                    .comparison(Ge, num_value(2.5)),
+                    .greater_than_or_equal(num_value(2.5)),
             ),
         )
         .with_projection(["name", "age"])
@@ -432,11 +433,12 @@ mod test {
     #[test]
     fn update() {
         let expression = Expression::new_with_condition(
-            "name"
-                .parse::<Path>()
-                .unwrap()
-                .attribute_exists()
-                .and("age".parse::<Path>().unwrap().comparison(Ge, num_value(25))),
+            "name".parse::<Path>().unwrap().attribute_exists().and(
+                "age"
+                    .parse::<Path>()
+                    .unwrap()
+                    .greater_than_or_equal(num_value(25)),
+            ),
         );
 
         let condition = expression

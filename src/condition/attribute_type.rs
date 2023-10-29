@@ -2,7 +2,7 @@ use core::fmt;
 
 use crate::path::Path;
 
-/// True if the attribute at the specified `path` is of a particular data type.
+/// True if the value at the specified [`Path`] is of a particular data type.
 ///
 /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

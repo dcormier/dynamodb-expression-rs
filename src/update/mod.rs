@@ -100,6 +100,36 @@ impl From<Set> for Update {
     }
 }
 
+impl From<SetAction> for Update {
+    fn from(value: SetAction) -> Self {
+        Self::Set(value.into())
+    }
+}
+
+impl From<Assign> for Update {
+    fn from(value: Assign) -> Self {
+        Self::Set(value.into())
+    }
+}
+
+impl From<Math> for Update {
+    fn from(value: Math) -> Self {
+        Self::Set(value.into())
+    }
+}
+
+impl From<ListAppend> for Update {
+    fn from(value: ListAppend) -> Self {
+        Self::Set(value.into())
+    }
+}
+
+impl From<IfNotExists> for Update {
+    fn from(value: IfNotExists) -> Self {
+        Self::Set(value.into())
+    }
+}
+
 impl From<Remove> for Update {
     fn from(value: Remove) -> Self {
         Self::Remove(value)

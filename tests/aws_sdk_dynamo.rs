@@ -15,12 +15,12 @@ use dynamodb_expression::{
     key::key,
     path::Path,
     string_value,
-    update::{Remove, Set, Update},
+    update::{Remove, Set, SetAction},
 };
 
 use crate::dynamodb::{
     debug::DebugList,
-    item::{new_item, ATTR_BLOB, ATTR_ID, ATTR_LIST, ATTR_NULL, ATTR_NUM, ATTR_STRING},
+    item::{new_item, ATTR_ID, ATTR_LIST, ATTR_NUM, ATTR_STRING},
     partial_eq::PartialEqItem,
     setup::{clean_table, delete_table},
     Config,
@@ -48,39 +48,34 @@ async fn update() {
     test("update", |config| Box::pin(test_update(config))).await;
 }
 
-/// A name for a field that doesn't exist in generated item from the helper functions.
+/// A name for a field that doesn't exist in generated item from [`new_item`] and [`fresh_item`].
 const ATTR_NEW_FIELD: &str = "new_field";
 
 async fn test_update(config: &Config) {
     let client = config.client().await;
     let item = fresh_item(config).await;
-    let item_key = Some([(ATTR_ID.into(), item[ATTR_ID].clone())].into());
-
     assert_eq!(None, item.get(ATTR_NEW_FIELD));
 
-    let update = Expression::new_with_update(
-        Set::from(Path::from(ATTR_STRING).assign("abcdef"))
-            .and(Path::from(ATTR_NUM).math().sub(3.5))
-            .and(
-                Path::from(ATTR_LIST)
-                    .list_append()
-                    .before()
-                    .list(["A new value at the beginning"]),
-            )
-            // DynamoDB won't let you append to the same list twice in the same update expression.
-            // .and(
-            //     Path::from(ATTR_LIST)
-            //         .list_append()
-            //         .list(["A new value at the end"]),
-            // )
-            .and(
-                Path::from(ATTR_NEW_FIELD)
-                    .if_not_exists()
-                    .value("A new field"),
-            ),
-    )
+    let update = Expression::new_with_update(Set::from_iter([
+        SetAction::from(Path::from(ATTR_STRING).assign("abcdef")),
+        Path::from(ATTR_NUM).math().sub(3.5).into(),
+        Path::from(ATTR_LIST)
+            .list_append()
+            .before()
+            .list(["A new value at the beginning"])
+            .into(),
+        // DynamoDB won't let you append to the same list twice in the same update expression.
+        // Path::from(ATTR_LIST)
+        //     .list_append()
+        //     .list(["A new value at the end"])
+        //     .into(),
+        Path::from(ATTR_NEW_FIELD)
+            .if_not_exists()
+            .value("A new field")
+            .into(),
+    ]))
     .update_item(client)
-    .set_key(item_key.clone());
+    .set_key(item_key(&item).into());
 
     // println!("{:?}", update.as_input());
 
@@ -92,13 +87,13 @@ async fn test_update(config: &Config) {
 
     // Once more to add another item to the end of that list.
     // DynamoDB won't allow both in a single update expression.
-    let after_update = Expression::new_with_update(Update::set(
+    let updated_item = Expression::new_with_update(
         Path::from(ATTR_LIST)
             .list_append()
             .list(["A new value at the end"]),
-    ))
+    )
     .update_item(client)
-    .set_key(item_key.clone())
+    .set_key(item_key(&item).into())
     .table_name(&config.table_name)
     .return_values(ReturnValue::AllNew)
     .send()
@@ -109,31 +104,29 @@ async fn test_update(config: &Config) {
 
     // println!("Got item: {:#?}", DebugItem(&after_update));
 
-    assert_ne!(item.get(ATTR_STRING), after_update.get(ATTR_STRING));
+    assert_ne!(item.get(ATTR_STRING), updated_item.get(ATTR_STRING));
     assert_eq!(
         "abcdef",
-        after_update
+        updated_item
             .get(ATTR_STRING)
             .map(AttributeValue::as_s)
             .expect("Field is missing")
             .expect("That field should be a String"),
         "Assigning a new value to the field didn't work"
     );
-
-    assert_ne!(item.get(ATTR_NUM), after_update.get(ATTR_NUM));
+    assert_ne!(item.get(ATTR_NUM), updated_item.get(ATTR_NUM));
     assert_eq!(
         "38.5",
-        after_update
+        updated_item
             .get(ATTR_NUM)
             .map(AttributeValue::as_n)
             .expect("Field is missing")
             .expect("That field should be a Number"),
         "Subtraction didn't work"
     );
-
     assert_eq!(
         "A new field",
-        after_update
+        updated_item
             .get(ATTR_NEW_FIELD)
             .map(AttributeValue::as_s)
             .expect("Field is missing")
@@ -141,32 +134,42 @@ async fn test_update(config: &Config) {
         "The new field was not added to the item as expected"
     );
 
-    let list = after_update
+    let updated_list = updated_item
         .get(ATTR_LIST)
         .map(AttributeValue::as_l)
         .expect("List is missing")
         .expect("The field should be a list");
     assert_eq!(
+        item.get(ATTR_LIST)
+            .map(AttributeValue::as_l)
+            .expect("List is missing")
+            .expect("The field should be a list")
+            .len()
+            + 2,
+        updated_list.len(),
+        "The list should have had two items added to it"
+    );
+    assert_eq!(
         Some(&AttributeValue::S("A new value at the beginning".into())),
-        list.first(),
+        updated_list.first(),
         "List is missing the new value at the beginning: {:#?}",
-        DebugList(list)
+        DebugList(updated_list)
     );
     assert_eq!(
         Some(&AttributeValue::S("A new value at the end".into())),
-        list.last(),
+        updated_list.last(),
         "List is missing the new value at th end: {:#?}",
-        DebugList(list)
+        DebugList(updated_list)
     );
 
     // Remove those two items we added to the list
     let update = Expression::new_with_update(
-        [(ATTR_LIST, 0), (ATTR_LIST, (list.len() - 1) as u32)]
+        [(ATTR_LIST, 0), (ATTR_LIST, (updated_list.len() - 1) as u32)]
             .into_iter()
             .collect::<Remove>(),
     )
     .update_item(client)
-    .set_key(item_key.clone());
+    .set_key(item_key(&item).into());
 
     println!("{:?}", update.as_input());
 
@@ -191,7 +194,7 @@ async fn test_update(config: &Config) {
         .expect("List is missing")
         .clone();
 
-    assert_eq!(list.len() - 2, list_cleaned.len());
+    assert_eq!(updated_list.len() - 2, list_cleaned.len());
     assert!(
         !list_cleaned.contains(&AttributeValue::S("A new value at the beginning".into())),
         "Value was not removed from the beginning. The list: {:#?}",
@@ -229,7 +232,8 @@ where
     result
 }
 
-/// Deletes the item (if it exists) and inserts a new one. Returns the inserted item.
+/// Deletes the item (if it exists) from [`new_item`] and inserts a new one.
+/// Returns the inserted item.
 async fn fresh_item(config: &Config) -> HashMap<String, AttributeValue> {
     let item = new_item(ITEM_ID);
 
@@ -244,6 +248,11 @@ async fn fresh_item(config: &Config) -> HashMap<String, AttributeValue> {
         .expect("Failed to put item");
 
     item
+}
+
+/// Gets the item key for the given item.
+fn item_key(item: &HashMap<String, AttributeValue>) -> HashMap<String, AttributeValue> {
+    [(ATTR_ID.into(), item[ATTR_ID].clone())].into()
 }
 
 /// Gets the item from the configured table

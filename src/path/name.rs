@@ -13,10 +13,7 @@ use core::fmt;
 /// `expression_attribute_names`.
 ///
 /// ```
-/// use dynamodb_expression::path::{name, Name};
-///
-/// // The `name()` function will turn anything that's `Into<String>` into a `Name`.
-/// let name: Name = name("foo");
+/// use dynamodb_expression::path::Name;
 ///
 /// // A variety of strings can be turned into a `Name`.
 /// let name: Name = "foo".into();
@@ -63,12 +60,4 @@ impl From<&&str> for Name {
     fn from(name: &&str) -> Self {
         Self::from(name.to_owned())
     }
-}
-
-/// A convenience function for creating a [`Name`] instance.
-pub fn name<T>(name: T) -> Name
-where
-    T: Into<String>,
-{
-    name.into().into()
 }

@@ -16,7 +16,7 @@ fn scan_input() {
         .filter_expression(
             Path::from("#name")
                 .begins_with(":prefix")
-                .and(Path::from("#age").comparison(Ge, string_value(":min_age"))),
+                .and(Path::from("#age").greater_than_or_equal(string_value(":min_age"))),
         )
         .expression_attribute_names("#name", "name")
         .expression_attribute_values(":prefix", AttributeValue::S("Wil".into()))
@@ -66,7 +66,7 @@ fn query() {
         .filter_expression(
             Path::from("#0")
                 .attribute_exists()
-                .and(Path::from("#1").comparison(Ge, ref_value("0"))),
+                .and(Path::from("#1").greater_than_or_equal(ref_value("0"))),
         )
         .projection_expression("#0, #1")
         .key_condition_expression("#2 = :1")
@@ -85,7 +85,7 @@ fn query() {
     let qi_3: QueryInput = Expression::new_with_filter(
         Path::from("name")
             .attribute_exists()
-            .and(Path::from("age").comparison(Ge, num_value(2.5))),
+            .and(Path::from("age").greater_than_or_equal(num_value(2.5))),
     )
     .with_projection(["name", "age"])
     .with_key_condition(key("id").equal(num_value(42)))

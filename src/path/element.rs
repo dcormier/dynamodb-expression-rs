@@ -12,7 +12,9 @@ use super::{Name, PathParseError};
 /// in `foo[3][7].bar[2].baz`, the `Element`s would be `foo[3][7]`, `bar[2]`,
 /// and `baz`.
 ///
-/// See [`Path`] for more.
+/// See also: [`Path`]
+///
+/// [`Path`]: crate::path::Path
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Element {
     Name(Name),
@@ -20,6 +22,11 @@ pub enum Element {
 }
 
 impl Element {
+    /// An attribute name element of a document path.
+    ///
+    /// See also: [`Element`], [`Path`]
+    ///
+    /// [`Path`]: crate::path::Path
     pub fn name<N>(name: N) -> Self
     where
         N: Into<Name>,
@@ -27,6 +34,14 @@ impl Element {
         Self::Name(name.into())
     }
 
+    /// An indexed field element of a document path. For example, `foo[3]` or
+    /// `foo[7][4]`
+    ///
+    /// `indexes` here can be a slice, `Vec`, array of, or single `u32`.
+    ///
+    /// See also: [`Element`], [`Path`]
+    ///
+    /// [`Path`]: crate::path::Path
     pub fn indexed_field<N, I>(name: N, indexes: I) -> Self
     where
         N: Into<Name>,
@@ -38,7 +53,7 @@ impl Element {
         } else {
             Self::IndexedField(IndexedField {
                 name: name.into(),
-                indexes: indexes.into_indexes(),
+                indexes,
             })
         }
     }
@@ -50,6 +65,56 @@ impl fmt::Display for Element {
             Element::Name(name) => name.fmt(f),
             Element::IndexedField(field_index) => field_index.fmt(f),
         }
+    }
+}
+
+impl From<IndexedField> for Element {
+    fn from(value: IndexedField) -> Self {
+        if value.indexes.is_empty() {
+            Self::Name(value.name)
+        } else {
+            Self::IndexedField(value)
+        }
+    }
+}
+
+impl<N, I> From<(N, I)> for Element
+where
+    N: Into<Name>,
+    I: Indexes,
+{
+    fn from((name, indexes): (N, I)) -> Self {
+        Self::indexed_field(name, indexes)
+    }
+}
+
+impl From<Name> for Element {
+    fn from(name: Name) -> Self {
+        Self::Name(name)
+    }
+}
+
+impl From<String> for Element {
+    fn from(name: String) -> Self {
+        Self::name(name)
+    }
+}
+
+impl From<&String> for Element {
+    fn from(name: &String) -> Self {
+        Self::name(name)
+    }
+}
+
+impl From<&str> for Element {
+    fn from(name: &str) -> Self {
+        Self::name(name)
+    }
+}
+
+impl From<&&str> for Element {
+    fn from(name: &&str) -> Self {
+        Self::name(name)
     }
 }
 
@@ -127,67 +192,16 @@ impl FromStr for Element {
     }
 }
 
-impl From<IndexedField> for Element {
-    fn from(value: IndexedField) -> Self {
-        if value.indexes.is_empty() {
-            Self::Name(value.name)
-        } else {
-            Self::IndexedField(value)
-        }
-    }
-}
-
-impl<N, P> From<(N, P)> for Element
-where
-    N: Into<Name>,
-    P: Indexes,
-{
-    fn from((name, indexes): (N, P)) -> Self {
-        let indexes = indexes.into_indexes();
-        if indexes.is_empty() {
-            Self::Name(name.into())
-        } else {
-            Self::IndexedField((name, indexes).into())
-        }
-    }
-}
-
-impl From<Name> for Element {
-    fn from(name: Name) -> Self {
-        Self::Name(name)
-    }
-}
-
-impl From<String> for Element {
-    fn from(name: String) -> Self {
-        Self::name(name)
-    }
-}
-
-impl From<&String> for Element {
-    fn from(name: &String) -> Self {
-        Self::name(name)
-    }
-}
-
-impl From<&str> for Element {
-    fn from(name: &str) -> Self {
-        Self::name(name)
-    }
-}
-
-impl From<&&str> for Element {
-    fn from(name: &&str) -> Self {
-        Self::name(name)
-    }
-}
-
 /// Represents a type of [`Element`] of a DynamoDB document [`Path`] that is a
-/// name with one or more indexes. For example, in `foo[3][7].bar[2].baz`, the
-/// elements `foo[3][7]` and `bar[2]` would both be represented as an
+/// [`Name`] with one or more indexes. For example, in `foo[3][7].bar[2].baz`,
+/// the elements `foo[3][7]` and `bar[2]` would both be represented as an
 /// `IndexedField`.
 ///
-/// See [`Path`] for more.
+/// Created via `Element::from` and [`Element::indexed_field`].
+///
+/// See also: [`Element`], [`Path`]
+///
+/// [`Path`]: crate::path::Path
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IndexedField {
     pub(crate) name: Name,
@@ -203,19 +217,11 @@ impl fmt::Display for IndexedField {
     }
 }
 
-impl<N, P> From<(N, P)> for IndexedField
-where
-    N: Into<Name>,
-    P: Indexes,
-{
-    fn from((name, indexes): (N, P)) -> Self {
-        Self {
-            name: name.into(),
-            indexes: indexes.into_indexes(),
-        }
-    }
-}
-
+/// Used for [`IndexedField`]. A slice, `Vec`, array of, or single `u32`.
+///
+/// See also: [`Element`], [`Path`]
+///
+/// [`Path`]: crate::path::Path
 pub trait Indexes {
     fn into_indexes(self) -> Vec<u32>;
 }

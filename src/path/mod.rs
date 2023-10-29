@@ -3,7 +3,7 @@ mod name;
 
 pub use self::{
     element::{Element, IndexedField, Indexes},
-    name::{name, Name},
+    name::Name,
 };
 
 use core::{
@@ -15,8 +15,8 @@ use itertools::Itertools;
 
 use crate::{
     condition::{
-        attribute_type::Type, AttributeType, BeginsWith, Between, Comparison, Condition, Contains,
-        In,
+        attribute_type::Type, equal, greater_than, greater_than_or_equal, less_than,
+        less_than_or_equal, not_equal, AttributeType, BeginsWith, Between, Condition, Contains, In,
     },
     operand::{Operand, Size},
     update::{
@@ -28,14 +28,13 @@ use crate::{
         Add, Assign, Delete, IfNotExists, ListAppend, Math, Remove,
     },
     value::{self, Scalar, Value},
-    Comparator,
 };
 
 /// Represents a DynamoDB [document path][1]. For example, `foo[3][7].bar[2].baz`.
 ///
-/// Anything that can be turned into a `Name` can be turned into a [`Path`]
+/// Anything that can be turned into a [`Name`] can be turned into a [`Path`]
 ///
-/// When used in an [`Expression`], attribute names in a `Path` are
+/// When used in an [`Expression`], attribute names in a [`Path`] are
 /// automatically handled as [expression attribute names][2], allowing for names
 /// that would not otherwise be permitted by DynamoDB. For example,
 /// `foo[3][7].bar[2].baz` would become something similar to `#0[3][7].#1[2].#2`,
@@ -45,7 +44,7 @@ use crate::{
 ///
 /// # Examples
 ///
-/// Each of these are ways to create a `Path` instance for `foo[3][7].bar[2].baz`.
+/// Each of these are ways to create a [`Path`] instance for `foo[3][7].bar[2].baz`.
 /// ```
 /// use dynamodb_expression::{path::{Element, Path}};
 /// # use pretty_assertions::assert_eq;
@@ -112,8 +111,11 @@ use crate::{
 /// ```
 /// # use dynamodb_expression::path::{Element, Path};
 /// # use pretty_assertions::assert_eq;
-/// let path: Path = Element::name("foo.bar").into();
+/// // If the field name is `foo.bar`:
+/// let path = Path::from(Element::name("foo.bar"));
 /// # assert_eq!(Path::from_iter([Element::name("foo.bar")]), path);
+///
+/// // If the item at `foo[3]` has a field named `bar.baz`:
 /// let path = Path::from_iter([Element::indexed_field("foo", 3), Element::name("bar.baz")]);
 /// # assert_eq!("foo[3].bar.baz", path.to_string());
 /// ```
@@ -154,24 +156,69 @@ pub struct Path {
 
 /// Methods relating to building condition and filter expressions.
 impl Path {
-    /// Compare two values.
+    /// Check if the value at this [`Path`] is equal to the given value.
     ///
-    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
-    // TODO: Operator-specific methods instead of this.
-    pub fn comparison<R>(self, cmp: Comparator, right: R) -> Condition
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    pub fn equal<T>(self, right: T) -> Condition
     where
-        R: Into<Operand>,
+        T: Into<Operand>,
     {
-        Condition::Comparison(Comparison {
-            left: self.into(),
-            cmp,
-            right: right.into(),
-        })
+        equal(self, right).into()
+    }
+
+    /// Check if the value at this [`Path`] is not equal to the given value.
+    ///
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    pub fn not_equal<T>(self, right: T) -> Condition
+    where
+        T: Into<Operand>,
+    {
+        not_equal(self, right).into()
+    }
+
+    /// Check if the value at this [`Path`] is greater than the given value.
+    ///
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    pub fn greater_than<T>(self, right: T) -> Condition
+    where
+        T: Into<Operand>,
+    {
+        greater_than(self, right).into()
+    }
+
+    /// Check if the value at this [`Path`] is greater than or equal to the given value.
+    ///
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    pub fn greater_than_or_equal<T>(self, right: T) -> Condition
+    where
+        T: Into<Operand>,
+    {
+        greater_than_or_equal(self, right).into()
+    }
+
+    /// Check if the value at this [`Path`] is less than the given value.
+    ///
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    pub fn less_than<T>(self, right: T) -> Condition
+    where
+        T: Into<Operand>,
+    {
+        less_than(self, right).into()
+    }
+
+    /// Check if the value at this [`Path`] is less than or equal to the given value.
+    ///
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    pub fn less_than_or_equal<T>(self, right: T) -> Condition
+    where
+        T: Into<Operand>,
+    {
+        less_than_or_equal(self, right).into()
     }
 
     /// `self BETWEEN b AND c` - true if `self` is greater than or equal to `b`, and less than or equal to `c`.
     ///
-    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
     pub fn between<L, U>(self, lower: L, upper: U) -> Condition
     where
         L: Into<Operand>,
@@ -188,7 +235,7 @@ impl Path {
     ///
     /// The list can contain up to 100 values. It must have at least 1.
     ///
-    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
     pub fn in_<I, T>(self, items: I) -> Condition
     where
         I: IntoIterator<Item = T>,
@@ -199,28 +246,28 @@ impl Path {
 
     /// True if the item contains the attribute specified by `path`.
     ///
-    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn attribute_exists(self) -> Condition {
         Condition::AttributeExists(self.into())
     }
 
     /// True if the attribute specified by `path` does not exist in the item.
     ///
-    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn attribute_not_exists(self) -> Condition {
         Condition::AttributeNotExists(self.into())
     }
 
     /// True if the attribute at the specified `path` is of a particular data type.
     ///
-    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn attribute_type(self, attribute_type: Type) -> Condition {
         AttributeType::new(self, attribute_type).into()
     }
 
     /// True if the attribute specified by `path` begins with a particular substring.
     ///
-    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn begins_with<T>(self, prefix: T) -> Condition
     where
         T: Into<String>,
@@ -236,7 +283,7 @@ impl Path {
     /// The operand must be a `String` if the attribute specified by path is a `String`.
     /// If the attribute specified by path is a `Set`, the operand must be the set's element type.
     ///
-    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn contains<V>(self, operand: V) -> Condition
     where
         V: Into<Scalar>,
@@ -246,7 +293,7 @@ impl Path {
 
     /// Returns a number representing an attribute's size.
     ///
-    /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn size(self) -> Size {
         self.into()
     }
@@ -356,7 +403,7 @@ impl TryFrom<Path> for Name {
     type Error = Path;
 
     /// If the [`Path`] is just a single [`Name`] element, this will return `Ok`
-    /// with that `Name`. Otherwise, the original `Path` is returned in the `Err`.
+    /// with that [`Name`]. Otherwise, the original [`Path`] is returned in the `Err`.
     fn try_from(path: Path) -> Result<Self, Self::Error> {
         let element: [_; 1] = path
             .elements
@@ -373,7 +420,7 @@ impl TryFrom<Path> for Name {
     }
 }
 
-/// A [`Path`] (or path [`Element`] of a path) failed to parse.
+/// A [`Path`] (or [`Element`] of a path) failed to parse.
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 #[error("invalid document path")]
 pub struct PathParseError;
@@ -384,7 +431,7 @@ mod test {
 
     use crate::{num_value, Comparator};
 
-    use super::{Element, IndexedField, Name, Path, PathParseError};
+    use super::{Element, Name, Path, PathParseError};
 
     #[test]
     fn parse_path() {
@@ -459,7 +506,6 @@ mod test {
     /// Demonstration/proof of how a `Path` can be expressed to prove usability.
     #[test]
     fn express_path() {
-        let _: IndexedField = ("foo", 0).into();
         let _: Element = ("foo", 0).into();
         let _: Path = ("foo", 0).into();
     }

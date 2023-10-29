@@ -2,6 +2,10 @@ use core::fmt;
 
 use crate::operand::Operand;
 
+/// Represents a [DynamoDB comparison operation][1] for use in a [`Condition`].
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
+/// [`Condition`]: crate::condition::Condition
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Comparison {
     pub(crate) left: Operand,
@@ -64,6 +68,12 @@ impl fmt::Display for Comparator {
     }
 }
 
+/// Check if the two [values][1] or [paths][2] are equal.
+///
+/// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+///
+/// [1]: [crate::value]
+/// [2]: [crate::path::Path]
 pub fn equal<L, R>(left: L, right: R) -> Comparison
 where
     L: Into<Operand>,
@@ -76,6 +86,12 @@ where
     }
 }
 
+/// Check if the two [values][1] or [paths][2] are not equal.
+///
+/// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+///
+/// [1]: [crate::value]
+/// [2]: [crate::path::Path]
 pub fn not_equal<L, R>(left: L, right: R) -> Comparison
 where
     L: Into<Operand>,
@@ -88,30 +104,12 @@ where
     }
 }
 
-pub fn less_than<L, R>(left: L, right: R) -> Comparison
-where
-    L: Into<Operand>,
-    R: Into<Operand>,
-{
-    Comparison {
-        left: left.into(),
-        cmp: Comparator::Lt,
-        right: right.into(),
-    }
-}
-
-pub fn less_than_or_equal<L, R>(left: L, right: R) -> Comparison
-where
-    L: Into<Operand>,
-    R: Into<Operand>,
-{
-    Comparison {
-        left: left.into(),
-        cmp: Comparator::Le,
-        right: right.into(),
-    }
-}
-
+/// Check if a [value][1] or [`Path`] is greater than another.
+///
+/// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+///
+/// [1]: [crate::value]
+/// [`Path`]: crate::path::Path
 pub fn greater_than<L, R>(left: L, right: R) -> Comparison
 where
     L: Into<Operand>,
@@ -124,6 +122,12 @@ where
     }
 }
 
+/// Check if a [value][1] or [`Path`] is greater than or equal to another.
+///
+/// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+///
+/// [1]: [crate::value]
+/// [`Path`]: crate::path::Path
 pub fn greater_than_or_equal<L, R>(left: L, right: R) -> Comparison
 where
     L: Into<Operand>,
@@ -132,6 +136,42 @@ where
     Comparison {
         left: left.into(),
         cmp: Comparator::Ge,
+        right: right.into(),
+    }
+}
+
+/// Check if a [value][1] or [`Path`] is less than another.
+///
+/// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+///
+/// [1]: [crate::value]
+/// [`Path`]: crate::path::Path
+pub fn less_than<L, R>(left: L, right: R) -> Comparison
+where
+    L: Into<Operand>,
+    R: Into<Operand>,
+{
+    Comparison {
+        left: left.into(),
+        cmp: Comparator::Lt,
+        right: right.into(),
+    }
+}
+
+/// Check if a [value][1] or [`Path`] is less than or equal to another.
+///
+/// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+///
+/// [1]: [crate::value]
+/// [`Path`]: crate::path::Path
+pub fn less_than_or_equal<L, R>(left: L, right: R) -> Comparison
+where
+    L: Into<Operand>,
+    R: Into<Operand>,
+{
+    Comparison {
+        left: left.into(),
+        cmp: Comparator::Le,
         right: right.into(),
     }
 }
@@ -151,4 +191,6 @@ mod test {
         assert_str_eq!(">", Gt.to_string());
         assert_str_eq!(">=", Ge.to_string());
     }
+
+    // TODO: More tests
 }

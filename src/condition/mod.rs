@@ -31,7 +31,10 @@ use core::{fmt, ops};
 
 /// Represents a [DynamoDB condition or filter expression][1].
 ///
+/// You can construct an instance of this via its `From` implementations.
+///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Syntax
+// TODO: Doc examples
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Condition {
     AttributeExists(AttributeExists),
@@ -196,7 +199,7 @@ impl From<Parenthetical> for Condition {
 
 // As of v0.29, `aws_sdk_dynamodb` wants an `Into<String>` to be passed to the
 // `.filter_expression()` methods on its `*Input` types. So, we'll implement
-// that to make it nicer to work with.
+// that to make this nicer to work with.
 impl From<Condition> for String {
     fn from(condition: Condition) -> Self {
         condition.to_string()

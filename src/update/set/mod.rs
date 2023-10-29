@@ -13,17 +13,19 @@ use crate::{
     value::{Value, ValueOrRef},
 };
 
-// func Set(name NameBuilder, operandBuilder OperandBuilder) UpdateBuilder
-// func (ub UpdateBuilder) Set(name NameBuilder, operandBuilder OperandBuilder) UpdateBuilder
-
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET>
+/// Represents a [`SET` statement for an update expression][1].
+///
+/// See also: [`Update`]
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET
+/// [`Update`]: crate::update::Update
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Set {
     pub(crate) actions: Vec<SetAction>,
 }
 
 impl Set {
-    /// Add an additional action to this `SET` expression.
+    /// Add an additional action to this `SET` statement.
     pub fn and<T>(mut self, action: T) -> Self
     where
         T: Into<SetAction>,
@@ -76,20 +78,38 @@ where
     }
 }
 
-/// Represents an action to take in a DynamoDB update expression for [`SET` statements][1].
+/// Represents an action to take in a [`SET` statement][1] for an update expression.
+///
+/// See also: [`Set`], [`Update`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET
+/// [`Update`]: crate::update::Update
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SetAction {
+    /// Assign a value in a `SET` statement for an update expression.
+    ///
+    /// See also: [`Assign`]
     Assign(Assign),
 
-    /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement>
+    /// Perform [math against a value in a `SET` statement][1] for an update expression.
+    ///
+    /// See also: [`Math`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement
     Math(Math),
 
-    /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements>
+    /// [Add values to a list][1] in a `SET` statement for an update expression.
+    ///
+    /// See also: [`ListAppend`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements
     ListAppend(ListAppend),
 
-    /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.PreventingAttributeOverwrites>
+    /// Assign a value [only if it doesn't exist][1].
+    ///
+    /// See also: [`IfNotExists`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.PreventingAttributeOverwrites
     IfNotExists(IfNotExists),
 }
 

@@ -159,36 +159,40 @@ impl Builder {
 mod test {
     use pretty_assertions::assert_str_eq;
 
-    use crate::path::name;
+    use crate::path::Name;
 
     use super::ListAppend;
 
     #[test]
     fn display() {
-        let append = ListAppend::builder(name("foo"))
-            .src(name("bar"))
+        let append = ListAppend::builder(Name::from("foo"))
+            .src(Name::from("bar"))
             .after()
             .list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(bar, ["a", "b"])"#, append.to_string());
 
-        let append = ListAppend::builder(name("foo"))
-            .src(name("bar"))
+        let append = ListAppend::builder(Name::from("foo"))
+            .src(Name::from("bar"))
             .list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(bar, ["a", "b"])"#, append.to_string());
 
-        let append = ListAppend::builder(name("foo"))
-            .src(name("bar"))
+        let append = ListAppend::builder(Name::from("foo"))
+            .src(Name::from("bar"))
             .before()
             .list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(["a", "b"], bar)"#, append.to_string());
 
-        let append = ListAppend::builder(name("foo")).after().list(["a", "b"]);
+        let append = ListAppend::builder(Name::from("foo"))
+            .after()
+            .list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(foo, ["a", "b"])"#, append.to_string());
 
-        let append = ListAppend::builder(name("foo")).list(["a", "b"]);
+        let append = ListAppend::builder(Name::from("foo")).list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(foo, ["a", "b"])"#, append.to_string());
 
-        let append = ListAppend::builder(name("foo")).before().list(["a", "b"]);
+        let append = ListAppend::builder(Name::from("foo"))
+            .before()
+            .list(["a", "b"]);
         assert_str_eq!(r#"foo = list_append(["a", "b"], foo)"#, append.to_string());
     }
 }
