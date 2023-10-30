@@ -120,3 +120,9 @@ impl fmt::Display for KeyCondition {
         self.condition.fmt(f)
     }
 }
+
+impl From<KeyCondition> for String {
+    fn from(key_condition: KeyCondition) -> Self {
+        key_condition.condition.into()
+    }
+}

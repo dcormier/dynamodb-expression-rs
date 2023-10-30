@@ -8,18 +8,18 @@ use crate::path::Path;
 /// # Examples
 ///
 /// ```
-/// use dynamodb_expression::{path::Path, update::{Remove, Update}};
+/// use dynamodb_expression::{path::{Name, Path}, update::{Remove, Update}};
 ///
-/// let update = Remove::from("foo");
+/// let update = Remove::from(Name::from("foo"));
 /// assert_eq!(r#"REMOVE foo"#, update.to_string());
 ///
 /// let update = Remove::from("foo[8]".parse::<Path>().unwrap());
 /// assert_eq!(r#"REMOVE foo[8]"#, update.to_string());
 ///
-/// let update = Remove::from_iter(["foo", "bar", "baz"]);
+/// let update = Remove::from_iter(["foo", "bar", "baz"].map(Name::from));
 /// assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
 ///
-/// let update = ["foo", "bar", "baz"].into_iter().collect::<Remove>();
+/// let update = ["foo", "bar", "baz"].into_iter().map(Name::from).collect::<Remove>();
 /// assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
 /// ```
 ///

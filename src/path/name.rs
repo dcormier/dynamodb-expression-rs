@@ -61,3 +61,9 @@ impl From<&&str> for Name {
         Self::from(name.to_owned())
     }
 }
+
+impl From<Name> for String {
+    fn from(name: Name) -> Self {
+        name.name
+    }
+}

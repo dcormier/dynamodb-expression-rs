@@ -10,13 +10,13 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use dynamodb_expression::{num_value, path::Path, update::IfNotExists};
+/// use dynamodb_expression::{num_value, path::{Name, Path}, update::IfNotExists};
 /// # use pretty_assertions::assert_eq;
 ///
-/// let if_not_exists = IfNotExists::builder("foo").value(num_value(7));
+/// let if_not_exists = IfNotExists::builder(Name::from("foo")).value(num_value(7));
 /// assert_eq!("foo = if_not_exists(foo, 7)", if_not_exists.to_string());
 ///
-/// let if_not_exists_2 = Path::from("foo").if_not_exists().value(num_value(7));
+/// let if_not_exists_2 = Path::from(Name::from("foo")).if_not_exists().value(num_value(7));
 /// assert_eq!(if_not_exists, if_not_exists_2);
 /// ```
 ///

@@ -17,7 +17,9 @@ use super::{Name, PathParseError};
 /// [`Path`]: crate::path::Path
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Element {
+    /// See: [`Name`]
     Name(Name),
+    /// See: [`IndexedField`]
     IndexedField(IndexedField),
 }
 
@@ -68,6 +70,15 @@ impl fmt::Display for Element {
     }
 }
 
+impl From<Element> for String {
+    fn from(element: Element) -> Self {
+        match element {
+            Element::Name(name) => name.into(),
+            Element::IndexedField(indexed_field) => indexed_field.to_string(),
+        }
+    }
+}
+
 impl From<IndexedField> for Element {
     fn from(value: IndexedField) -> Self {
         if value.indexes.is_empty() {
@@ -94,29 +105,9 @@ impl From<Name> for Element {
     }
 }
 
-impl From<String> for Element {
-    fn from(name: String) -> Self {
-        Self::name(name)
-    }
-}
-
-impl From<&String> for Element {
-    fn from(name: &String) -> Self {
-        Self::name(name)
-    }
-}
-
-impl From<&str> for Element {
-    fn from(name: &str) -> Self {
-        Self::name(name)
-    }
-}
-
-impl From<&&str> for Element {
-    fn from(name: &&str) -> Self {
-        Self::name(name)
-    }
-}
+// Intentionally not implementing `From` string-types for `Element` to force
+// users to intentionally use a `Name` if that's what they want. Should help
+// avoid surprises when they have an indexed field, or sub-attribute.
 
 impl FromStr for Element {
     type Err = PathParseError;

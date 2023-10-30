@@ -38,12 +38,27 @@ impl From<Ref> for ValueOrRef {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ref(String);
 
-impl<T> From<T> for Ref
-where
-    T: Into<String>,
-{
-    fn from(value: T) -> Self {
-        Self(value.into())
+impl From<String> for Ref {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl From<&String> for Ref {
+    fn from(value: &String) -> Self {
+        Self(value.to_owned())
+    }
+}
+
+impl From<&str> for Ref {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
+    }
+}
+
+impl From<&&str> for Ref {
+    fn from(value: &&str) -> Self {
+        Self((*value).to_owned())
     }
 }
 
@@ -54,13 +69,21 @@ impl fmt::Display for Ref {
     }
 }
 
+impl From<Ref> for String {
+    fn from(mut value: Ref) -> Self {
+        value.0.insert(0, ':');
+
+        value.0
+    }
+}
+
 /// A reference to a DynamoDB value stored in expression attribute values.
 /// Automatically prefixed with `:`.
 pub fn ref_value<T>(value: T) -> Ref
 where
     T: Into<String>,
 {
-    Ref::from(value)
+    Ref::from(value.into())
 }
 
 #[cfg(test)]

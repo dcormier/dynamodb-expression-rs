@@ -13,7 +13,7 @@ use pretty_assertions::{assert_eq, assert_ne};
 use dynamodb_expression::{
     expression::Expression,
     key::Key,
-    path::Path,
+    path::{Name, Path},
     string_value,
     update::{Remove, Set, SetAction},
 };
@@ -56,26 +56,28 @@ async fn test_update(config: &Config) {
     let item = fresh_item(config).await;
     assert_eq!(None, item.get(ATTR_NEW_FIELD));
 
-    let update = Expression::new_with_update(Set::from_iter([
-        SetAction::from(Path::from(ATTR_STRING).assign("abcdef")),
-        Path::from(ATTR_NUM).math().sub(3.5).into(),
-        Path::from(ATTR_LIST)
-            .list_append()
-            .before()
-            .list(["A new value at the beginning"])
-            .into(),
-        // DynamoDB won't let you append to the same list twice in the same update expression.
-        // Path::from(ATTR_LIST)
-        //     .list_append()
-        //     .list(["A new value at the end"])
-        //     .into(),
-        Path::from(ATTR_NEW_FIELD)
-            .if_not_exists()
-            .value("A new field")
-            .into(),
-    ]))
-    .update_item(client)
-    .set_key(item_key(&item).into());
+    let update = Expression::builder()
+        .with_update(Set::from_iter([
+            SetAction::from(Path::from(Name::from(ATTR_STRING)).assign("abcdef")),
+            Path::from(Name::from(ATTR_NUM)).math().sub(3.5).into(),
+            Path::from(Name::from(ATTR_LIST))
+                .list_append()
+                .before()
+                .list(["A new value at the beginning"])
+                .into(),
+            // DynamoDB won't let you append to the same list twice in the same update expression.
+            // Path::from(Name::from(ATTR_LIST))
+            //     .list_append()
+            //     .list(["A new value at the end"])
+            //     .into(),
+            Path::from(Name::from(ATTR_NEW_FIELD))
+                .if_not_exists()
+                .value("A new field")
+                .into(),
+        ]))
+        .build()
+        .update_item(client)
+        .set_key(item_key(&item).into());
 
     // println!("{:?}", update.as_input());
 
@@ -85,22 +87,29 @@ async fn test_update(config: &Config) {
         .await
         .expect("Failed to update item");
 
+    // TODO:
+    //  * Remove
+    //  * Add
+    //  * Delete
+
     // Once more to add another item to the end of that list.
     // DynamoDB won't allow both in a single update expression.
-    let updated_item = Expression::new_with_update(
-        Path::from(ATTR_LIST)
-            .list_append()
-            .list(["A new value at the end"]),
-    )
-    .update_item(client)
-    .set_key(item_key(&item).into())
-    .table_name(&config.table_name)
-    .return_values(ReturnValue::AllNew)
-    .send()
-    .await
-    .expect("Failed to update item")
-    .attributes
-    .expect("Where is the item?");
+    let updated_item = Expression::builder()
+        .with_update(
+            Path::from(Name::from(ATTR_LIST))
+                .list_append()
+                .list(["A new value at the end"]),
+        )
+        .build()
+        .update_item(client)
+        .set_key(item_key(&item).into())
+        .table_name(&config.table_name)
+        .return_values(ReturnValue::AllNew)
+        .send()
+        .await
+        .expect("Failed to update item")
+        .attributes
+        .expect("Where is the item?");
 
     // println!("Got item: {:#?}", DebugItem(&after_update));
 
@@ -163,13 +172,15 @@ async fn test_update(config: &Config) {
     );
 
     // Remove those two items we added to the list
-    let update = Expression::new_with_update(
-        [(ATTR_LIST, 0), (ATTR_LIST, (updated_list.len() - 1) as u32)]
-            .into_iter()
-            .collect::<Remove>(),
-    )
-    .update_item(client)
-    .set_key(item_key(&item).into());
+    let update = Expression::builder()
+        .with_update(
+            [(ATTR_LIST, 0), (ATTR_LIST, (updated_list.len() - 1) as u32)]
+                .into_iter()
+                .collect::<Remove>(),
+        )
+        .build()
+        .update_item(client)
+        .set_key(item_key(&item).into());
 
     println!("{:?}", update.as_input());
 
@@ -259,7 +270,9 @@ fn item_key(item: &HashMap<String, AttributeValue>) -> HashMap<String, Attribute
 async fn get_item(
     config: &Config,
 ) -> Result<Option<HashMap<String, AttributeValue>>, SdkError<QueryError>> {
-    Expression::new_with_key_condition(Key::from(ATTR_ID).equal(string_value(ITEM_ID)))
+    Expression::builder()
+        .with_key_condition(Key::from(Name::from(ATTR_ID)).equal(string_value(ITEM_ID)))
+        .build()
         .query(config.client().await)
         .table_name(config.table_name.clone())
         .send()

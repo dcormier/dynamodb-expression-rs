@@ -202,6 +202,7 @@ impl From<Parenthetical> for Condition {
 // that to make this nicer to work with.
 impl From<Condition> for String {
     fn from(condition: Condition) -> Self {
+        // TODO: Is there a more efficient way when all of these require formatting?
         condition.to_string()
     }
 }

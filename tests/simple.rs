@@ -7,16 +7,21 @@ use aws_sdk_dynamodb::{
 use pretty_assertions::assert_eq;
 
 use dynamodb_expression::{
-    expression::Expression, key::Key, num_value, path::Path, ref_value, string_value, Comparator::*,
+    expression::Expression,
+    key::Key,
+    num_value,
+    path::{Name, Path},
+    ref_value, string_value,
+    Comparator::*,
 };
 
 #[test]
 fn scan_input() {
     ScanInput::builder()
         .filter_expression(
-            Path::from("#name")
-                .begins_with(":prefix")
-                .and(Path::from("#age").greater_than_or_equal(string_value(":min_age"))),
+            Path::from(Name::from("#name")).begins_with(":prefix").and(
+                Path::from(Name::from("#age")).greater_than_or_equal(string_value(":min_age")),
+            ),
         )
         .expression_attribute_names("#name", "name")
         .expression_attribute_values(":prefix", AttributeValue::S("Wil".into()))
@@ -30,9 +35,9 @@ fn scan_input() {
 fn put() {
     Put::builder()
         .condition_expression(
-            Path::from("#name")
+            Path::from(Name::from("#name"))
                 .attribute_not_exists()
-                .or(Path::from("#name")
+                .or(Path::from(Name::from("#name"))
                     .size()
                     .comparison(Eq, string_value(":zero"))),
         )
@@ -64,9 +69,9 @@ fn query() {
     // Building the `QueryInput` using this crate to help with the filter expression.
     let qi_2 = QueryInput::builder()
         .filter_expression(
-            Path::from("#0")
+            Path::from(Name::from("#0"))
                 .attribute_exists()
-                .and(Path::from("#1").greater_than_or_equal(ref_value("0"))),
+                .and(Path::from(Name::from("#1")).greater_than_or_equal(ref_value("0"))),
         )
         .projection_expression("#0, #1")
         .key_condition_expression("#2 = :1")
@@ -82,17 +87,19 @@ fn query() {
     println!("{qi_2:#?}");
 
     // Building the `QueryInput` by leveraging this crate to its fullest.
-    let qi_3: QueryInput = Expression::new_with_filter(
-        Path::from("name")
-            .attribute_exists()
-            .and(Path::from("age").greater_than_or_equal(num_value(2.5))),
-    )
-    .with_projection(["name", "age"])
-    .with_key_condition(Key::from("id").equal(num_value(42)))
-    .to_query_input_builder()
-    .table_name("the_table")
-    .build()
-    .unwrap();
+    let qi_3: QueryInput = Expression::builder()
+        .with_filter(
+            Path::from(Name::from("name"))
+                .attribute_exists()
+                .and(Path::from(Name::from("age")).greater_than_or_equal(num_value(2.5))),
+        )
+        .with_projection(["name", "age"])
+        .with_key_condition(Key::from(Name::from("id")).equal(num_value(42)))
+        .build()
+        .to_query_input_builder()
+        .table_name("the_table")
+        .build()
+        .unwrap();
 
     println!("{qi_3:#?}");
 

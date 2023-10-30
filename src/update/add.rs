@@ -16,9 +16,9 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use dynamodb_expression::{path::Path, update::Add, value::Num};
+/// use dynamodb_expression::{path::{Name, Path}, update::Add, value::Num};
 ///
-/// let update = Add::new("foo", Num::from(1));
+/// let update = Add::new(Name::from("foo"), Num::from(1));
 /// assert_eq!("ADD foo 1", update.to_string());
 ///
 /// let update = Add::new("foo[4]".parse::<Path>().unwrap(), Num::from(1));

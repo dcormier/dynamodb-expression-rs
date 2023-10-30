@@ -72,25 +72,16 @@ use crate::{
 ///     .collect();
 /// # assert_eq!(expected, path);
 ///
-/// // `Element` can be converted into from `Into<String>`, as well as
-/// // string/index tuples. In this case, an "index" is an array, slice,
-/// // `Vec` of, or a single `u32`.
-/// let path: Path = [
-///     Element::from(("foo", [3, 7])),
-///     Element::from(("bar", 2)),
-///     Element::from("baz"),
-/// ]
-/// .into_iter()
-/// .collect();
-/// # assert_eq!(expected, path);
-///
+/// // `Element` can be converted into from string/index tuples. Where the
+/// // string is the attribute name. In this case, an "index" is an array,
+/// // slice, `Vec` of, or a single `u32`.
 /// // It's smart about it, though. If if there's one or zero indexes it'll do
 /// // the right thing. This helps when you're chaining iterator adapters and
 /// // the results are values with inconsistent numbers of indexes.
 /// let path: Path = [
-///     Element::from(("foo", [3, 7])),
-///     Element::from(("bar", [2])),
-///     Element::from(("baz", [])),
+///     Element::from(("foo", vec![3, 7])),
+///     Element::from(("bar", vec![2])),
+///     Element::from(("baz", vec![])),
 /// ]
 /// .into_iter()
 /// .collect();
@@ -371,6 +362,16 @@ impl fmt::Display for Path {
 
             elem.fmt(f)
         })
+    }
+}
+
+impl From<Path> for String {
+    fn from(path: Path) -> Self {
+        path.elements
+            .into_iter()
+            .map(String::from)
+            .collect_vec()
+            .join(".")
     }
 }
 

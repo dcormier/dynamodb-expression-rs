@@ -27,7 +27,12 @@ impl AttributeType {
 
 impl fmt::Display for AttributeType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "attribute_type({}, {})", self.path, self.attribute_type)
+        write!(
+            f,
+            "attribute_type({}, {})",
+            self.path,
+            self.attribute_type.as_str()
+        )
     }
 }
 
