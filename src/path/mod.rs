@@ -518,6 +518,15 @@ impl FromStr for Path {
     }
 }
 
+impl IntoIterator for Path {
+    type Item = Element;
+    type IntoIter = alloc::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.elements.into_iter()
+    }
+}
+
 impl TryFrom<Path> for Name {
     type Error = Path;
 
