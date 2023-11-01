@@ -35,6 +35,7 @@ where
     }
 }
 
+#[derive(Clone, PartialEq)]
 pub struct DebugList<I, T>(pub I)
 where
     I: Clone + IntoIterator<Item = T>,

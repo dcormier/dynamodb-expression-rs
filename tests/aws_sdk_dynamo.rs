@@ -20,9 +20,8 @@ use pretty_assertions::{assert_eq, assert_ne};
 use crate::dynamodb::{
     debug::DebugList,
     item::{new_item, ATTR_ID, ATTR_LIST, ATTR_MAP, ATTR_NULL, ATTR_NUM, ATTR_STRING},
-    partial_eq::PartialEqItem,
     setup::{clean_table, delete_table},
-    Config,
+    Config, DebugItem,
 };
 
 const ITEM_ID: &str = "sanity item";
@@ -53,7 +52,7 @@ async fn test_query(config: &Config) {
         .pop()
         .expect("Got no items");
 
-    assert_eq!(PartialEqItem(item), PartialEqItem(got));
+    assert_eq!(DebugItem(item), DebugItem(got));
 }
 
 #[tokio::test]

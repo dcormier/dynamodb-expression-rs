@@ -557,7 +557,7 @@ pub struct PathParseError;
 mod test {
     use pretty_assertions::{assert_eq, assert_str_eq};
 
-    use crate::{num_value, Comparator};
+    use crate::num_value;
 
     use super::{Element, Name, Path, PathParseError};
 
@@ -683,7 +683,7 @@ mod test {
             "a".parse::<Path>()
                 .unwrap()
                 .size()
-                .comparison(Comparator::Eq, num_value(0))
+                .equal(num_value(0))
                 .to_string()
         );
     }

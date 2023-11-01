@@ -37,10 +37,6 @@ use aws_sdk_dynamodb::{
 
 use super::Expression;
 
-// Conversions to DynamoDB input builders
-
-// TODO: Allow each of these impl blocks to be turned on/off with features?
-
 /// Methods related to [`PutItem` operations][1].
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_PutItem.html
@@ -332,9 +328,6 @@ impl Expression {
     // TODO: This ultimately ends up being a part of a `BatchGetItemInput`.
     //       See how that gets used in practice.
     // https://docs.rs/aws-sdk-dynamodb/latest/aws_sdk_dynamodb/operation/batch_get_item/builders/struct.BatchGetItemInputBuilder.html#method.request_items
-    //
-    // TODO: If feature flags are used for these blocks, should this be grouped
-    //       with the other methods related to `get`?
     // ----
     /// Uses this [`Expression`] to create a [`KeysAndAttributesBuilder`] with the following set:
     /// * Projection expression
@@ -346,11 +339,8 @@ impl Expression {
     }
 
     // TODO: This ultimately ends up being a part of a `TransactWriteItem`.
-    // See how that gets used in practice.
+    //       See how that gets used in practice.
     // https://docs.rs/aws-sdk-dynamodb/latest/aws_sdk_dynamodb/types/builders/struct.TransactWriteItemBuilder.html#method.condition_check
-    //
-    // TODO: If feature flags are used for these blocks, should this be grouped
-    //       with the other methods related to `put_item` (or is it `update`)?
     // ----
     /// Uses this [`Expression`] to create a [`ConditionCheckBuilder`] with the following set:
     /// * Condition expression

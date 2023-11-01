@@ -171,6 +171,7 @@ pub struct Num {
 }
 
 impl Num {
+    // TODO: Docs
     // TODO: Only up to 38 digits of precision are supported. Does there
     // need to be alternate constructors with different formatting options?
     // Should be able to be achieved with constructors using these constraints:
@@ -186,6 +187,8 @@ impl Num {
         }
     }
 
+    // TODO: Docs
+    // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Number
     pub fn new_lower_exp<T>(value: T) -> Self
     where
         T: LowerExp + num::Num,
@@ -195,6 +198,8 @@ impl Num {
         }
     }
 
+    // TODO: Docs
+    // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Number
     pub fn new_upper_exp<T>(value: T) -> Self
     where
         T: UpperExp + num::Num,

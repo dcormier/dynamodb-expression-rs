@@ -13,7 +13,6 @@ use dynamodb_expression::{
     num_value,
     path::{Name, Path},
     ref_value, string_value,
-    Comparator::*,
 };
 
 #[test]
@@ -40,7 +39,7 @@ fn put() {
                 .attribute_not_exists()
                 .or(Path::from(Name::from("#name"))
                     .size()
-                    .comparison(Eq, string_value(":zero"))),
+                    .equal(string_value(":zero"))),
         )
         .expression_attribute_names("#name", "name")
         .expression_attribute_values(":zero", AttributeValue::N(0.to_string()))

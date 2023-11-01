@@ -259,9 +259,6 @@ mod test {
         assert_eq!(vec!["-1", "0", "1", "42"], deserialized);
 
         let set = num_set([f64::MIN, 0.0, 3.14, f64::MAX]);
-        // TODO: Find out what format DynamoDB wants extreme values in. Exponents?
-        //       Yes, exponents.
-        //       https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Number
         assert_eq!(
             "[\"-17976931348623157000000000000000000000000000000000000000000000\
             0000000000000000000000000000000000000000000000000000000000000000000\
