@@ -12,7 +12,6 @@ use aws_sdk_dynamodb::{
 use dynamodb_expression::{
     expression::Expression,
     key::Key,
-    num_value,
     path::{Element, Name, Path},
     string_set, string_value,
     update::{Add, Delete, Remove, Set, SetAction},
