@@ -180,7 +180,9 @@ where
 mod test {
     use pretty_assertions::assert_str_eq;
 
-    use super::Comparator::*;
+    use crate::path::Name;
+
+    use super::{Comparator::*, *};
 
     #[test]
     fn display() {
@@ -192,5 +194,51 @@ mod test {
         assert_str_eq!(">=", Ge.to_string());
     }
 
-    // TODO: More tests
+    #[test]
+    fn eq() {
+        assert_eq!(
+            "foo = bar",
+            equal(Name::from("foo"), Name::from("bar")).to_string()
+        );
+    }
+
+    #[test]
+    fn ne() {
+        assert_eq!(
+            "foo <> bar",
+            not_equal(Name::from("foo"), Name::from("bar")).to_string()
+        );
+    }
+
+    #[test]
+    fn lt() {
+        assert_eq!(
+            "foo < bar",
+            less_than(Name::from("foo"), Name::from("bar")).to_string()
+        );
+    }
+
+    #[test]
+    fn le() {
+        assert_eq!(
+            "foo <= bar",
+            less_than_or_equal(Name::from("foo"), Name::from("bar")).to_string()
+        );
+    }
+
+    #[test]
+    fn gt() {
+        assert_eq!(
+            "foo > bar",
+            greater_than(Name::from("foo"), Name::from("bar")).to_string()
+        );
+    }
+
+    #[test]
+    fn ge() {
+        assert_eq!(
+            "foo >= bar",
+            greater_than_or_equal(Name::from("foo"), Name::from("bar")).to_string()
+        );
+    }
 }

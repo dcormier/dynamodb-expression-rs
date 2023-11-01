@@ -19,9 +19,7 @@ use pretty_assertions::{assert_eq, assert_ne};
 
 use crate::dynamodb::{
     debug::DebugList,
-    item::{
-        new_item, ATTR_ID, ATTR_LIST, ATTR_MAP, ATTR_NULL, ATTR_NUM, ATTR_STRING, ATTR_STRINGS,
-    },
+    item::{new_item, ATTR_ID, ATTR_LIST, ATTR_MAP, ATTR_NULL, ATTR_NUM, ATTR_STRING},
     partial_eq::PartialEqItem,
     setup::{clean_table, delete_table},
     Config,
@@ -36,10 +34,24 @@ async fn query() {
 
 async fn test_query(config: &Config) {
     let item = fresh_item(config).await;
-    let got = get_item(config)
+    let got = Expression::builder()
+        .with_key_condition(Key::from(Name::from(ATTR_ID)).equal(string_value(ITEM_ID)))
+        .with_projection(
+            // Testing with an empty projection expression to see if:
+            // 1. DynamoDB allows it or
+            // 2. We handle it properly
+            Vec::<Name>::default(),
+        )
+        .build()
+        .query(config.client().await)
+        .table_name(config.table_name.clone())
+        .send()
         .await
         .expect("Failed to query item")
-        .expect("Where is the item?");
+        .items
+        .expect("Where is the item?")
+        .pop()
+        .expect("Got no items");
 
     assert_eq!(PartialEqItem(item), PartialEqItem(got));
 }

@@ -8,20 +8,20 @@ edition = "2021"
 documentation = "https://docs.rs/dynamodb-expression/"
 repository = "https://github.com/dcormier/dynamodb-expression-rs"
 license = "Apache-2.0"
-keywords = ["aws", "dynamodb", "expression", "filter", "condition"]
+keywords = ["aws", "dynamodb", "expression", "filter", "condition", "update"]
 
 [dependencies]
 aws-sdk-dynamodb = "0"
 base64 = "0.21"
 itermap = "0"
+itertools = "0.11"
 num = "0"
 optempty = "0"
 serde_json = "1"
 thiserror = "1"
-itertools = "0.11"
 
 [dev-dependencies]
 aws-config = "0.56"
+easy-error = "1"
 pretty_assertions = "1"
 tokio = { version = "1", features = ["macros"] }
-easy-error = "1"

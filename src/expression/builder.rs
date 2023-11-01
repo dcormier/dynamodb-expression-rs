@@ -83,10 +83,10 @@ impl Builder {
                 .into_iter()
                 .map(|name| self.process_name(name.into()))
                 .collect(),
-        );
-
-        // TODO: Empty into none, here? Test what happens with an empty projection.
-        //       If DynamoDB gives an error, then use `.empty_into_none()`, here.
+        )
+        // Empty into `None` because DynamoDB doesn't allow empty projection expressions.
+        // `Invalid ProjectionExpression: The expression can not be empty;`
+        .empty_into_none();
 
         self
     }
