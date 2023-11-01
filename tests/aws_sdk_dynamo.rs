@@ -7,13 +7,16 @@ use aws_sdk_dynamodb::{
     error::SdkError,
     operation::query::QueryError,
     types::{AttributeValue, ReturnValue},
+    Client,
 };
 use dynamodb_expression::{
     expression::Expression,
     key::Key,
+    num_value,
     path::{Element, Name, Path},
-    string_value,
-    update::{Remove, Set, SetAction},
+    string_set, string_value,
+    update::{Add, Remove, Set, SetAction},
+    value::Num,
 };
 use pretty_assertions::{assert_eq, assert_ne};
 
@@ -65,70 +68,51 @@ const ATTR_NEW_FIELD: &str = "new_field";
 
 async fn test_update(config: &Config) {
     let client = config.client().await;
+
+    test_update_set(config, client).await;
+    test_update_remove(config, client).await;
+    test_update_add(config, client).await;
+    // TODO:
+    //  * Delete
+}
+
+async fn test_update_set(config: &Config, client: &Client) {
     let item = fresh_item(config).await;
     assert_eq!(None, item.get(ATTR_NEW_FIELD));
 
     let update = Expression::builder()
         .with_update(Set::from_iter([
-            SetAction::from(Path::from(Name::from(ATTR_STRING)).assign("abcdef")),
-            Path::from(Name::from(ATTR_NUM)).math().sub(3.5).into(),
-            Path::from(Name::from(ATTR_LIST))
+            SetAction::from(Path::name(ATTR_STRING).assign("abcdef")),
+            Path::name(ATTR_NUM).math().sub(3.5).into(),
+            Path::name(ATTR_LIST)
                 .list_append()
                 .before()
                 .list(["A new value at the beginning"])
                 .into(),
             // DynamoDB won't let you append to the same list twice in the same update expression.
-            // Path::from(Name::from(ATTR_LIST))
+            // Path::name(ATTR_LIST)
             //     .list_append()
             //     .list(["A new value at the end"])
             //     .into(),
-            Path::from(Name::from(ATTR_NEW_FIELD))
+            Path::name(ATTR_NEW_FIELD)
                 .if_not_exists()
                 .value("A new field")
                 .into(),
         ]))
         .build()
         .update_item(client)
+        .table_name(&config.table_name)
         .set_key(item_key(&item).into());
 
     // println!("{:?}", update.as_input());
 
-    update
-        .table_name(&config.table_name)
-        .send()
-        .await
-        .expect("Failed to update item");
-
-    let update = Expression::builder()
-        .with_update(Remove::from_iter([
-            Element::name(ATTR_NULL).into(),
-            Path::from_iter([
-                Element::name(ATTR_MAP),
-                Element::indexed_field(ATTR_LIST, 0),
-            ]),
-            Path::from_iter([ATTR_MAP, ATTR_NULL].map(Name::from)),
-        ]))
-        .build()
-        .update_item(client)
-        .set_key(item_key(&item).into());
-
-    println!("\n{:?}\n", update.as_input());
-
-    update
-        .table_name(&config.table_name)
-        .send()
-        .await
-        .expect("Failed to update item");
-
-    // TODO:
-    //  * Add
-    //  * Delete
+    update.send().await.expect("Failed to update item");
 
     // Once more to add another item to the end of that list.
     // DynamoDB won't allow both in a single update expression.
     let updated_item = Expression::builder()
         .with_update(
-            Path::from(Name::from(ATTR_LIST))
+            Path::name(ATTR_LIST)
                 .list_append()
                 .list(["A new value at the end"]),
         )
@@ -145,7 +129,11 @@ async fn test_update(config: &Config) {
 
     // println!("Got item: {:#?}", DebugItem(&after_update));
 
-    assert_ne!(item.get(ATTR_STRING), updated_item.get(ATTR_STRING));
+    assert_ne!(
+        item.get(ATTR_STRING),
+        updated_item.get(ATTR_STRING),
+        "Updated string should be different."
+    );
     assert_eq!(
         "abcdef",
         updated_item
@@ -155,7 +143,11 @@ async fn test_update(config: &Config) {
             .expect("That field should be a String"),
         "Assigning a new value to the field didn't work"
     );
-    assert_ne!(item.get(ATTR_NUM), updated_item.get(ATTR_NUM));
+    assert_ne!(
+        item.get(ATTR_NUM),
+        updated_item.get(ATTR_NUM),
+        "Updated number should be different"
+    );
     assert_eq!(
         "38.5",
         updated_item
@@ -193,60 +185,46 @@ async fn test_update(config: &Config) {
     assert_eq!(
         Some(&AttributeValue::S("A new value at the beginning".into())),
         updated_list.first(),
-        "List is missing the new value at the beginning: {:#?}",
+        "List is missing the new item at the beginning: {:#?}",
         DebugList(updated_list)
     );
     assert_eq!(
         Some(&AttributeValue::S("A new value at the end".into())),
         updated_list.last(),
-        "List is missing the new value at th end: {:#?}",
+        "List is missing the new item at th end: {:#?}",
         DebugList(updated_list)
     );
+}
 
-    // Remove those two items we added to the list
+async fn test_update_remove(config: &Config, client: &Client) {
+    let item = fresh_item(config).await;
+    assert_eq!(None, item.get(ATTR_NEW_FIELD));
+
     let update = Expression::builder()
         .with_update(Remove::from_iter([
-            (ATTR_LIST, 0),
-            (ATTR_LIST, (updated_list.len() - 1)),
+            Element::name(ATTR_NULL).into(),
+            Path::from_iter([
+                Element::name(ATTR_MAP),
+                Element::indexed_field(ATTR_LIST, 0),
+            ]),
+            Path::from_iter([ATTR_MAP, ATTR_NULL].map(Name::from)),
         ]))
         .build()
         .update_item(client)
+        .table_name(&config.table_name)
         .set_key(item_key(&item).into());
 
-    println!("{:?}", update.as_input());
+    // println!("\n{:?}\n", update.as_input());
 
-    let list_cleaned = update
-        .table_name(&config.table_name)
+    let updated_item = update
         .return_values(ReturnValue::AllNew)
         .send()
         .await
         .expect("Failed to update item")
-        // Grab the updated item
         .attributes
-        .expect("Where is the item?")
-        // Specifically, grab the list.
-        .remove(ATTR_LIST)
-        .map(|list| {
-            if let AttributeValue::L(list) = list {
-                list
-            } else {
-                panic!("The field should be a list")
-            }
-        })
-        .expect("List is missing")
-        .clone();
+        .expect("Where is the item?");
 
-    assert_eq!(updated_list.len() - 2, list_cleaned.len());
-    assert!(
-        !list_cleaned.contains(&AttributeValue::S("A new value at the beginning".into())),
-        "Value was not removed from the beginning. The list: {:#?}",
-        DebugList(list_cleaned.iter()),
-    );
-    assert!(
-        !list_cleaned.contains(&AttributeValue::S("A new value at the end".into())),
-        "Value was not removed from the end. The list: {:#?}",
-        DebugList(list_cleaned.iter()),
-    );
+    // println!("Got item: {:#?}", DebugItem(&updated_item));
 
     assert_eq!(
         None,
@@ -258,7 +236,7 @@ async fn test_update(config: &Config) {
         .get(ATTR_MAP)
         .expect("Map attribute is missing")
         .as_m()
-        .expect("Field is missing or not a map");
+        .expect("Field is not a map");
 
     assert_eq!(
         None,
@@ -270,7 +248,7 @@ async fn test_update(config: &Config) {
         .get(ATTR_MAP)
         .expect("Map attribute is missing")
         .as_m()
-        .expect("Field is missing or not a map")
+        .expect("Field is not a map")
         .get(ATTR_LIST)
         .expect("List is missing from the map")
         .as_l()
@@ -298,6 +276,105 @@ async fn test_update(config: &Config) {
         map_list_updated.iter().find(|elem| *elem == map_list_first),
         "The first item should have been removed"
     );
+}
+
+async fn test_update_add(config: &Config, client: &Client) {
+    let item = fresh_item(config).await;
+    assert_eq!(None, item.get(ATTR_NEW_FIELD));
+
+    let update = Expression::builder()
+        .with_update(Add::new(
+            Path::from_iter([
+                Element::name(ATTR_MAP),
+                Element::indexed_field(ATTR_LIST, 1),
+            ]),
+            string_set(["d", "e", "f"]),
+        ))
+        .build()
+        .update_item(client)
+        .table_name(&config.table_name)
+        .set_key(item_key(&item).into());
+
+    // println!("\n{:?}\n", update.as_input());
+
+    update.send().await.expect("Failed to update item");
+
+    let update = Expression::builder()
+        .with_update(Add::new(
+            Path::from_iter([
+                Element::name(ATTR_MAP),
+                Element::indexed_field(ATTR_LIST, 2),
+            ]),
+            // TODO: Can it be made so `num_value()` can be used here?
+            Num::new(-3.5),
+        ))
+        .build()
+        .update_item(client)
+        .table_name(&config.table_name)
+        .set_key(item_key(&item).into());
+
+    // println!("\n{:?}\n", update.as_input());
+
+    let updated_item = update
+        .return_values(ReturnValue::AllNew)
+        .send()
+        .await
+        .expect("Failed to update item")
+        .attributes
+        .expect("Where is the item?");
+
+    // println!("Got item: {:#?}", DebugItem(&updated_item));
+
+    let map_list = item
+        .get(ATTR_MAP)
+        .expect("Map attribute is missing")
+        .as_m()
+        .expect("Field is not a map")
+        .get(ATTR_LIST)
+        .expect("List is missing from the map")
+        .as_l()
+        .expect("Item is not a list");
+
+    let map_list_updated = updated_item
+        .get(ATTR_MAP)
+        .expect("Map attribute is missing")
+        .as_m()
+        .expect("Field is not a map")
+        .get(ATTR_LIST)
+        .expect("List is missing from the map")
+        .as_l()
+        .expect("Item is not a list");
+
+    let ss = map_list
+        .get(1)
+        .expect("Item doesn't exist")
+        .as_ss()
+        .expect("Item is not a string set");
+
+    let ss_updated = map_list_updated
+        .get(1)
+        .expect("Item doesn't exist")
+        .as_ss()
+        .expect("Item is not a string set");
+
+    assert_eq!(3, ss.len());
+    assert_eq!(6, ss_updated.len());
+    assert_eq!(["a", "b", "c", "d", "e", "f"], ss_updated.as_slice());
+
+    let n = map_list
+        .get(2)
+        .expect("Item doesn't exist")
+        .as_n()
+        .expect("Item is not a number");
+
+    let n_updated = map_list_updated
+        .get(2)
+        .expect("Item doesn't exist")
+        .as_n()
+        .expect("Item is not a number");
+
+    assert_eq!("42", n);
+    assert_eq!("38.5", n_updated);
 }
 
 /// Wraps a test function in code to set up and tear down the DynamoDB table.

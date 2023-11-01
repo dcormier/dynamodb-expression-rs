@@ -27,7 +27,7 @@ pub fn new_item<T>(id: T) -> HashMap<String, AttributeValue>
 where
     T: Into<String>,
 {
-    let mut item = into_map([
+    let values = vec![
         (ATTR_STRING, S("foo".into())),
         (ATTR_STRINGS, Ss(into_strings(["a", "b", "c"]))),
         (ATTR_NUM, N("42".into())),
@@ -44,12 +44,13 @@ where
         (ATTR_BOOL, Bool(true)),
         (ATTR_BLOB, B(Blob::new(base64_encode("foo")))),
         (ATTR_BLOBS, Bs(into_blobs(["foo", "bar", "baz"]))),
-    ]);
+    ];
 
-    let mut list = item.values().cloned().collect_vec();
+    let mut list = values.iter().map(|(_k, v)| v.clone()).collect_vec();
     // Nested list.
     list.push(L(list.clone()));
 
+    let mut item = into_map(values);
     item.insert(ATTR_LIST.into(), L(list));
 
     // Nested map.

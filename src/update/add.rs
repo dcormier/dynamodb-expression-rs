@@ -31,7 +31,6 @@ use crate::{
 /// [`Set`]: crate::update::Set
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Add {
-    // TODO: Name or Path?
     pub(crate) path: Path,
     pub(crate) value: ValueOrRef,
 }
