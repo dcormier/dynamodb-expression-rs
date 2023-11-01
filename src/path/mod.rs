@@ -33,19 +33,17 @@ use crate::{
 
 /// Represents a DynamoDB [document path][1]. For example, `foo[3][7].bar[2].baz`.
 ///
-/// Anything that can be turned into a [`Name`] can be turned into a [`Path`]
-///
 /// When used in an [`Expression`], attribute names in a [`Path`] are
 /// automatically handled as [expression attribute names][2], allowing for names
 /// that would not otherwise be permitted by DynamoDB. For example,
 /// `foo[3][7].bar[2].baz` would become something similar to `#0[3][7].#1[2].#2`,
 /// and the names would be in the `expression_attribute_names`.
 ///
-/// See also: [`Name`]
+/// See also: [`Element`], [`Name`], [`IndexedField`]
 ///
 /// # Examples
 ///
-/// The safest way to construct a [`Path`] is a [parse] it from a string.
+/// The safest way to construct a [`Path`] is to [parse] it.
 /// ```
 /// use dynamodb_expression::path::Path;
 /// # use pretty_assertions::assert_eq;
@@ -58,23 +56,20 @@ use crate::{
 /// let path: Path = "baz[0].foo".parse().unwrap();
 /// ```
 ///
-/// This makes the assumption that each path element is separated by a
-/// period (`.`). For example, the path `foo.bar` gets treated as if `bar` is a
-/// sub-attribute of `foo`. However, `.` is also a [valid character in an
-/// attribute name][3].
+/// This makes the common assumption that each path element is separated by a
+/// period (`.`). For example, the path `foo.bar` gets treated as if `foo` is a
+/// top-level attribute, and `bar` is a sub-attribute of `foo`. However, `.` [is
+/// also a valid character in an attribute name][3].
 ///
 /// If you have an attribute name with a `.` in it, and need it to not be
 /// treated as a separator, you can construct the [`Path`] a few different ways.
-/// Take an attribute named `attr.name` as an example. If you were to [parse]
-/// it, like above, it would be treated as a path with an attribute, `attr`, and
-/// a sub-attribute, `name`.
-///
-/// Here are some ways you can correctly construct such a [`Path`].
+/// Here are some ways you can correctly construct a [`Path`] using `attr.name`
+/// as the problematic attribute name.
 /// ```
 /// use dynamodb_expression::path::{Element, Path};
 /// # use pretty_assertions::assert_eq;
-/// #
-/// // If a top-level attribute name:
+///
+/// // As a top-level attribute name:
 /// let path = Path::name("attr.name");
 ///
 /// // If the top-level attribute, `foo`, has a sub-attribute named `attr.name`:
@@ -113,7 +108,7 @@ use crate::{
 /// let path: Path = "foo[3][7].bar[2].baz".parse().unwrap();
 /// # assert_eq!(expected, path);
 ///
-/// // `Path` implements `FromIterator` for items that `Element`s.
+/// // `Path` implements `FromIterator` for items that are `Element`s.
 /// let path = Path::from_iter([
 ///     Element::indexed_field("foo", [3, 7]),
 ///     Element::indexed_field("bar", 2),
@@ -133,7 +128,7 @@ use crate::{
 ///
 /// // `Element` can be converted into from string/index tuples. Where the
 /// // string is the attribute name. In this case, an "index" is an array,
-/// // slice, `Vec` of, or a single `u32`.
+/// // slice, `Vec` of, or a single `usize`.
 /// //
 /// // It's smart about it, though. If if there's one or zero indexes it'll do
 /// // the right thing. This helps when you're chaining iterator adapters and
@@ -169,33 +164,20 @@ use crate::{
 /// # assert_eq!(Path::from_iter([Element::name("foo.bar")]), path);
 ///
 /// // If the item at `foo[3]` has an attribute named `bar.baz`:
-/// let path = Path::from_iter([Element::indexed_field("foo", 3), Element::name("bar.baz")]);
+/// let path = Path::from_iter([
+///     Element::indexed_field("foo", 3),
+///     Element::name("bar.baz")
+/// ]);
 /// # assert_eq!("foo[3].bar.baz", path.to_string());
 /// ```
 ///
-/// [`Name`] and [`Path`] can be converted between each other.
+/// A [`Name`] can be converted into a `Path`.
 /// ```
 /// use dynamodb_expression::path::{Element, Name, Path};
 ///
-/// // A `Name` can be converted into a `Path`
 /// let name = Name::from("foo");
 /// let path = Path::from(name);
 /// assert_eq!(Path::from(Element::name("foo")), path);
-///
-/// // A `Path` consisting of a single, unindexed attribute can be converted into a `Name`.
-/// let path: Path = "foo".parse().unwrap();
-/// let name = Name::try_from(path).unwrap();
-/// assert_eq!(Name::from("foo"), name);
-///
-/// // If the `Path` has more elements, or has indexes, it cannot be converted
-/// // and the original `Path` is returned.
-/// let path: Path = "foo[0]".parse().unwrap();
-/// let err = Name::try_from(path.clone()).unwrap_err();
-/// assert_eq!(path, err);
-///
-/// let path: Path = "foo.bar".parse().unwrap();
-/// let err = Name::try_from(path.clone()).unwrap_err();
-/// assert_eq!(path, err);
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
@@ -518,20 +500,38 @@ impl FromStr for Path {
     }
 }
 
-impl IntoIterator for Path {
-    type Item = Element;
-    type IntoIter = alloc::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.elements.into_iter()
+impl From<Path> for Vec<Element> {
+    fn from(path: Path) -> Self {
+        path.elements
     }
 }
 
 impl TryFrom<Path> for Name {
     type Error = Path;
 
-    /// If the [`Path`] is just a single [`Name`] element, this will return `Ok`
-    /// with that [`Name`]. Otherwise, the original [`Path`] is returned in the `Err`.
+    /// A [`Path`] consisting of a single, unindexed attribute can be converted
+    /// into a [`Name`].
+    /// ```
+    /// use dynamodb_expression::path::{Element, Name, Path};
+    ///
+    /// let path: Path = "foo".parse().unwrap();
+    /// let name = Name::try_from(path).unwrap();
+    /// assert_eq!(Name::from("foo"), name);
+    ///```
+    ///
+    /// If the `Path` has indexes, or has sub-attributes, it cannot be
+    /// converted, and the original `Path` is returned.
+    /// ```
+    /// # use dynamodb_expression::path::{Element, Name, Path};
+    /// #
+    /// let path: Path = "foo[0]".parse().unwrap();
+    /// let err = Name::try_from(path.clone()).unwrap_err();
+    /// assert_eq!(path, err);
+    ///
+    /// let path: Path = "foo.bar".parse().unwrap();
+    /// let err = Name::try_from(path.clone()).unwrap_err();
+    /// assert_eq!(path, err);
+    /// ```
     fn try_from(path: Path) -> Result<Self, Self::Error> {
         let element: [_; 1] = path
             .elements
@@ -648,15 +648,15 @@ mod test {
     fn display_indexed() {
         // Also tests that `Element::indexed_field()` can accept a few different types of input.
 
-        // From a u32
+        // From a usize
         let path = Element::indexed_field("foo", 42);
         assert_str_eq!("foo[42]", path.to_string());
 
-        // From an array of u32
+        // From an array of usize
         let path = Element::indexed_field("foo", [42]);
         assert_str_eq!("foo[42]", path.to_string());
 
-        // From a slice of u32
+        // From a slice of usize
         let path = Element::indexed_field("foo", &([42, 37, 9])[..]);
         assert_str_eq!("foo[42][37][9]", path.to_string());
     }

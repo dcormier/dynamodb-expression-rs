@@ -39,7 +39,7 @@ impl Element {
     /// An indexed field element of a document path. For example, `foo[3]` or
     /// `foo[7][4]`
     ///
-    /// `indexes` here can be a slice, `Vec`, array of, or single `u32`.
+    /// `indexes` here can be a slice, `Vec`, array of, or single `usize`.
     ///
     /// See also: [`Element`], [`Path`]
     ///
@@ -153,8 +153,8 @@ impl FromStr for Element {
                         return Err(PathParseError);
                     }
 
-                    // The value between the braces should be a u32.
-                    let index: u32 = remaining[open + 1..close]
+                    // The value between the braces should be a usize.
+                    let index: usize = remaining[open + 1..close]
                         .parse()
                         .map_err(|_| PathParseError)?;
                     indexes.push(index);
@@ -196,7 +196,7 @@ impl FromStr for Element {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IndexedField {
     pub(crate) name: Name,
-    indexes: Vec<u32>,
+    indexes: Vec<usize>,
 }
 
 impl fmt::Display for IndexedField {
@@ -208,41 +208,41 @@ impl fmt::Display for IndexedField {
     }
 }
 
-/// Used for [`IndexedField`]. A slice, `Vec`, array of, or single `u32`.
+/// Used for [`IndexedField`]. A slice, `Vec`, array of, or single `usize`.
 ///
 /// See also: [`Element`], [`Path`]
 ///
 /// [`Path`]: crate::path::Path
 pub trait Indexes {
-    fn into_indexes(self) -> Vec<u32>;
+    fn into_indexes(self) -> Vec<usize>;
 }
 
-impl Indexes for u32 {
-    fn into_indexes(self) -> Vec<u32> {
+impl Indexes for usize {
+    fn into_indexes(self) -> Vec<usize> {
         vec![self]
     }
 }
 
-impl Indexes for Vec<u32> {
-    fn into_indexes(self) -> Vec<u32> {
+impl Indexes for Vec<usize> {
+    fn into_indexes(self) -> Vec<usize> {
         self
     }
 }
 
-impl Indexes for &[u32] {
-    fn into_indexes(self) -> Vec<u32> {
+impl Indexes for &[usize] {
+    fn into_indexes(self) -> Vec<usize> {
         self.to_vec()
     }
 }
 
-impl<const N: usize> Indexes for [u32; N] {
-    fn into_indexes(self) -> Vec<u32> {
+impl<const N: usize> Indexes for [usize; N] {
+    fn into_indexes(self) -> Vec<usize> {
         self.to_vec()
     }
 }
 
-impl<const N: usize> Indexes for &[u32; N] {
-    fn into_indexes(self) -> Vec<u32> {
+impl<const N: usize> Indexes for &[usize; N] {
+    fn into_indexes(self) -> Vec<usize> {
         self.to_vec()
     }
 }
@@ -265,15 +265,15 @@ mod test {
     fn display_indexed() {
         // Also tests that `Element::indexed_field()` can accept a few different types of input.
 
-        // From a u32
+        // From a usize
         let path = Element::indexed_field("foo", 42);
         assert_eq!("foo[42]", path.to_string());
 
-        // From an array of u32
+        // From an array of usize
         let path = Element::indexed_field("foo", [42]);
         assert_eq!("foo[42]", path.to_string());
 
-        // From a slice of u32
+        // From a slice of usize
         let path = Element::indexed_field("foo", &([42, 37, 9])[..]);
         assert_eq!("foo[42][37][9]", path.to_string());
     }

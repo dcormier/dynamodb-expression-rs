@@ -8,19 +8,20 @@ use aws_sdk_dynamodb::{
     operation::query::QueryError,
     types::{AttributeValue, ReturnValue},
 };
-use pretty_assertions::{assert_eq, assert_ne};
-
 use dynamodb_expression::{
     expression::Expression,
     key::Key,
-    path::{Name, Path},
+    path::{Element, Name, Path},
     string_value,
     update::{Remove, Set, SetAction},
 };
+use pretty_assertions::{assert_eq, assert_ne};
 
 use crate::dynamodb::{
     debug::DebugList,
-    item::{new_item, ATTR_ID, ATTR_LIST, ATTR_NUM, ATTR_STRING},
+    item::{
+        new_item, ATTR_ID, ATTR_LIST, ATTR_MAP, ATTR_NULL, ATTR_NUM, ATTR_STRING, ATTR_STRINGS,
+    },
     partial_eq::PartialEqItem,
     setup::{clean_table, delete_table},
     Config,
@@ -87,8 +88,28 @@ async fn test_update(config: &Config) {
         .await
         .expect("Failed to update item");
 
+    let update = Expression::builder()
+        .with_update(Remove::from_iter([
+            Element::name(ATTR_NULL).into(),
+            Path::from_iter([
+                Element::name(ATTR_MAP),
+                Element::indexed_field(ATTR_LIST, 0),
+            ]),
+            Path::from_iter([ATTR_MAP, ATTR_NULL].map(Name::from)),
+        ]))
+        .build()
+        .update_item(client)
+        .set_key(item_key(&item).into());
+
+    println!("\n{:?}\n", update.as_input());
+
+    update
+        .table_name(&config.table_name)
+        .send()
+        .await
+        .expect("Failed to update item");
+
     // TODO:
-    //  * Remove
     //  * Add
     //  * Delete
 
@@ -173,11 +194,10 @@ async fn test_update(config: &Config) {
 
     // Remove those two items we added to the list
     let update = Expression::builder()
-        .with_update(
-            [(ATTR_LIST, 0), (ATTR_LIST, (updated_list.len() - 1) as u32)]
-                .into_iter()
-                .collect::<Remove>(),
-        )
+        .with_update(Remove::from_iter([
+            (ATTR_LIST, 0),
+            (ATTR_LIST, (updated_list.len() - 1)),
+        ]))
         .build()
         .update_item(client)
         .set_key(item_key(&item).into());
@@ -215,6 +235,57 @@ async fn test_update(config: &Config) {
         !list_cleaned.contains(&AttributeValue::S("A new value at the end".into())),
         "Value was not removed from the end. The list: {:#?}",
         DebugList(list_cleaned.iter()),
+    );
+
+    assert_eq!(
+        None,
+        updated_item.get(ATTR_NULL),
+        "Attribute should have been removed"
+    );
+
+    let map_updated = updated_item
+        .get(ATTR_MAP)
+        .expect("Map attribute is missing")
+        .as_m()
+        .expect("Field is missing or not a map");
+
+    assert_eq!(
+        None,
+        map_updated.get(ATTR_NULL),
+        "Sub-attribute should have been removed"
+    );
+
+    let map_list = item
+        .get(ATTR_MAP)
+        .expect("Map attribute is missing")
+        .as_m()
+        .expect("Field is missing or not a map")
+        .get(ATTR_LIST)
+        .expect("List is missing from the map")
+        .as_l()
+        .expect("Item is not a list");
+
+    let map_list_updated = map_updated
+        .get(ATTR_LIST)
+        .expect("List is missing from the map")
+        .as_l()
+        .expect("Item is not a list");
+
+    assert_eq!(
+        map_list.len() - 1,
+        map_list_updated.len(),
+        "There should have been one item removed"
+    );
+
+    let map_list_first = map_list.first().unwrap();
+    // println!(
+    //     "Looking to see if this was removed: {:?}",
+    //     DebugAttributeValue(map_list_first)
+    // );
+    assert_eq!(
+        None,
+        map_list_updated.iter().find(|elem| *elem == map_list_first),
+        "The first item should have been removed"
     );
 }
 

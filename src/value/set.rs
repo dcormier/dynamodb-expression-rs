@@ -319,10 +319,6 @@ mod test {
         fn charset(
         ) -> impl Iterator<Item = char> + ExactSizeIterator + DoubleEndedIterator + FusedIterator + Clone
         {
-            // Uh, `RangeInclusive<u32>` (among other range types) doesn't
-            // implement `ExactSizeIterator`.
-            // https://doc.rust-lang.org/std/iter/trait.ExactSizeIterator.html#implementors
-            // TODO: Open a Rust issue about the missing implementations. See about fixing it.
             (32..127).map(char::from_u32).map(Option::unwrap)
         }
 
