@@ -15,7 +15,7 @@ use dynamodb_expression::{
     num_value,
     path::{Element, Name, Path},
     string_set, string_value,
-    update::{Add, Remove, Set, SetAction},
+    update::{Add, Delete, Remove, Set, SetAction},
     value::Num,
 };
 use pretty_assertions::{assert_eq, assert_ne};
@@ -72,8 +72,7 @@ async fn test_update(config: &Config) {
     test_update_set(config, client).await;
     test_update_remove(config, client).await;
     test_update_add(config, client).await;
-    // TODO:
-    //  * Delete
+    test_update_delete(config, client).await;
 }
 
 async fn test_update_set(config: &Config, client: &Client) {
@@ -375,6 +374,72 @@ async fn test_update_add(config: &Config, client: &Client) {
 
     assert_eq!("42", n);
     assert_eq!("38.5", n_updated);
+}
+
+async fn test_update_delete(config: &Config, client: &Client) {
+    let item = fresh_item(config).await;
+    assert_eq!(None, item.get(ATTR_NEW_FIELD));
+
+    let update = Expression::builder()
+        .with_update(Delete::new(
+            Path::from_iter([
+                Element::name(ATTR_MAP),
+                Element::indexed_field(ATTR_LIST, 1),
+            ]),
+            string_set(["a", "c", "d"]),
+        ))
+        .build()
+        .update_item(client)
+        .table_name(&config.table_name)
+        .set_key(item_key(&item).into());
+
+    // println!("\n{:?}\n", update.as_input());
+
+    let updated_item = update
+        .return_values(ReturnValue::AllNew)
+        .send()
+        .await
+        .expect("Failed to update item")
+        .attributes
+        .expect("Where is the item?");
+
+    // println!("Got item: {:#?}", DebugItem(&updated_item));
+
+    let map_list = item
+        .get(ATTR_MAP)
+        .expect("Map attribute is missing")
+        .as_m()
+        .expect("Field is not a map")
+        .get(ATTR_LIST)
+        .expect("List is missing from the map")
+        .as_l()
+        .expect("Item is not a list");
+
+    let map_list_updated = updated_item
+        .get(ATTR_MAP)
+        .expect("Map attribute is missing")
+        .as_m()
+        .expect("Field is not a map")
+        .get(ATTR_LIST)
+        .expect("List is missing from the map")
+        .as_l()
+        .expect("Item is not a list");
+
+    let ss = map_list
+        .get(1)
+        .expect("Item doesn't exist")
+        .as_ss()
+        .expect("Item is not a string set");
+
+    let ss_updated = map_list_updated
+        .get(1)
+        .expect("Item doesn't exist")
+        .as_ss()
+        .expect("Item is not a string set");
+
+    assert_eq!(3, ss.len());
+    assert_eq!(1, ss_updated.len());
+    assert_eq!(["b"], ss_updated.as_slice());
 }
 
 /// Wraps a test function in code to set up and tear down the DynamoDB table.
