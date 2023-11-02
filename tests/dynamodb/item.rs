@@ -101,6 +101,7 @@ where
 }
 
 /// Decodes base64 from DynamoDB.
+#[allow(unused)]
 pub fn base64_decode<T>(b: T) -> Result<Vec<u8>, base64::DecodeError>
 where
     T: AsRef<[u8]>,

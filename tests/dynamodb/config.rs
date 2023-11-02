@@ -10,6 +10,7 @@ pub struct Config {
     pub creds: Option<(String, String)>,
     pub table_name: String,
 
+    #[allow(unused)]
     client: OnceCell<Client>,
 }
 
@@ -20,6 +21,7 @@ impl Config {
     /// ```
     /// docker run -p 127.0.0.1:8000:8000 amazon/dynamodb-local
     /// ```
+    #[allow(unused)]
     pub fn new_local() -> Self {
         Self {
             endpoint: Some("http://127.0.0.1:8000".into()),

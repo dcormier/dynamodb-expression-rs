@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 //! Helpers for running tests against DynamoDB.
 
 pub mod config;

@@ -1,4 +1,3 @@
-#[cfg(test)]
 mod dynamodb;
 
 use std::{collections::HashMap, future::Future, pin::Pin};
@@ -11,7 +10,6 @@ use aws_sdk_dynamodb::{
 };
 use dynamodb_expression::{
     expression::Expression,
-    key::Key,
     path::{Element, Name, Path},
     string_set, string_value,
     update::{Add, Delete, Remove, Set, SetAction},
@@ -480,7 +478,7 @@ async fn get_item(
     config: &Config,
 ) -> Result<Option<HashMap<String, AttributeValue>>, SdkError<QueryError>> {
     Expression::builder()
-        .with_key_condition(Key::from(Name::from(ATTR_ID)).equal(string_value(ITEM_ID)))
+        .with_key_condition(Path::name(ATTR_ID).key().equal(string_value(ITEM_ID)))
         .build()
         .query(config.client().await)
         .table_name(config.table_name.clone())

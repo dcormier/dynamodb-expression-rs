@@ -1,4 +1,3 @@
-#[cfg(test)]
 mod dynamodb;
 
 use aws_sdk_dynamodb::{

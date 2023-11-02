@@ -1,9 +1,8 @@
 /*!
 A package to help build DynamoDB filter and condition expressions in a type safe way.
+*/
 
 // TODO: An example here.
-
-*/
 
 extern crate alloc;
 

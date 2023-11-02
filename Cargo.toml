@@ -1,14 +1,14 @@
 [package]
 name = "dynamodb_expression"
-# TODO: Update this
-description = "Types to build DynamoDB expressions"
+description = "Types to build DynamoDB filter, condition, or update expressions"
 authors = ["Daniel Cormier"]
-version = "0.2.0"
+version = "0.2.0-alpha.1"
 edition = "2021"
 documentation = "https://docs.rs/dynamodb-expression/"
 repository = "https://github.com/dcormier/dynamodb-expression-rs"
 license = "Apache-2.0"
 keywords = ["aws", "dynamodb", "expression", "filter", "condition", "update"]
+include = ["/src", "/LICENSE.txt", "/NOTICE.txt", "README.md"]
 
 [dependencies]
 aws-sdk-dynamodb = "0"

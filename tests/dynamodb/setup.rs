@@ -14,6 +14,7 @@ use itertools::Itertools;
 use super::item::ATTR_ID;
 
 /// Creates the table if it doesn't already exist. Logs success or failure.
+#[allow(unused)]
 pub async fn create_table(
     client: &Client,
     table_name: &str,
@@ -74,6 +75,7 @@ pub async fn create_table(
         })
 }
 
+#[allow(unused)]
 pub async fn delete_table(
     client: &Client,
     table_name: &str,
@@ -114,6 +116,7 @@ pub async fn delete_table(
 }
 
 /// If the table already exists, it's deleted and recreated. If it doesn't exist, it's created.
+#[allow(unused)]
 pub async fn clean_table(
     client: &Client,
     table_name: &str,
