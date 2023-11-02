@@ -84,7 +84,8 @@ impl Builder {
                 .map(|name| self.process_name(name.into()))
                 .collect(),
         )
-        // Empty into `None` because DynamoDB doesn't allow empty projection expressions.
+        // Empty into `None` because DynamoDB doesn't allow empty projection
+        // expressions, and will return:
         // `Invalid ProjectionExpression: The expression can not be empty;`
         .empty_into_none();
 
@@ -323,5 +324,38 @@ impl Builder {
             }
             ValueOrRef::Ref(value) => value,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use aws_sdk_dynamodb::operation::query::builders::QueryInputBuilder;
+    use pretty_assertions::assert_eq;
+
+    use crate::path::Name;
+
+    use super::Expression;
+
+    #[test]
+    fn empty_projection() {
+        let expression = Expression::builder()
+            .with_projection(Vec::<Name>::default())
+            .build();
+        assert_eq!(
+            Expression {
+                condition_expression: None,
+                filter_expression: None,
+                key_condition_expression: None,
+                projection_expression: None,
+                update_expression: None,
+                expression_attribute_names: None,
+                expression_attribute_values: None
+            },
+            expression,
+            "An empty iterator should result in `None` for projection expression"
+        );
+
+        let query = expression.to_query_input_builder();
+        assert_eq!(QueryInputBuilder::default(), query);
     }
 }

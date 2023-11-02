@@ -35,24 +35,10 @@ async fn query() {
 
 async fn test_query(config: &Config) {
     let item = fresh_item(config).await;
-    let got = Expression::builder()
-        .with_key_condition(Key::from(Name::from(ATTR_ID)).equal(string_value(ITEM_ID)))
-        .with_projection(
-            // Testing with an empty projection expression to see if:
-            // 1. DynamoDB allows it or
-            // 2. We handle it properly
-            Vec::<Name>::default(),
-        )
-        .build()
-        .query(config.client().await)
-        .table_name(config.table_name.clone())
-        .send()
+    let got = get_item(config)
         .await
-        .expect("Failed to query item")
-        .items
-        .expect("Where is the item?")
-        .pop()
-        .expect("Got no items");
+        .expect("Failed to get item")
+        .expect("Where is the item?");
 
     assert_eq!(DebugItem(item), DebugItem(got));
 }
@@ -503,10 +489,7 @@ async fn get_item(
         .map(|resp| {
             let mut items = resp.items.expect("Should have found items");
 
-            assert!(
-                items.len() <= 1,
-                "Should not have gotten more than one item"
-            );
+            assert_eq!(1, items.len(), "Should have gotten one item");
 
             items.pop()
         })

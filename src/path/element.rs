@@ -26,7 +26,7 @@ pub enum Element {
 impl Element {
     /// An attribute name element of a document path.
     ///
-    /// See also: [`Element`], [`Path`]
+    /// See also: [`Name`], [`Element`], [`Path`]
     ///
     /// [`Path`]: crate::path::Path
     pub fn name<N>(name: N) -> Self
@@ -39,11 +39,29 @@ impl Element {
     /// An indexed field element of a document path. For example, `foo[3]` or
     /// `foo[7][4]`
     ///
-    /// `indexes` here can be a slice, `Vec`, array of, or single `usize`.
+    /// `indexes` here can be an array, slice, `Vec` of, or single `usize`.
+    /// ```
+    /// # use dynamodb_expression::path::Element;
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// assert_eq!("foo[3]", Element::indexed_field("foo", 3).to_string());
+    /// assert_eq!("foo[3]", Element::indexed_field("foo", [3]).to_string());
+    /// assert_eq!("foo[3]", Element::indexed_field("foo", &[3]).to_string());
+    /// assert_eq!("foo[3]", Element::indexed_field("foo", vec![3]).to_string());
     ///
-    /// See also: [`Element`], [`Path`]
+    /// assert_eq!("foo[7][4]", Element::indexed_field("foo", [7, 4]).to_string());
+    /// assert_eq!("foo[7][4]", Element::indexed_field("foo", &[7, 4]).to_string());
+    /// assert_eq!("foo[7][4]", Element::indexed_field("foo", vec![7, 4]).to_string());
+    ///
+    /// assert_eq!("foo", Element::indexed_field("foo", []).to_string());
+    /// assert_eq!("foo", Element::indexed_field("foo", &[]).to_string());
+    /// assert_eq!("foo", Element::indexed_field("foo", vec![]).to_string());
+    /// ```
+    ///
+    /// See also: [`IndexedField`], [`Path`], [`Path::indexed_field`]
     ///
     /// [`Path`]: crate::path::Path
+    /// [`Path::indexed_field`]: crate::path::Path::indexed_field
     pub fn indexed_field<N, I>(name: N, indexes: I) -> Self
     where
         N: Into<Name>,
@@ -188,10 +206,10 @@ impl FromStr for Element {
 /// the elements `foo[3][7]` and `bar[2]` would both be represented as an
 /// `IndexedField`.
 ///
-/// Created via `Element::from` and [`Element::indexed_field`].
+/// Created via `Element::from`, [`Element::indexed_field`], and
+/// [`Path::indexed_field`].
 ///
-/// See also: [`Element`], [`Path`]
-///
+/// [`Path::indexed_field`]: crate::path::Path::indexed_field
 /// [`Path`]: crate::path::Path
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IndexedField {
@@ -208,11 +226,11 @@ impl fmt::Display for IndexedField {
     }
 }
 
-/// Used for [`IndexedField`]. A slice, `Vec`, array of, or single `usize`.
+/// Used for [`IndexedField`]. An array, slice, `Vec` of, or single `usize`.
 ///
-/// See also: [`Element`], [`Path`]
+/// See also: [`Element::indexed_field`], [`Path::indexed_field`]
 ///
-/// [`Path`]: crate::path::Path
+/// [`Path::indexed_field`]: crate::path::Path::indexed_field
 pub trait Indexes {
     fn into_indexes(self) -> Vec<usize>;
 }
@@ -251,7 +269,7 @@ impl<const N: usize> Indexes for &[usize; N] {
 mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::{num_value, Comparator, Path};
+    use crate::{num_value, Path};
 
     use super::{Element, Name};
 
@@ -300,7 +318,7 @@ mod test {
             "a".parse::<Path>()
                 .unwrap()
                 .size()
-                .comparison(Comparator::Eq, num_value(0))
+                .equal(num_value(0))
                 .to_string()
         );
     }

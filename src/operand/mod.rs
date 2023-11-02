@@ -9,7 +9,7 @@ use crate::{
         equal, greater_than, greater_than_or_equal, less_than, less_than_or_equal, not_equal,
         Between, Condition, In,
     },
-    path::Path,
+    path::{Element, IndexedField, Name, Path},
     value::{Ref, Scalar, ValueOrRef},
 };
 
@@ -145,6 +145,24 @@ impl fmt::Display for OperandType {
 impl From<Path> for OperandType {
     fn from(path: Path) -> Self {
         Self::Path(path)
+    }
+}
+
+impl From<Element> for OperandType {
+    fn from(element: Element) -> Self {
+        Self::Path(element.into())
+    }
+}
+
+impl From<Name> for OperandType {
+    fn from(name: Name) -> Self {
+        Self::Path(name.into())
+    }
+}
+
+impl From<IndexedField> for OperandType {
+    fn from(field: IndexedField) -> Self {
+        Self::Path(field.into())
     }
 }
 

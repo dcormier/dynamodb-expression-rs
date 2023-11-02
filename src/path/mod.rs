@@ -207,9 +207,30 @@ impl Path {
 
     /// Constructs a [`Path`] for a single attribute name (with no indexes or
     /// sub-attributes). If you have a attribute name with no indexes, you can
-    /// pass an empty array, or use [`Path::name()`].
+    /// pass an empty collection, or use [`Path::name`].
     ///
-    /// [`Path::name()`]: Self::name
+    /// `indexes` here can be an array, slice, `Vec` of, or single `usize`.
+    /// ```
+    /// # use dynamodb_expression::path::Path;
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// assert_eq!("foo[3]", Path::indexed_field("foo", 3).to_string());
+    /// assert_eq!("foo[3]", Path::indexed_field("foo", [3]).to_string());
+    /// assert_eq!("foo[3]", Path::indexed_field("foo", &[3]).to_string());
+    /// assert_eq!("foo[3]", Path::indexed_field("foo", vec![3]).to_string());
+    ///
+    /// assert_eq!("foo[7][4]", Path::indexed_field("foo", [7, 4]).to_string());
+    /// assert_eq!("foo[7][4]", Path::indexed_field("foo", &[7, 4]).to_string());
+    /// assert_eq!("foo[7][4]", Path::indexed_field("foo", vec![7, 4]).to_string());
+    ///
+    /// assert_eq!("foo", Path::indexed_field("foo", []).to_string());
+    /// assert_eq!("foo", Path::indexed_field("foo", &[]).to_string());
+    /// assert_eq!("foo", Path::indexed_field("foo", vec![]).to_string());
+    /// ```
+    ///
+    /// See also: [`IndexedField`], [`Element::indexed_field`]
+    ///
+    /// [`Path::name`]: Self::name
     pub fn indexed_field<N, I>(name: N, indexes: I) -> Self
     where
         N: Into<Name>,
@@ -220,16 +241,16 @@ impl Path {
         }
     }
 
-    /// Appends the another [`Path`] to the end of this one.
+    /// Appends another [`Path`] to the end of this one.
     ///
     /// ```
     /// use dynamodb_expression::path::Path;
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let mut path:Path="foo".parse().unwrap();
-    /// let sub_path:Path="bar".parse().unwrap();
+    /// let mut path: Path = "foo[2]".parse().unwrap();
+    /// let sub_path: Path = "bar".parse().unwrap();
     /// path.append(sub_path);
-    /// assert_eq!("foo.bar".parse::<Path>().unwrap(), path);
+    /// assert_eq!("foo[2].bar".parse::<Path>().unwrap(), path);
     /// ```
     pub fn append(&mut self, mut other: Path) {
         self.elements.append(&mut other.elements);
