@@ -1,5 +1,10 @@
 /*!
-A package to help build DynamoDB filter and condition expressions in a type safe way.
+A package to help build DynamoDB filter, condition, and update expressions in a type-safe way.
+
+See the integration tests for [querying] and [updating] as a starting place.
+
+[querying]: https://github.com/dcormier/dynamodb-expression-rs/blob/b18bc1c/tests/aws_sdk_dynamo.rs#L480-L486
+[updating]: https://github.com/dcormier/dynamodb-expression-rs/blob/b18bc1c/tests/aws_sdk_dynamo.rs#L52
 */
 
 // TODO: An example here.
