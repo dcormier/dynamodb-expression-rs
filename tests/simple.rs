@@ -35,6 +35,7 @@ fn scan_input() {
 #[test]
 fn put() {
     Put::builder()
+        .item("name", AttributeValue::S("Jane".into()))
         .condition_expression(
             Path::name("#name")
                 .attribute_not_exists()
@@ -42,7 +43,9 @@ fn put() {
         )
         .expression_attribute_names("#name", "name")
         .expression_attribute_values(":zero", AttributeValue::N(0.to_string()))
-        .build();
+        .table_name("people")
+        .build()
+        .unwrap();
 }
 
 #[test]

@@ -32,7 +32,7 @@ impl Config {
     }
 
     async fn dynamodb_config(&self) -> aws_sdk_dynamodb::Config {
-        let mut builder = Builder::from(&aws_config::from_env().load().await);
+        let mut builder = Builder::from(&aws_config::load_from_env().await);
 
         if let Some(endpoint) = &self.endpoint {
             println!("Using DynamoDB endpoint: {endpoint}");

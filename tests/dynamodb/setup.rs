@@ -26,19 +26,22 @@ pub async fn create_table(
             KeySchemaElement::builder()
                 .key_type(KeyType::Hash)
                 .attribute_name(ATTR_ID)
-                .build(),
+                .build()
+                .unwrap(),
         )
         .attribute_definitions(
             AttributeDefinition::builder()
                 .attribute_name(ATTR_ID)
                 .attribute_type(ScalarAttributeType::S)
-                .build(),
+                .build()
+                .unwrap(),
         )
         .provisioned_throughput(
             ProvisionedThroughput::builder()
                 .read_capacity_units(1)
                 .write_capacity_units(1)
-                .build(),
+                .build()
+                .unwrap(),
         )
         .send()
         .await
