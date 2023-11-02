@@ -1,5 +1,5 @@
 [package]
-name = "dynamodb_expression"
+name = "dynamodb-expression"
 description = "Types to build DynamoDB filter, condition, or update expressions"
 authors = ["Daniel Cormier"]
 version = "0.2.0-alpha.1"
