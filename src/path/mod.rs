@@ -576,7 +576,7 @@ pub struct PathParseError;
 mod test {
     use pretty_assertions::{assert_eq, assert_str_eq};
 
-    use crate::num_value;
+    use crate::{num_value, ref_value};
 
     use super::{Element, Name, Path, PathParseError};
 
@@ -705,5 +705,28 @@ mod test {
                 .equal(num_value(0))
                 .to_string()
         );
+    }
+
+    #[test]
+    fn begins_with_string() {
+        let begins_with = Path::indexed_field("foo", 3).begins_with("foo");
+        assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
+
+        let begins_with = Path::indexed_field("foo", 3).begins_with(String::from("foo"));
+        assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
+
+        #[allow(clippy::needless_borrow)]
+        let begins_with = Path::indexed_field("foo", 3).begins_with(&String::from("foo"));
+        assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
+
+        #[allow(clippy::needless_borrow)]
+        let begins_with = Path::indexed_field("foo", 3).begins_with(&"foo");
+        assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
+    }
+
+    #[test]
+    fn begins_with_value_ref() {
+        let begins_with = Path::indexed_field("foo", 3).begins_with(ref_value("prefix"));
+        assert_eq!("begins_with(foo[3], :prefix)", begins_with.to_string());
     }
 }

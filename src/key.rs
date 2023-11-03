@@ -132,3 +132,33 @@ impl From<KeyCondition> for String {
         key_condition.condition.into()
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{ref_value, Path};
+
+    use super::Key;
+
+    #[test]
+    fn begins_with_string() {
+        let begins_with = Key::from(Path::name("foo")).begins_with("foo");
+        assert_eq!(r#"begins_with(foo, "foo")"#, begins_with.to_string());
+
+        let begins_with = Key::from(Path::name("foo")).begins_with(String::from("foo"));
+        assert_eq!(r#"begins_with(foo, "foo")"#, begins_with.to_string());
+
+        #[allow(clippy::needless_borrow)]
+        let begins_with = Key::from(Path::name("foo")).begins_with(&String::from("foo"));
+        assert_eq!(r#"begins_with(foo, "foo")"#, begins_with.to_string());
+
+        #[allow(clippy::needless_borrow)]
+        let begins_with = Key::from(Path::name("foo")).begins_with(&"foo");
+        assert_eq!(r#"begins_with(foo, "foo")"#, begins_with.to_string());
+    }
+
+    #[test]
+    fn begins_with_value_ref() {
+        let begins_with = Key::from(Path::name("foo")).begins_with(ref_value("prefix"));
+        assert_eq!("begins_with(foo, :prefix)", begins_with.to_string());
+    }
+}

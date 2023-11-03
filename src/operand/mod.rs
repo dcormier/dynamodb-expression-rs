@@ -1,18 +1,35 @@
+mod operand_type;
 mod size;
 
-pub use size::Size;
+pub(crate) use self::operand_type::OperandType;
+pub use self::size::Size;
 
 use core::fmt;
 
-use crate::{
-    condition::{
-        equal, greater_than, greater_than_or_equal, less_than, less_than_or_equal, not_equal,
-        Between, Condition, In,
-    },
-    path::{Element, IndexedField, Name, Path},
-    value::{Ref, Scalar, ValueOrRef},
+use crate::condition::{
+    equal, greater_than, greater_than_or_equal, less_than, less_than_or_equal, not_equal, Between,
+    Condition, In,
 };
 
+/// Represents a [part of a DynamoDB comparison][1].
+///
+/// You can use `Operand::from` to construct an instance from any of these:
+/// * [`Path`]
+/// * [`Element`]
+/// * [`Name`]
+/// * [`IndexedField`]
+/// * [`Scalar`]
+/// * [`Ref`]
+/// * [`Condition`] (as well as `Box<Condition>`)
+/// * [`Size`]
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
+/// [`Path`]: crate::path::Path
+/// [`Element`]: crate::path::Element
+/// [`Name`]: crate::path::Name
+/// [`IndexedField`]: crate::path::IndexedField
+/// [`Scalar`]: crate::value::Scalar
+/// [`Ref`]: crate::value::Ref
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Operand {
     pub(crate) op: OperandType,
@@ -120,78 +137,5 @@ where
 {
     fn from(op: T) -> Self {
         Self { op: op.into() }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) enum OperandType {
-    Path(Path),
-    Scalar(ValueOrRef),
-    Condition(Box<Condition>),
-    Size(Size),
-}
-
-impl fmt::Display for OperandType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Path(operand) => operand.fmt(f),
-            Self::Scalar(operand) => operand.fmt(f),
-            Self::Condition(operand) => operand.fmt(f),
-            Self::Size(operand) => operand.fmt(f),
-        }
-    }
-}
-
-impl From<Path> for OperandType {
-    fn from(path: Path) -> Self {
-        Self::Path(path)
-    }
-}
-
-impl From<Element> for OperandType {
-    fn from(element: Element) -> Self {
-        Self::Path(element.into())
-    }
-}
-
-impl From<Name> for OperandType {
-    fn from(name: Name) -> Self {
-        Self::Path(name.into())
-    }
-}
-
-impl From<IndexedField> for OperandType {
-    fn from(field: IndexedField) -> Self {
-        Self::Path(field.into())
-    }
-}
-
-impl From<Scalar> for OperandType {
-    fn from(value: Scalar) -> Self {
-        Self::Scalar(value.into())
-    }
-}
-
-impl From<Ref> for OperandType {
-    fn from(value: Ref) -> Self {
-        Self::Scalar(value.into())
-    }
-}
-
-impl From<Condition> for OperandType {
-    fn from(condition: Condition) -> Self {
-        Self::Condition(condition.into())
-    }
-}
-
-impl From<Box<Condition>> for OperandType {
-    fn from(condition: Box<Condition>) -> Self {
-        Self::Condition(condition)
-    }
-}
-
-impl From<Size> for OperandType {
-    fn from(size: Size) -> Self {
-        Self::Size(size)
     }
 }
