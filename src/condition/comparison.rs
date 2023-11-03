@@ -6,7 +6,7 @@ use crate::operand::Operand;
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
 /// [`Condition`]: crate::condition::Condition
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Comparison {
     pub(crate) left: Operand,
     pub(crate) cmp: Comparator,
@@ -33,7 +33,7 @@ comparator ::=
     | >
     | >=
 */
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Comparator {
     /// Equal (`=`)
     Eq,

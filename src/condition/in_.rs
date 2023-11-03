@@ -2,7 +2,7 @@ use core::fmt::{self, Write};
 
 use crate::operand::Operand;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct In {
     pub op: Operand,
     pub items: Vec<Operand>,

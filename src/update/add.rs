@@ -29,7 +29,7 @@ use crate::{
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
 /// [`Update`]: crate::update::Update
 /// [`Set`]: crate::update::Set
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Add {
     pub(crate) path: Path,
     pub(crate) value: ValueOrRef,
@@ -61,7 +61,7 @@ impl fmt::Display for Add {
 /// A value that can be used for the `ADD` operation in a DynamoDB update request.
 ///
 /// See: [`Add`]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddValue {
     Set(Set),
     Num(Num),

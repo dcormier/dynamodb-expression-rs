@@ -2,7 +2,7 @@ use core::fmt;
 
 use super::Condition;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parenthetical {
     pub(crate) condition: Box<Condition>,
 }

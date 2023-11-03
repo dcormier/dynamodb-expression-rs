@@ -7,7 +7,7 @@ use crate::{
     value::{Ref, Scalar, ValueOrRef},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum OperandType {
     Path(Path),
     Scalar(ValueOrRef),

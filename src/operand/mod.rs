@@ -30,7 +30,7 @@ use crate::condition::{
 /// [`IndexedField`]: crate::path::IndexedField
 /// [`Scalar`]: crate::value::Scalar
 /// [`Ref`]: crate::value::Ref
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Operand {
     pub(crate) op: OperandType,
 }

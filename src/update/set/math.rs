@@ -29,7 +29,7 @@ use crate::{
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Math {
     // TODO: Name or Path for these?
     pub(crate) dst: Path,
@@ -65,7 +65,7 @@ impl fmt::Display for Math {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum MathOp {
     Add,
     Sub,

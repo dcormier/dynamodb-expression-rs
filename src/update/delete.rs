@@ -9,7 +9,7 @@ use crate::{
 // func (ub UpdateBuilder) Delete(name NameBuilder, value ValueBuilder) UpdateBuilder
 
 /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.DELETE>
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Delete {
     // TODO: Name or Path?
     pub(crate) path: Path,

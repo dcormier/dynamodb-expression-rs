@@ -2,7 +2,7 @@ use core::fmt;
 
 use crate::operand::Operand;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Between {
     pub(crate) op: Operand,
 

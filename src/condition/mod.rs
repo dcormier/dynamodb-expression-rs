@@ -35,7 +35,7 @@ use core::{fmt, ops};
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Syntax
 // TODO: Doc examples
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Condition {
     AttributeExists(AttributeExists),
     AttributeNotExists(AttributeNotExists),

@@ -32,7 +32,7 @@ use crate::{
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements
 /// [`.before()`]: Builder::before
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ListAppend {
     /// The field to set the newly combined list to
     // TODO: Name or Path?
@@ -83,7 +83,7 @@ impl fmt::Display for ListAppend {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 enum Order {
     /// Put the new elements before the existing elements.
     Before,

@@ -16,7 +16,7 @@ use crate::{
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
 /// [`From<Into<Path>>` implementation]: Key::from
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Key {
     // TODO: Is `Path` the right thing, here?
     //       Probably not. Looks like it should be `Name`
@@ -108,7 +108,7 @@ where
 /// See also: [`Key`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyCondition {
     pub(crate) condition: Condition,
 }

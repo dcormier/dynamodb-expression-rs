@@ -8,7 +8,7 @@ use crate::condition::Condition;
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Or {
     pub(crate) left: Box<Condition>,
     pub(crate) right: Box<Condition>,
