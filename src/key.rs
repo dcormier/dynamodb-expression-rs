@@ -6,6 +6,7 @@ use crate::{
     },
     operand::Operand,
     path::Path,
+    value::StringOrRef,
 };
 
 /// Used to build a [key condition expression][1].
@@ -18,13 +19,18 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Key {
     // TODO: Is `Path` the right thing, here?
+    //       Probably not. Looks like it should be `Name`
+    //
+    //       > Furthermore, each primary key attribute must be defined as type string, number, or binary.
+    //
+    //       https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes
     path: Path,
 }
 
 impl Key {
     pub fn begins_with<T>(self, prefix: T) -> KeyCondition
     where
-        T: Into<String>,
+        T: Into<StringOrRef>,
     {
         KeyCondition {
             condition: self.path.begins_with(prefix),

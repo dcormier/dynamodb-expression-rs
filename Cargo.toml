@@ -2,12 +2,12 @@
 name = "dynamodb-expression"
 description = "Types to build DynamoDB filter, condition, or update expressions"
 authors = ["Daniel Cormier"]
-version = "0.2.0-alpha.2"
+version = "0.2.0-alpha.3"
 edition = "2021"
 documentation = "https://docs.rs/dynamodb-expression/"
 repository = "https://github.com/dcormier/dynamodb-expression-rs"
 license = "Apache-2.0"
-keywords = ["dynamodb", "expression", "filter", "condition", "update"]
+keywords = ["dynamodb", "expression"]
 include = ["/src", "/LICENSE.txt", "/NOTICE.txt"]
 
 [dependencies]

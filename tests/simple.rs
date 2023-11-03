@@ -16,12 +16,10 @@ use dynamodb_expression::{
 
 #[test]
 fn scan_input() {
-    ScanInput::builder()
+    let scan_input = ScanInput::builder()
         .filter_expression(
             Path::name("#name")
-                // TODO: Support this
-                // .begins_with(ref_value("prefix"))
-                .begins_with("Wil")
+                .begins_with(ref_value("prefix"))
                 .and(Path::name("#age").greater_than_or_equal(ref_value("min_age"))),
         )
         .expression_attribute_names("#name", "name")
@@ -30,11 +28,16 @@ fn scan_input() {
         .expression_attribute_values(":min_age", AttributeValue::N("25".into()))
         .build()
         .unwrap();
+
+    assert_eq!(
+        Some("begins_with(#name, :prefix) AND #age >= :min_age"),
+        scan_input.filter_expression()
+    );
 }
 
 #[test]
 fn put() {
-    Put::builder()
+    let put = Put::builder()
         .item("name", AttributeValue::S("Jane".into()))
         .condition_expression(
             Path::name("#name")
@@ -46,6 +49,11 @@ fn put() {
         .table_name("people")
         .build()
         .unwrap();
+
+    assert_eq!(
+        Some("attribute_not_exists(#name) OR size(#name) = :zero"),
+        put.condition_expression()
+    );
 }
 
 #[test]

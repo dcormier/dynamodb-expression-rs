@@ -86,6 +86,52 @@ where
     Ref::from(value.into())
 }
 
+/// Represents a value that is either a string, or a reference to a value
+/// already in the expression attribute values.
+pub enum StringOrRef {
+    String(String),
+    Ref(Ref),
+}
+
+impl From<String> for StringOrRef {
+    fn from(value: String) -> Self {
+        Self::String(value)
+    }
+}
+
+impl From<&String> for StringOrRef {
+    fn from(value: &String) -> Self {
+        Self::String(value.to_owned())
+    }
+}
+
+impl From<&str> for StringOrRef {
+    fn from(value: &str) -> Self {
+        Self::String(value.to_owned())
+    }
+}
+
+impl From<&&str> for StringOrRef {
+    fn from(value: &&str) -> Self {
+        Self::String((*value).to_owned())
+    }
+}
+
+impl From<Ref> for StringOrRef {
+    fn from(value: Ref) -> Self {
+        Self::Ref(value)
+    }
+}
+
+impl From<StringOrRef> for ValueOrRef {
+    fn from(value: StringOrRef) -> Self {
+        match value {
+            StringOrRef::String(value) => value.into(),
+            StringOrRef::Ref(value) => value.into(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use pretty_assertions::assert_str_eq;

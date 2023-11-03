@@ -2,7 +2,7 @@ use core::fmt;
 
 use crate::{
     path::Path,
-    value::{Scalar, ValueOrRef},
+    value::{StringOrRef, ValueOrRef},
 };
 
 /// True if the attribute specified by `path` begins with a particular substring.
@@ -20,11 +20,22 @@ impl BeginsWith {
     pub fn new<P, S>(path: P, substr: S) -> Self
     where
         P: Into<Path>,
-        S: Into<String>,
+        // Per the docs below, this can be a string or a reference to an expression attribute value.
+        //
+        // > True if the attribute specified by path begins with a particular substring.
+        // >
+        // > Example: Check whether the first few characters of the front view picture URL are http://.
+        // >
+        // > begins_with (Pictures.FrontView, :v_sub)
+        // >
+        // > The expression attribute value :v_sub is a placeholder for http://.
+        //
+        // Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
+        S: Into<StringOrRef>,
     {
         Self {
             path: path.into(),
-            substr: Scalar::from(substr.into()).into(),
+            substr: substr.into().into(),
         }
     }
 }

@@ -28,7 +28,7 @@ use crate::{
         },
         Add, Assign, Delete, IfNotExists, ListAppend, Math, Remove,
     },
-    value::{self, Scalar, Value},
+    value::{self, Scalar, StringOrRef, Value},
 };
 
 /// Represents a DynamoDB [document path][1]. For example, `foo[3][7].bar[2].baz`.
@@ -373,7 +373,7 @@ impl Path {
     /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn begins_with<T>(self, prefix: T) -> Condition
     where
-        T: Into<String>,
+        T: Into<StringOrRef>,
     {
         BeginsWith::new(self, prefix).into()
     }

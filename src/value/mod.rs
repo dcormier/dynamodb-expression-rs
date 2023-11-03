@@ -2,7 +2,7 @@ pub mod list;
 pub mod map;
 pub mod scalar;
 pub mod set;
-pub(crate) mod value_or_ref;
+mod value_or_ref;
 
 pub use list::List;
 pub use map::Map;
@@ -10,7 +10,7 @@ pub use scalar::{binary_value, bool_value, null_value, num_value, string_value, 
 pub use set::{binary_set, num_set, string_set, BinarySet, NumSet, Set, StringSet};
 pub use value_or_ref::{ref_value, Ref};
 
-pub(crate) use value_or_ref::ValueOrRef;
+pub(crate) use value_or_ref::{StringOrRef, ValueOrRef};
 
 use core::fmt;
 
