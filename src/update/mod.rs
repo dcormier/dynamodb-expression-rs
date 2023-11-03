@@ -21,23 +21,38 @@ pub use self::{
 /// # Examples
 ///
 /// ```
+/// use core::str::FromStr;
+///
 /// use dynamodb_expression::{
-///     path::{Name, Path},
-///     update::{IfNotExists, Math, Remove, Update},
+///     update::{Remove, Update},
+///     Path,
 /// };
+/// use itertools::Itertools;
 /// # use pretty_assertions::assert_eq;
 ///
-/// let update = Update::set(Math::builder(Name::from("foo")).add(7));
+/// let update = Update::from(Path::name("foo").math().add(7));
 /// assert_eq!("SET foo = foo + 7", update.to_string());
 ///
-/// let update = Update::set(IfNotExists::builder(Name::from("foo")).value("a value"));
+/// let update = Update::from(Path::name("foo").if_not_exists().value("a value"));
 /// assert_eq!(
 ///     r#"SET foo = if_not_exists(foo, "a value")"#,
 ///     update.to_string()
 /// );
 ///
-/// let update = Update::remove("foo[3].bar[0]".parse::<Path>().unwrap());
+/// let update = Update::from(Remove::name("foo"));
+/// assert_eq!(r#"REMOVE foo"#, update.to_string());
+///
+/// let update = Update::from("foo[3].bar[0]".parse::<Path>().unwrap().remove());
 /// assert_eq!(r#"REMOVE foo[3].bar[0]"#, update.to_string());
+///
+/// let update = Update::remove(
+///     ["foo", "bar", "baz"]
+///         .into_iter()
+///         .map(Path::from_str)
+///         .try_collect::<_, Remove, _>()
+///         .unwrap(),
+/// );
+/// assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
@@ -150,44 +165,38 @@ impl From<Delete> for Update {
 
 #[cfg(test)]
 mod test {
-    use core::str::FromStr;
-
-    use crate::path::Name;
-
     #[test]
     #[ignore = "This is just to help with formatting the example for `Update`"]
     fn example() {
+        use core::str::FromStr;
+
         use crate::{
-            path::Path,
             update::{Remove, Update},
+            Path,
         };
         use itertools::Itertools;
         use pretty_assertions::assert_eq;
 
-        let update = Update::set(Path::from(Name::from("foo")).math().add(7));
+        let update = Update::from(Path::name("foo").math().add(7));
         assert_eq!("SET foo = foo + 7", update.to_string());
 
-        let update = Update::set(
-            Path::from(Name::from("foo"))
-                .if_not_exists()
-                .value("a value"),
-        );
+        let update = Update::from(Path::name("foo").if_not_exists().value("a value"));
         assert_eq!(
             r#"SET foo = if_not_exists(foo, "a value")"#,
             update.to_string()
         );
 
-        let update = Update::remove(Path::from(Name::from("foo")).remove());
+        let update = Update::from(Remove::name("foo"));
         assert_eq!(r#"REMOVE foo"#, update.to_string());
 
-        let update = Update::remove("foo[3].bar[0]".parse::<Path>().unwrap().remove());
+        let update = Update::from("foo[3].bar[0]".parse::<Path>().unwrap().remove());
         assert_eq!(r#"REMOVE foo[3].bar[0]"#, update.to_string());
 
-        let update = Update::remove::<Remove>(
+        let update = Update::remove(
             ["foo", "bar", "baz"]
                 .into_iter()
                 .map(Path::from_str)
-                .try_collect()
+                .try_collect::<_, Remove, _>()
                 .unwrap(),
         );
         assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
