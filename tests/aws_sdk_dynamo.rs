@@ -184,7 +184,7 @@ async fn test_update_remove(config: &Config, client: &Client) {
 
     let update = Expression::builder()
         .with_update(Remove::from_iter([
-            Element::name(ATTR_NULL).into(),
+            Path::name(ATTR_NULL),
             Path::from_iter([
                 Element::name(ATTR_MAP),
                 Element::indexed_field(ATTR_LIST, 0),

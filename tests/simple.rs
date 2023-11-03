@@ -1,7 +1,7 @@
 #[test]
 fn scan_input() {
     use aws_sdk_dynamodb::{operation::scan::ScanInput, types::AttributeValue};
-    use dynamodb_expression::{path::Path, ref_value};
+    use dynamodb_expression::{ref_value, Path};
     use pretty_assertions::assert_eq;
 
     let scan_input = ScanInput::builder()
@@ -26,7 +26,7 @@ fn scan_input() {
 #[test]
 fn put() {
     use aws_sdk_dynamodb::types::{AttributeValue, Put};
-    use dynamodb_expression::{path::Path, ref_value};
+    use dynamodb_expression::{ref_value, Path};
     use pretty_assertions::assert_eq;
 
     let put = Put::builder()
@@ -51,7 +51,7 @@ fn put() {
 #[test]
 fn query() {
     use aws_sdk_dynamodb::{operation::query::QueryInput, types::AttributeValue};
-    use dynamodb_expression::{expression::Expression, num_value, path::Path, ref_value};
+    use dynamodb_expression::{expression::Expression, num_value, ref_value, Path};
     use pretty_assertions::assert_eq;
 
     // Building the `QueryInput` manually.
@@ -117,7 +117,7 @@ fn query() {
 #[allow(dead_code, unused_variables)]
 async fn query_example(
 ) -> Result<(), aws_sdk_dynamodb::error::SdkError<aws_sdk_dynamodb::operation::query::QueryError>> {
-    use dynamodb_expression::{expression::Expression, num_value, path::Path};
+    use dynamodb_expression::{expression::Expression, num_value, Path};
 
     let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
 

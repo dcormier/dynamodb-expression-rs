@@ -13,7 +13,7 @@ An example showing a how to use this crate to perform a query:
 # use aws_sdk_dynamodb::{error::SdkError, operation::query::QueryError};
 #
 # async fn example() -> Result<(), SdkError<QueryError>> {
-use dynamodb_expression::{Expression, num_value, path::Path};
+use dynamodb_expression::{Expression, num_value, Path};
 
 let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
 
@@ -40,8 +40,6 @@ let query_output = Expression::builder()
 [querying]: https://github.com/dcormier/dynamodb-expression-rs/blob/b18bc1c/tests/aws_sdk_dynamo.rs#L480-L486
 [updating]: https://github.com/dcormier/dynamodb-expression-rs/blob/b18bc1c/tests/aws_sdk_dynamo.rs#L52
 */
-
-// TODO: An example here.
 
 extern crate alloc;
 

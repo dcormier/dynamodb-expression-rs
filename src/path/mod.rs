@@ -43,9 +43,11 @@ use crate::{
 ///
 /// # Examples
 ///
+/// ## Parsing
+///
 /// The safest way to construct a [`Path`] is to [parse] it.
 /// ```
-/// use dynamodb_expression::path::Path;
+/// use dynamodb_expression::Path;
 /// # use pretty_assertions::assert_eq;
 ///
 /// let path: Path = "foo".parse().unwrap();
@@ -59,39 +61,11 @@ use crate::{
 /// This makes the common assumption that each path element is separated by a
 /// period (`.`). For example, the path `foo.bar` gets treated as if `foo` is a
 /// top-level attribute, and `bar` is a sub-attribute of `foo`. However, `.` [is
-/// also a valid character in an attribute name][3].
+/// also a valid character in an attribute name][3]. See
+/// [below](#attribute-names-with--in-them) for examples of how to construct a
+/// [`Path`] when an attribute name contains a `.`.
 ///
-/// If you have an attribute name with a `.` in it, and need it to not be
-/// treated as a separator, you can construct the [`Path`] a few different ways.
-/// Here are some ways you can correctly construct a [`Path`] using `attr.name`
-/// as the problematic attribute name.
-/// ```
-/// use dynamodb_expression::path::{Element, Path};
-/// # use pretty_assertions::assert_eq;
-///
-/// // As a top-level attribute name:
-/// let path = Path::name("attr.name");
-///
-/// // If the top-level attribute, `foo`, has a sub-attribute named `attr.name`:
-/// let path = Path::from_iter([
-///     Element::name("foo"),
-///     Element::name("attr.name"),
-/// ]);
-///
-/// // If top-level attribute `foo`, item 3 (i.e., `foo[3]`) has a sub-attribute
-/// // named `attr.name`:
-/// let path = Path::from_iter([
-///     Element::indexed_field("foo", 3),
-///     Element::name("attr.name"),
-/// ]);
-///
-/// // If top-level attribute `foo`, item 3, sub-item 7 (i.e., `foo[3][7]`) has
-/// // an attribute named `attr.name`:
-/// let path = Path::from_iter([
-///     Element::indexed_field("foo", [3, 7]),
-///     Element::name("attr.name"),
-/// ]);
-/// ```
+/// ## There are many ways to crate a `Path`
 ///
 /// Each of these are ways to create a [`Path`] instance for `foo[3][7].bar[2].baz`.
 /// ```
@@ -143,7 +117,6 @@ use crate::{
 /// );
 /// # assert_eq!(expected, path);
 ///
-///
 /// // `Path` implements `FromIterator` for items that are `Into<Element>`.
 /// // So, the above example can be simplified.
 /// let path = Path::from_iter([
@@ -152,32 +125,57 @@ use crate::{
 ///     ("baz", vec![]),
 /// ]);
 /// # assert_eq!(expected, path);
-/// ```
 ///
-/// If you have a document path where an [attribute name includes a period][3]
-/// (`.`), you will need to explicitly create the [`Element`]s for that [`Path`].
-/// ```
-/// # use dynamodb_expression::path::{Element, Path};
-/// # use pretty_assertions::assert_eq;
-/// // If the attribute name is `foo.bar`:
-/// let path = Path::from(Element::name("foo.bar"));
-/// # assert_eq!(Path::from_iter([Element::name("foo.bar")]), path);
-///
-/// // If the item at `foo[3]` has an attribute named `bar.baz`:
-/// let path = Path::from_iter([
-///     Element::indexed_field("foo", 3),
-///     Element::name("bar.baz")
-/// ]);
-/// # assert_eq!("foo[3].bar.baz", path.to_string());
+/// // You can append one [`Path`] to another.
+/// let mut path = Path::indexed_field("foo", [3, 7]);
+/// path.append(Path::indexed_field("bar", 2));
+/// path.append(Path::name("baz"));
+/// # assert_eq!(expected, path);
 /// ```
 ///
 /// A [`Name`] can be converted into a [`Path`].
 /// ```
 /// use dynamodb_expression::path::{Element, Name, Path};
+/// # use pretty_assertions::assert_eq;
 ///
 /// let name = Name::from("foo");
 /// let path = Path::from(name);
 /// assert_eq!(Path::from(Element::name("foo")), path);
+/// ```
+///
+/// ## Attribute names with `.` in them
+///
+/// If you have an attribute name with a `.` in it, and need it to not be
+/// treated as a separator, you can construct the [`Path`] a few different ways.
+/// Here are some ways you can correctly construct a [`Path`] using `attr.name`
+/// as the problematic attribute name.
+/// ```
+/// use dynamodb_expression::path::{Element, Path};
+/// # use pretty_assertions::assert_eq;
+///
+/// // As a top-level attribute name:
+/// let path = Path::name("attr.name");
+/// # assert_eq!(Path::from_iter([Element::name("attr.name")]), path);
+///
+/// // If the top-level attribute, `foo`, has a sub-attribute named `attr.name`:
+/// let path = Path::from_iter([
+///     Element::name("foo"),
+///     Element::name("attr.name"),
+/// ]);
+///
+/// // If top-level attribute `foo`, item 3 (i.e., `foo[3]`) has a sub-attribute
+/// // named `attr.name`:
+/// let path = Path::from_iter([
+///     Element::indexed_field("foo", 3),
+///     Element::name("attr.name"),
+/// ]);
+///
+/// // If top-level attribute `foo`, item 3, sub-item 7 (i.e., `foo[3][7]`) has
+/// // an attribute named `attr.name`:
+/// let path = Path::from_iter([
+///     Element::indexed_field("foo", [3, 7]),
+///     Element::name("attr.name"),
+/// ]);
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
@@ -205,13 +203,13 @@ impl Path {
         }
     }
 
-    /// Constructs a [`Path`] for a single attribute name (with no indexes or
-    /// sub-attributes). If you have a attribute name with no indexes, you can
-    /// pass an empty collection, or use [`Path::name`].
+    /// Constructs a [`Path`] for an indexed field element of a document path.
+    /// For example, `foo[3]` or `foo[7][4]`. If you have a attribute name with
+    /// no indexes, you can pass an empty collection, or use [`Path::name`].
     ///
     /// `indexes` here can be an array, slice, `Vec` of, or single `usize`.
     /// ```
-    /// # use dynamodb_expression::path::Path;
+    /// # use dynamodb_expression::Path;
     /// # use pretty_assertions::assert_eq;
     /// #
     /// assert_eq!("foo[3]", Path::indexed_field("foo", 3).to_string());
@@ -244,7 +242,7 @@ impl Path {
     /// Appends another [`Path`] to the end of this one.
     ///
     /// ```
-    /// use dynamodb_expression::path::Path;
+    /// use dynamodb_expression::Path;
     /// # use pretty_assertions::assert_eq;
     ///
     /// let mut path: Path = "foo[2]".parse().unwrap();

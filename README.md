@@ -1,4 +1,4 @@
-# dynamodb_expression
+# dynamodb-expression
 
 A Rust crate to help build DynamoDB condition, filter, key condition, and update
 expressions in a type-safe way.
@@ -9,7 +9,7 @@ expressions in a type-safe way.
 An example showing a how to use this crate to perform a query:
 
 ```rust
-use dynamodb_expression::{Expression, num_value, path::Path};
+use dynamodb_expression::{Expression, num_value, Path};
 
 let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
 

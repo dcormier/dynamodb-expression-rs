@@ -29,9 +29,9 @@ impl Element {
     /// See also: [`Name`], [`Element`], [`Path`]
     ///
     /// [`Path`]: crate::path::Path
-    pub fn name<N>(name: N) -> Self
+    pub fn name<T>(name: T) -> Self
     where
-        N: Into<Name>,
+        T: Into<Name>,
     {
         Self::Name(name.into())
     }

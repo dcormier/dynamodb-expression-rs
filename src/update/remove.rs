@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::path::Path;
+use crate::path::{Indexes, Name, Path};
 
 /// For use an in an [`Update`](crate::update::Update) expression to
 /// [remove attributes from an item][1], or [elements from a list][2].
@@ -10,8 +10,11 @@ use crate::path::Path;
 /// ```
 /// use dynamodb_expression::{path::{Name, Path}, update::{Remove, Update}};
 ///
-/// let update = Remove::from(Name::from("foo"));
+/// let update = Remove::name("foo");
 /// assert_eq!(r#"REMOVE foo"#, update.to_string());
+///
+/// let update = Remove::indexed_field("foo", [8]);
+/// assert_eq!(r#"REMOVE foo[8]"#, update.to_string());
 ///
 /// let update = Remove::from("foo[8]".parse::<Path>().unwrap());
 /// assert_eq!(r#"REMOVE foo[8]"#, update.to_string());
@@ -30,6 +33,40 @@ pub struct Remove {
     // Path is correct here.
     // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE.RemovingListElements
     pub(crate) paths: Vec<Path>,
+}
+
+impl Remove {
+    /// Remove the specified top-level element.
+    ///
+    /// See also: [`Name`]
+    pub fn name<T>(name: T) -> Self
+    where
+        T: Into<Name>,
+    {
+        Self {
+            paths: vec![name.into().into()],
+        }
+    }
+
+    /// Constructs a [`Remove`] for an indexed field element of a document path.
+    /// For example, `foo[3]` or `foo[7][4]`. If you have a attribute name with
+    /// no indexes, you can pass an empty collection, or use [`Remove::name`].
+    ///
+    /// `indexes` here can be an array, slice, `Vec` of, or single `usize`.
+    ///
+    /// See also: [`IndexedField`], [`Path::indexed_field`]
+    ///
+    /// [`Remove::name`]: Self::name
+    /// [`IndexedField`]: crate::path::IndexedField
+    pub fn indexed_field<N, I>(name: N, indexes: I) -> Self
+    where
+        N: Into<Name>,
+        I: Indexes,
+    {
+        Self {
+            paths: vec![Path::indexed_field(name, indexes)],
+        }
+    }
 }
 
 impl<T> From<T> for Remove
@@ -71,5 +108,11 @@ impl fmt::Display for Remove {
 
             name.fmt(f)
         })
+    }
+}
+
+impl From<Remove> for Vec<Path> {
+    fn from(remove: Remove) -> Self {
+        remove.paths
     }
 }
