@@ -10,6 +10,9 @@ See the integration tests for [querying] and [updating] as a starting place.
 An example showing a how to use this crate to perform a query:
 
 ```no_run
+# use aws_sdk_dynamodb::{error::SdkError, operation::query::QueryError};
+#
+# async fn example() -> Result<(), SdkError<QueryError>> {
 use dynamodb_expression::{Expression, num_value, path::Path};
 
 let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
@@ -29,6 +32,7 @@ let query_output = Expression::builder()
     .await?;
 #
 # Ok(())
+# }
 ```
 
 [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.html
