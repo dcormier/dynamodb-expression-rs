@@ -7,6 +7,30 @@ expressions in a type-safe way.
 many methods for building various expressions.
 See the integration tests for [querying] and [updating] as a starting place.
 
+An example showing a how to use this crate to perform a query:
+
+```no_run
+use dynamodb_expression::{Expression, num_value, path::Path};
+
+let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+
+let query_output = Expression::builder()
+    .with_filter(
+        Path::name("name")
+            .attribute_exists()
+            .and(Path::name("age").greater_than_or_equal(num_value(2.5))),
+    )
+    .with_projection(["name", "age"])
+    .with_key_condition(Path::name("id").key().equal(num_value(42)))
+    .build()
+    .query(&client)
+    .table_name("your_table")
+    .send()
+    .await?;
+#
+# Ok(())
+```
+
 [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.html
 [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html
 [querying]: https://github.com/dcormier/dynamodb-expression-rs/blob/b18bc1c/tests/aws_sdk_dynamo.rs#L480-L486

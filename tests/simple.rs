@@ -1,21 +1,9 @@
-mod dynamodb;
-
-use aws_sdk_dynamodb::{
-    operation::scan::ScanInput,
-    types::{AttributeValue, Put},
-};
-use pretty_assertions::assert_eq;
-
-use dynamodb_expression::{
-    expression::Expression,
-    key::Key,
-    num_value,
-    path::{Name, Path},
-    ref_value,
-};
-
 #[test]
 fn scan_input() {
+    use aws_sdk_dynamodb::{operation::scan::ScanInput, types::AttributeValue};
+    use dynamodb_expression::{path::Path, ref_value};
+    use pretty_assertions::assert_eq;
+
     let scan_input = ScanInput::builder()
         .filter_expression(
             Path::name("#name")
@@ -37,6 +25,10 @@ fn scan_input() {
 
 #[test]
 fn put() {
+    use aws_sdk_dynamodb::types::{AttributeValue, Put};
+    use dynamodb_expression::{path::Path, ref_value};
+    use pretty_assertions::assert_eq;
+
     let put = Put::builder()
         .item("name", AttributeValue::S("Jane".into()))
         .condition_expression(
@@ -58,7 +50,9 @@ fn put() {
 
 #[test]
 fn query() {
-    use aws_sdk_dynamodb::operation::query::QueryInput;
+    use aws_sdk_dynamodb::{operation::query::QueryInput, types::AttributeValue};
+    use dynamodb_expression::{expression::Expression, num_value, path::Path, ref_value};
+    use pretty_assertions::assert_eq;
 
     // Building the `QueryInput` manually.
     let qi_1 = QueryInput::builder()
@@ -104,7 +98,7 @@ fn query() {
                 .and(Path::name("age").greater_than_or_equal(num_value(2.5))),
         )
         .with_projection(["name", "age"])
-        .with_key_condition(Key::from(Name::from("id")).equal(num_value(42)))
+        .with_key_condition(Path::name("id").key().equal(num_value(42)))
         .build()
         .to_query_input_builder()
         .table_name("the_table")
@@ -116,4 +110,30 @@ fn query() {
     // Each of these methods builds an equivalent `QueryInput`.
     assert_eq!(qi_1, qi_2);
     assert_eq!(qi_2, qi_3);
+}
+
+// This is here as the basis for the example in the readme and the top-level crate docs.
+// Intentionally not marked as a test because this isn't expected to run on its own.
+#[allow(dead_code, unused_variables)]
+async fn query_example(
+) -> Result<(), aws_sdk_dynamodb::error::SdkError<aws_sdk_dynamodb::operation::query::QueryError>> {
+    use dynamodb_expression::{expression::Expression, num_value, path::Path};
+
+    let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+
+    let query_output = Expression::builder()
+        .with_filter(
+            Path::name("name")
+                .attribute_exists()
+                .and(Path::name("age").greater_than_or_equal(num_value(2.5))),
+        )
+        .with_projection(["name", "age"])
+        .with_key_condition(Path::name("id").key().equal(num_value(42)))
+        .build()
+        .query(&client)
+        .table_name("your_table")
+        .send()
+        .await?;
+
+    Ok(())
 }
