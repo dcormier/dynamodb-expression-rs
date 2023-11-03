@@ -68,6 +68,7 @@ impl Expression {
     /// * Condition expression
     /// * Expression attribute names
     /// * Expression attribute values
+    // TODO: An example
     pub fn to_put_item_fluent_builder(self, builder: PutItemFluentBuilder) -> PutItemFluentBuilder {
         builder
             .set_condition_expression(self.condition_expression)
@@ -80,6 +81,7 @@ impl Expression {
     /// * Condition expression
     /// * Expression attribute names
     /// * Expression attribute values
+    // TODO: An example
     pub fn put_item(self, client: &Client) -> PutItemFluentBuilder {
         self.to_put_item_fluent_builder(client.put_item())
     }
@@ -111,6 +113,7 @@ impl Expression {
     /// before returning it:
     /// * Projection expression
     /// * Expression attribute names
+    // TODO: An example
     pub fn to_get_item_fluent_builder(self, builder: GetItemFluentBuilder) -> GetItemFluentBuilder {
         builder
             .set_projection_expression(self.projection_expression)
@@ -121,6 +124,7 @@ impl Expression {
     /// to set the following on the [`GetItemFluentBuilder`] before returning it:
     /// * Projection expression
     /// * Expression attribute names
+    // TODO: An example
     pub fn get_item(self, client: &Client) -> GetItemFluentBuilder {
         self.to_get_item_fluent_builder(client.get_item())
     }
@@ -162,6 +166,7 @@ impl Expression {
     /// * Condition expression
     /// * Expression attribute names
     /// * Expression attribute values
+    // TODO: An example
     pub fn to_update_item_fluent_builder(
         self,
         builder: UpdateItemFluentBuilder,
@@ -179,6 +184,7 @@ impl Expression {
     /// * Condition expression
     /// * Expression attribute names
     /// * Expression attribute values
+    // TODO: An example
     pub fn update_item(self, client: &Client) -> UpdateItemFluentBuilder {
         self.to_update_item_fluent_builder(client.update_item())
     }
@@ -215,6 +221,7 @@ impl Expression {
     /// * Condition expression
     /// * Expression attribute names
     /// * Expression attribute values
+    // TODO: An example
     pub fn to_delete_item_fluent_builder(
         self,
         builder: DeleteItemFluentBuilder,
@@ -230,6 +237,7 @@ impl Expression {
     /// * Condition expression
     /// * Expression attribute names
     /// * Expression attribute values
+    // TODO: An example
     pub fn delete_item(self, client: &Client) -> DeleteItemFluentBuilder {
         self.to_delete_item_fluent_builder(client.delete_item())
     }
@@ -261,6 +269,7 @@ impl Expression {
     /// * Projection expression
     /// * Expression attribute names
     /// * Expression attribute values
+    // TODO: An example
     pub fn to_query_fluent_builder(self, builder: QueryFluentBuilder) -> QueryFluentBuilder {
         builder
             .set_key_condition_expression(self.key_condition_expression)
@@ -277,6 +286,7 @@ impl Expression {
     /// * Projection expression
     /// * Expression attribute names
     /// * Expression attribute values
+    // TODO: An example
     pub fn query(self, client: &Client) -> QueryFluentBuilder {
         self.to_query_fluent_builder(client.query())
     }
@@ -305,6 +315,7 @@ impl Expression {
     /// * Projection expression
     /// * Expression attribute names
     /// * Expression attribute values
+    // TODO: An example
     pub fn to_scan_fluent_builder(self, builder: ScanFluentBuilder) -> ScanFluentBuilder {
         builder
             .set_filter_expression(self.filter_expression)
@@ -319,6 +330,7 @@ impl Expression {
     /// * Projection expression
     /// * Expression attribute names
     /// * Expression attribute values
+    // TODO: An example
     pub fn scan(self, client: &Client) -> ScanFluentBuilder {
         self.to_scan_fluent_builder(client.scan())
     }

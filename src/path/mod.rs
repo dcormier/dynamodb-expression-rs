@@ -155,7 +155,7 @@ use crate::{
 /// ```
 ///
 /// If you have a document path where an [attribute name includes a period][3]
-/// (`.`), you will need to explicitly create the [`Element`]s for that `Path`.
+/// (`.`), you will need to explicitly create the [`Element`]s for that [`Path`].
 /// ```
 /// # use dynamodb_expression::path::{Element, Path};
 /// # use pretty_assertions::assert_eq;
@@ -171,7 +171,7 @@ use crate::{
 /// # assert_eq!("foo[3].bar.baz", path.to_string());
 /// ```
 ///
-/// A [`Name`] can be converted into a `Path`.
+/// A [`Name`] can be converted into a [`Path`].
 /// ```
 /// use dynamodb_expression::path::{Element, Name, Path};
 ///
@@ -347,28 +347,28 @@ impl Path {
         In::new(self.into(), items).into()
     }
 
-    /// True if the item contains the attribute specified by `path`.
+    /// True if the item contains the attribute specified by [`Path`].
     ///
     /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn attribute_exists(self) -> Condition {
         Condition::AttributeExists(self.into())
     }
 
-    /// True if the attribute specified by `path` does not exist in the item.
+    /// True if the attribute specified by [`Path`] does not exist in the item.
     ///
     /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn attribute_not_exists(self) -> Condition {
         Condition::AttributeNotExists(self.into())
     }
 
-    /// True if the attribute at the specified `path` is of a particular data type.
+    /// True if the attribute at the specified [`Path`] is of a particular data type.
     ///
     /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn attribute_type(self, attribute_type: Type) -> Condition {
         AttributeType::new(self, attribute_type).into()
     }
 
-    /// True if the attribute specified by `path` begins with a particular substring.
+    /// True if the attribute specified by [`Path`] begins with a particular substring.
     ///
     /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
     pub fn begins_with<T>(self, prefix: T) -> Condition
@@ -378,7 +378,7 @@ impl Path {
         BeginsWith::new(self, prefix).into()
     }
 
-    /// True if the attribute specified by `path` is one of the following:
+    /// True if the attribute specified by [`Path`] is one of the following:
     /// * A `String` that contains a particular substring.
     /// * A `Set` that contains a particular element within the set.
     /// * A `List` that contains a particular element within the list.
@@ -540,8 +540,8 @@ impl TryFrom<Path> for Name {
     /// assert_eq!(Name::from("foo"), name);
     ///```
     ///
-    /// If the `Path` has indexes, or has sub-attributes, it cannot be
-    /// converted, and the original `Path` is returned.
+    /// If the [`Path`] has indexes, or has sub-attributes, it cannot be
+    /// converted, and the original [`Path`] is returned.
     /// ```
     /// # use dynamodb_expression::path::{Element, Name, Path};
     /// #
@@ -652,7 +652,7 @@ mod test {
         "[0]".parse::<Path>().unwrap_err();
     }
 
-    /// Demonstration/proof of how a `Path` can be expressed to prove usability.
+    /// Demonstration/proof of how a [`Path`] can be expressed to prove usability.
     #[test]
     fn express_path() {
         let _: Element = ("foo", 0).into();

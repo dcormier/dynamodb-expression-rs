@@ -9,13 +9,32 @@ use aws_sdk_dynamodb::types::AttributeValue;
 
 /// The data needed for various [`aws_sdk_dynamodb`] input types.
 ///
-/// Create an instance using [`Builder`] via [`Expression::builder()`].
+/// Use [`Builder`] (via [`Expression::builder()`]) to create a DynamoDB
+/// condition, filter, key condition, or update expression.
 ///
-/// You can use the fields to manually populate an [`aws_sdk_dynamodb`] input type,
-/// or you can use one of the many methods on this to automatically build or
-/// populate one of those types.
+/// You can use the these methods to consume this and set up a DynamoDB
+/// operation (via an appropriate fluent builder):
+/// * [`put_item`]
+/// * [`get_item`]
+/// * [`scan`]
+/// * [`query`]
+/// * [`update_item`]
+/// * [`delete_item`]
+///
+/// See also the `to_*_input_builder` and `to_*_fluent_builder` methods for
+/// populating [`aws_sdk_dynamodb`] types.
+///
+/// You can use the fields on this struct to manually populate an
+/// [`aws_sdk_dynamodb`] input type, or you can use one of the many methods on
+/// this to automatically build or populate one of those types.
 ///
 /// [`Expression::builder()`]: Self::builder
+/// [`put_item`]: Self::put_item
+/// [`get_item`]: Self::get_item
+/// [`scan`]: Self::scan
+/// [`query`]: Self::query
+/// [`update_item`]: Self::update_item
+/// [`delete_item`]: Self::delete_item
 // TODO: An example.
 #[must_use = "Use the fields or methods to create an input type for `aws_sdk_dynamodb"]
 #[derive(Debug, Clone)]
