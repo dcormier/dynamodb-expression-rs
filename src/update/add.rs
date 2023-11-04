@@ -2,7 +2,7 @@ use core::fmt;
 
 use crate::{
     path::Path,
-    value::{scalar::Num, Ref, Set, Value, ValueOrRef},
+    value::{Num, Ref, Set, Value, ValueOrRef},
 };
 
 /// Represents an [`ADD` statement][1] in a [DynamoDB update expression][2].

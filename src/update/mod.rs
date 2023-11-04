@@ -30,16 +30,16 @@ pub use self::{
 /// use itertools::Itertools;
 /// # use pretty_assertions::assert_eq;
 ///
-/// let update = Update::from(Path::name("foo").math().add(7));
+/// let update = Update::from(Path::new_name("foo").math().add(7));
 /// assert_eq!("SET foo = foo + 7", update.to_string());
 ///
-/// let update = Update::from(Path::name("foo").if_not_exists().value("a value"));
+/// let update = Update::from(Path::new_name("foo").if_not_exists().value("a value"));
 /// assert_eq!(
 ///     r#"SET foo = if_not_exists(foo, "a value")"#,
 ///     update.to_string()
 /// );
 ///
-/// let update = Update::from(Remove::name("foo"));
+/// let update = Update::from(Remove::new_name("foo"));
 /// assert_eq!(r#"REMOVE foo"#, update.to_string());
 ///
 /// let update = Update::from("foo[3].bar[0]".parse::<Path>().unwrap().remove());
@@ -177,16 +177,16 @@ mod test {
         use itertools::Itertools;
         use pretty_assertions::assert_eq;
 
-        let update = Update::from(Path::name("foo").math().add(7));
+        let update = Update::from(Path::new_name("foo").math().add(7));
         assert_eq!("SET foo = foo + 7", update.to_string());
 
-        let update = Update::from(Path::name("foo").if_not_exists().value("a value"));
+        let update = Update::from(Path::new_name("foo").if_not_exists().value("a value"));
         assert_eq!(
             r#"SET foo = if_not_exists(foo, "a value")"#,
             update.to_string()
         );
 
-        let update = Update::from(Remove::name("foo"));
+        let update = Update::from(Remove::new_name("foo"));
         assert_eq!(r#"REMOVE foo"#, update.to_string());
 
         let update = Update::from("foo[3].bar[0]".parse::<Path>().unwrap().remove());

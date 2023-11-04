@@ -38,6 +38,15 @@ impl From<Ref> for ValueOrRef {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ref(String);
 
+impl Ref {
+    pub fn new<T>(value_ref: T) -> Self
+    where
+        T: Into<String>,
+    {
+        Self(value_ref.into())
+    }
+}
+
 impl From<String> for Ref {
     fn from(value: String) -> Self {
         Self(value)
@@ -75,15 +84,6 @@ impl From<Ref> for String {
 
         value.0
     }
-}
-
-/// A reference to a DynamoDB value stored in expression attribute values.
-/// Automatically prefixed with `:`.
-pub fn ref_value<T>(value: T) -> Ref
-where
-    T: Into<String>,
-{
-    Ref::from(value.into())
 }
 
 /// Represents a value that is either a string, or a reference to a value
@@ -136,12 +136,13 @@ impl From<StringOrRef> for ValueOrRef {
 mod test {
     use pretty_assertions::assert_str_eq;
 
+    use crate::Scalar;
+
     use super::{Ref, ValueOrRef};
-    use crate::string_value;
 
     #[test]
     fn display_value() {
-        let vr = ValueOrRef::from(string_value("foo"));
+        let vr = ValueOrRef::from(Scalar::new_string("foo"));
         assert_str_eq!("\"foo\"", vr.to_string());
     }
 

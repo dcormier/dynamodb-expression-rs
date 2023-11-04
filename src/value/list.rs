@@ -1,7 +1,4 @@
-use core::{
-    fmt::{self, Write},
-    ops,
-};
+use core::fmt::{self, Write};
 
 use aws_sdk_dynamodb::types::AttributeValue;
 
@@ -27,20 +24,6 @@ impl List {
                 .map(Value::into_attribute_value)
                 .collect(),
         )
-    }
-}
-
-impl ops::Deref for List {
-    type Target = Vec<Value>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.list
-    }
-}
-
-impl ops::DerefMut for List {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.list
     }
 }
 
@@ -96,14 +79,14 @@ mod test {
     use pretty_assertions::assert_str_eq;
 
     use super::List;
-    use crate::num_value;
+    use crate::value::Value;
 
     #[test]
     fn display() {
-        let mut list = List::from(["a"]);
+        let list = List::from(["a"]);
         assert_str_eq!(r#"["a"]"#, list.to_string());
 
-        list.push(num_value(42).into());
+        let list = List::from([Value::new_string("a"), Value::new_num(42)]);
         assert_str_eq!(r#"["a", 42]"#, list.to_string());
     }
 }

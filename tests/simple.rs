@@ -1,14 +1,16 @@
+use std::error::Error;
+
 #[test]
 fn scan_input() {
     use aws_sdk_dynamodb::{operation::scan::ScanInput, types::AttributeValue};
-    use dynamodb_expression::{ref_value, Path};
+    use dynamodb_expression::{value::Ref, Path};
     use pretty_assertions::assert_eq;
 
     let scan_input = ScanInput::builder()
         .filter_expression(
-            Path::name("#name")
-                .begins_with(ref_value("prefix"))
-                .and(Path::name("#age").greater_than_or_equal(ref_value("min_age"))),
+            Path::new_name("#name")
+                .begins_with(Ref::new("prefix"))
+                .and(Path::new_name("#age").greater_than_or_equal(Ref::new("min_age"))),
         )
         .expression_attribute_names("#name", "name")
         .expression_attribute_values(":prefix", AttributeValue::S("Wil".into()))
@@ -26,32 +28,53 @@ fn scan_input() {
 #[test]
 fn put() {
     use aws_sdk_dynamodb::types::{AttributeValue, Put};
-    use dynamodb_expression::{ref_value, Path};
+    use dynamodb_expression::{value::Ref, Expression, Path, Scalar};
     use pretty_assertions::assert_eq;
 
-    let put = Put::builder()
+    let put_1 = Put::builder()
+        .condition_expression("attribute_not_exists(#0) OR size(#0) = :0")
+        .expression_attribute_names("#0", "name")
+        .expression_attribute_values(":0", AttributeValue::N(0.to_string()))
         .item("name", AttributeValue::S("Jane".into()))
-        .condition_expression(
-            Path::name("#name")
-                .attribute_not_exists()
-                .or(Path::name("#name").size().equal(ref_value("zero"))),
-        )
-        .expression_attribute_names("#name", "name")
-        .expression_attribute_values(":zero", AttributeValue::N(0.to_string()))
         .table_name("people")
         .build()
         .unwrap();
 
-    assert_eq!(
-        Some("attribute_not_exists(#name) OR size(#name) = :zero"),
-        put.condition_expression()
-    );
+    let put_2 = Put::builder()
+        .condition_expression(
+            Path::new_name("#0")
+                .attribute_not_exists()
+                .or(Path::new_name("#0").size().equal(Ref::new("0"))),
+        )
+        .expression_attribute_names("#0", "name")
+        .expression_attribute_values(":0", AttributeValue::N(0.to_string()))
+        .item("name", AttributeValue::S("Jane".into()))
+        .table_name("people")
+        .build()
+        .unwrap();
+
+    let put_3 = Expression::builder()
+        .with_condition(
+            Path::new_name("name")
+                .attribute_not_exists()
+                .or(Path::new_name("name").size().equal(Scalar::new_num(0))),
+        )
+        .build()
+        .to_put_builder()
+        // TODO: Expression needs to be able to build `Put`
+        .item("name", AttributeValue::S("Jane".into()))
+        .table_name("people")
+        .build()
+        .unwrap();
+
+    assert_eq!(put_1, put_2);
+    assert_eq!(put_2, put_3);
 }
 
 #[test]
 fn query() {
     use aws_sdk_dynamodb::{operation::query::QueryInput, types::AttributeValue};
-    use dynamodb_expression::{expression::Expression, num_value, ref_value, Path};
+    use dynamodb_expression::{value::Ref, Expression, Path, Scalar};
     use pretty_assertions::assert_eq;
 
     // Building the `QueryInput` manually.
@@ -73,9 +96,9 @@ fn query() {
     // Building the `QueryInput` using this crate to help with the filter expression.
     let qi_2 = QueryInput::builder()
         .filter_expression(
-            Path::name("#0")
+            Path::new_name("#0")
                 .attribute_exists()
-                .and(Path::name("#1").greater_than_or_equal(ref_value("0"))),
+                .and(Path::new_name("#1").greater_than_or_equal(Ref::new("0"))),
         )
         .projection_expression("#0, #1")
         .key_condition_expression("#2 = :1")
@@ -93,12 +116,12 @@ fn query() {
     // Building the `QueryInput` by leveraging this crate to its fullest.
     let qi_3: QueryInput = Expression::builder()
         .with_filter(
-            Path::name("name")
+            Path::new_name("name")
                 .attribute_exists()
-                .and(Path::name("age").greater_than_or_equal(num_value(2.5))),
+                .and(Path::new_name("age").greater_than_or_equal(Scalar::new_num(2.5))),
         )
         .with_projection(["name", "age"])
-        .with_key_condition(Path::name("id").key().equal(num_value(42)))
+        .with_key_condition(Path::new_name("id").key().equal(Scalar::new_num(42)))
         .build()
         .to_query_input_builder()
         .table_name("the_table")
@@ -114,26 +137,26 @@ fn query() {
 
 // This is here as the basis for the example in the readme and the top-level crate docs.
 // Intentionally not marked as a test because this isn't expected to run on its own.
-#[allow(dead_code, unused_variables)]
-async fn query_example(
-) -> Result<(), aws_sdk_dynamodb::error::SdkError<aws_sdk_dynamodb::operation::query::QueryError>> {
-    use dynamodb_expression::{expression::Expression, num_value, Path};
+#[allow(dead_code)]
+async fn query_example() -> Result<(), Box<dyn Error + Send + Sync>> {
+    use dynamodb_expression::{Expression, Num, Path};
 
     let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
 
     let query_output = Expression::builder()
         .with_filter(
-            Path::name("name")
+            Path::new_name("name")
                 .attribute_exists()
-                .and(Path::name("age").greater_than_or_equal(num_value(2.5))),
+                .and(Path::new_name("age").greater_than_or_equal(Num::new(2.5))),
         )
         .with_projection(["name", "age"])
-        .with_key_condition(Path::name("id").key().equal(num_value(42)))
+        .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
         .build()
         .query(&client)
         .table_name("your_table")
         .send()
         .await?;
 
+    _ = query_output;
     Ok(())
 }

@@ -2,7 +2,7 @@ use core::fmt::{self, Write};
 
 use crate::{
     path::Path,
-    value::{scalar::Num, ValueOrRef},
+    value::{Num, ValueOrRef},
 };
 
 /// Represents a [DynamoDB math operation][1] used as a part of an update expression.

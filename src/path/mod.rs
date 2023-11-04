@@ -73,9 +73,9 @@ use crate::{
 /// # use pretty_assertions::assert_eq;
 /// #
 /// # let expected = Path::from_iter([
-/// #     Element::indexed_field("foo", [3, 7]),
-/// #     Element::indexed_field("bar", 2),
-/// #     Element::name("baz"),
+/// #     Element::new_indexed_field("foo", [3, 7]),
+/// #     Element::new_indexed_field("bar", 2),
+/// #     Element::new_name("baz"),
 /// # ]);
 ///
 /// // A `Path` can be parsed from a string
@@ -84,17 +84,17 @@ use crate::{
 ///
 /// // `Path` implements `FromIterator` for items that are `Element`s.
 /// let path = Path::from_iter([
-///     Element::indexed_field("foo", [3, 7]),
-///     Element::indexed_field("bar", 2),
-///     Element::name("baz"),
+///     Element::new_indexed_field("foo", [3, 7]),
+///     Element::new_indexed_field("bar", 2),
+///     Element::new_name("baz"),
 /// ]);
 /// # assert_eq!(expected, path);
 ///
 /// // Of course, that means you can `.collect()` into a `Path`.
 /// let path: Path = [
-///     Element::indexed_field("foo", [3, 7]),
-///     Element::indexed_field("bar", 2),
-///     Element::name("baz"),
+///     Element::new_indexed_field("foo", [3, 7]),
+///     Element::new_indexed_field("bar", 2),
+///     Element::new_name("baz"),
 /// ]
 /// .into_iter()
 /// .collect();
@@ -127,9 +127,9 @@ use crate::{
 /// # assert_eq!(expected, path);
 ///
 /// // You can append one [`Path`] to another.
-/// let mut path = Path::indexed_field("foo", [3, 7]);
-/// path.append(Path::indexed_field("bar", 2));
-/// path.append(Path::name("baz"));
+/// let mut path = Path::new_indexed_field("foo", [3, 7]);
+/// path.append(Path::new_indexed_field("bar", 2));
+/// path.append(Path::new_name("baz"));
 /// # assert_eq!(expected, path);
 /// ```
 ///
@@ -140,7 +140,7 @@ use crate::{
 ///
 /// let name = Name::from("foo");
 /// let path = Path::from(name);
-/// assert_eq!(Path::from(Element::name("foo")), path);
+/// assert_eq!(Path::from(Element::new_name("foo")), path);
 /// ```
 ///
 /// ## Attribute names with `.` in them
@@ -154,27 +154,27 @@ use crate::{
 /// # use pretty_assertions::assert_eq;
 ///
 /// // As a top-level attribute name:
-/// let path = Path::name("attr.name");
-/// # assert_eq!(Path::from_iter([Element::name("attr.name")]), path);
+/// let path = Path::new_name("attr.name");
+/// # assert_eq!(Path::from_iter([Element::new_name("attr.name")]), path);
 ///
 /// // If the top-level attribute, `foo`, has a sub-attribute named `attr.name`:
 /// let path = Path::from_iter([
-///     Element::name("foo"),
-///     Element::name("attr.name"),
+///     Element::new_name("foo"),
+///     Element::new_name("attr.name"),
 /// ]);
 ///
 /// // If top-level attribute `foo`, item 3 (i.e., `foo[3]`) has a sub-attribute
 /// // named `attr.name`:
 /// let path = Path::from_iter([
-///     Element::indexed_field("foo", 3),
-///     Element::name("attr.name"),
+///     Element::new_indexed_field("foo", 3),
+///     Element::new_name("attr.name"),
 /// ]);
 ///
 /// // If top-level attribute `foo`, item 3, sub-item 7 (i.e., `foo[3][7]`) has
 /// // an attribute named `attr.name`:
 /// let path = Path::from_iter([
-///     Element::indexed_field("foo", [3, 7]),
-///     Element::name("attr.name"),
+///     Element::new_indexed_field("foo", [3, 7]),
+///     Element::new_name("attr.name"),
 /// ]);
 /// ```
 ///
@@ -191,51 +191,51 @@ pub struct Path {
 impl Path {
     /// Constructs a [`Path`] for a single attribute name (with no indexes or
     /// sub-attributes). If you have a attribute name with one or more indexes,
-    /// use [`Path::indexed_field()`].
+    /// use [`Path::new_indexed_field()`].
     ///
-    /// [`Path::indexed_field()`]: Self::indexed_field
-    pub fn name<T>(name: T) -> Self
+    /// [`Path::new_indexed_field()`]: Self::new_indexed_field
+    pub fn new_name<T>(name: T) -> Self
     where
         T: Into<Name>,
     {
         Self {
-            elements: vec![Element::name(name)],
+            elements: vec![Element::new_name(name)],
         }
     }
 
     /// Constructs a [`Path`] for an indexed field element of a document path.
     /// For example, `foo[3]` or `foo[7][4]`. If you have a attribute name with
-    /// no indexes, you can pass an empty collection, or use [`Path::name`].
+    /// no indexes, you can pass an empty collection, or use [`Path::new_name`].
     ///
     /// `indexes` here can be an array, slice, `Vec` of, or single `usize`.
     /// ```
     /// # use dynamodb_expression::Path;
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// assert_eq!("foo[3]", Path::indexed_field("foo", 3).to_string());
-    /// assert_eq!("foo[3]", Path::indexed_field("foo", [3]).to_string());
-    /// assert_eq!("foo[3]", Path::indexed_field("foo", &[3]).to_string());
-    /// assert_eq!("foo[3]", Path::indexed_field("foo", vec![3]).to_string());
+    /// assert_eq!("foo[3]", Path::new_indexed_field("foo", 3).to_string());
+    /// assert_eq!("foo[3]", Path::new_indexed_field("foo", [3]).to_string());
+    /// assert_eq!("foo[3]", Path::new_indexed_field("foo", &[3]).to_string());
+    /// assert_eq!("foo[3]", Path::new_indexed_field("foo", vec![3]).to_string());
     ///
-    /// assert_eq!("foo[7][4]", Path::indexed_field("foo", [7, 4]).to_string());
-    /// assert_eq!("foo[7][4]", Path::indexed_field("foo", &[7, 4]).to_string());
-    /// assert_eq!("foo[7][4]", Path::indexed_field("foo", vec![7, 4]).to_string());
+    /// assert_eq!("foo[7][4]", Path::new_indexed_field("foo", [7, 4]).to_string());
+    /// assert_eq!("foo[7][4]", Path::new_indexed_field("foo", &[7, 4]).to_string());
+    /// assert_eq!("foo[7][4]", Path::new_indexed_field("foo", vec![7, 4]).to_string());
     ///
-    /// assert_eq!("foo", Path::indexed_field("foo", []).to_string());
-    /// assert_eq!("foo", Path::indexed_field("foo", &[]).to_string());
-    /// assert_eq!("foo", Path::indexed_field("foo", vec![]).to_string());
+    /// assert_eq!("foo", Path::new_indexed_field("foo", []).to_string());
+    /// assert_eq!("foo", Path::new_indexed_field("foo", &[]).to_string());
+    /// assert_eq!("foo", Path::new_indexed_field("foo", vec![]).to_string());
     /// ```
     ///
-    /// See also: [`IndexedField`], [`Element::indexed_field`]
+    /// See also: [`IndexedField`], [`Element::new_indexed_field`]
     ///
-    /// [`Path::name`]: Self::name
-    pub fn indexed_field<N, I>(name: N, indexes: I) -> Self
+    /// [`Path::new_name`]: Self::new_name
+    pub fn new_indexed_field<N, I>(name: N, indexes: I) -> Self
     where
         N: Into<Name>,
         I: Indexes,
     {
         Self {
-            elements: vec![Element::indexed_field(name, indexes)],
+            elements: vec![Element::new_indexed_field(name, indexes)],
         }
     }
 
@@ -576,7 +576,7 @@ pub struct PathParseError;
 mod test {
     use pretty_assertions::{assert_eq, assert_str_eq};
 
-    use crate::{num_value, ref_value};
+    use crate::{value::Ref, Num};
 
     use super::{Element, Name, Path, PathParseError};
 
@@ -599,13 +599,19 @@ mod test {
 
         let path: Path = "foo[42].bar".parse().unwrap();
         assert_eq!(
-            Path::from_iter([Element::indexed_field("foo", 42), Element::name("bar")]),
+            Path::from_iter([
+                Element::new_indexed_field("foo", 42),
+                Element::new_name("bar")
+            ]),
             path
         );
 
         let path: Path = "foo.bar[37]".parse().unwrap();
         assert_eq!(
-            Path::from_iter([Element::name("foo"), Element::indexed_field("bar", 37)]),
+            Path::from_iter([
+                Element::new_name("foo"),
+                Element::new_indexed_field("bar", 37)
+            ]),
             path
         );
 
@@ -659,24 +665,24 @@ mod test {
 
     #[test]
     fn display_name() {
-        let path = Element::name("foo");
+        let path = Element::new_name("foo");
         assert_str_eq!("foo", path.to_string());
     }
 
     #[test]
     fn display_indexed() {
-        // Also tests that `Element::indexed_field()` can accept a few different types of input.
+        // Also tests that `Element::new_indexed_field()` can accept a few different types of input.
 
         // From a usize
-        let path = Element::indexed_field("foo", 42);
+        let path = Element::new_indexed_field("foo", 42);
         assert_str_eq!("foo[42]", path.to_string());
 
         // From an array of usize
-        let path = Element::indexed_field("foo", [42]);
+        let path = Element::new_indexed_field("foo", [42]);
         assert_str_eq!("foo[42]", path.to_string());
 
         // From a slice of usize
-        let path = Element::indexed_field("foo", &([42, 37, 9])[..]);
+        let path = Element::new_indexed_field("foo", &([42, 37, 9])[..]);
         assert_str_eq!("foo[42][37][9]", path.to_string());
     }
 
@@ -685,13 +691,19 @@ mod test {
         let path: Path = ["foo", "bar"].into_iter().map(Name::from).collect();
         assert_str_eq!("foo.bar", path.to_string());
 
-        let path = Path::from_iter([Element::name("foo"), Element::indexed_field("bar", 42)]);
+        let path = Path::from_iter([
+            Element::new_name("foo"),
+            Element::new_indexed_field("bar", 42),
+        ]);
         assert_str_eq!("foo.bar[42]", path.to_string());
 
         // TODO: I'm not sure this is a legal path based on these examples:
         //       https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
         //       Test whether it's valid and remove this comment or handle it appropriately.
-        let path = Path::from_iter([Element::indexed_field("foo", 42), Element::name("bar")]);
+        let path = Path::from_iter([
+            Element::new_indexed_field("foo", 42),
+            Element::new_name("bar"),
+        ]);
         assert_str_eq!("foo[42].bar", path.to_string());
     }
 
@@ -702,31 +714,31 @@ mod test {
             "a".parse::<Path>()
                 .unwrap()
                 .size()
-                .equal(num_value(0))
+                .equal(Num::new(0))
                 .to_string()
         );
     }
 
     #[test]
     fn begins_with_string() {
-        let begins_with = Path::indexed_field("foo", 3).begins_with("foo");
+        let begins_with = Path::new_indexed_field("foo", 3).begins_with("foo");
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
 
-        let begins_with = Path::indexed_field("foo", 3).begins_with(String::from("foo"));
-        assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
-
-        #[allow(clippy::needless_borrow)]
-        let begins_with = Path::indexed_field("foo", 3).begins_with(&String::from("foo"));
+        let begins_with = Path::new_indexed_field("foo", 3).begins_with(String::from("foo"));
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
 
         #[allow(clippy::needless_borrow)]
-        let begins_with = Path::indexed_field("foo", 3).begins_with(&"foo");
+        let begins_with = Path::new_indexed_field("foo", 3).begins_with(&String::from("foo"));
+        assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
+
+        #[allow(clippy::needless_borrow)]
+        let begins_with = Path::new_indexed_field("foo", 3).begins_with(&"foo");
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
     }
 
     #[test]
     fn begins_with_value_ref() {
-        let begins_with = Path::indexed_field("foo", 3).begins_with(ref_value("prefix"));
+        let begins_with = Path::new_indexed_field("foo", 3).begins_with(Ref::new("prefix"));
         assert_eq!("begins_with(foo[3], :prefix)", begins_with.to_string());
     }
 }

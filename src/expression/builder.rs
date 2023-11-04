@@ -289,10 +289,10 @@ impl Builder {
             .into_iter()
             .map(|elem| match elem {
                 Element::Name(name) => self.process_name(name).into(),
-                Element::IndexedField(mut indexed_field) => {
-                    indexed_field.name = self.process_name(indexed_field.name);
+                Element::IndexedField(mut new_indexed_field) => {
+                    new_indexed_field.name = self.process_name(new_indexed_field.name);
 
-                    indexed_field.into()
+                    new_indexed_field.into()
                 }
             })
             .collect();

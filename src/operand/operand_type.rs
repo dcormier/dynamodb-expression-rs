@@ -4,7 +4,7 @@ use crate::{
     condition::Condition,
     operand::Size,
     path::{Element, IndexedField, Name, Path},
-    value::{Ref, Scalar, ValueOrRef},
+    value::{Num, Ref, Scalar, ValueOrRef},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,6 +53,69 @@ impl From<IndexedField> for OperandType {
 impl From<Scalar> for OperandType {
     fn from(value: Scalar) -> Self {
         Self::Scalar(value.into())
+    }
+}
+
+impl From<String> for OperandType {
+    fn from(value: String) -> Self {
+        Scalar::from(value).into()
+    }
+}
+
+impl From<&String> for OperandType {
+    fn from(value: &String) -> Self {
+        Scalar::from(value).into()
+    }
+}
+
+impl From<&str> for OperandType {
+    fn from(value: &str) -> Self {
+        Scalar::from(value).into()
+    }
+}
+
+impl From<&&str> for OperandType {
+    fn from(value: &&str) -> Self {
+        Scalar::from(value).into()
+    }
+}
+
+impl From<Num> for OperandType {
+    fn from(value: Num) -> Self {
+        Scalar::from(value).into()
+    }
+}
+
+impl From<bool> for OperandType {
+    fn from(value: bool) -> Self {
+        Scalar::from(value).into()
+    }
+}
+
+impl From<Vec<u8>> for OperandType {
+    fn from(value: Vec<u8>) -> Self {
+        Scalar::from(value).into()
+    }
+}
+
+impl<const N: usize> From<[u8; N]> for OperandType {
+    fn from(value: [u8; N]) -> Self {
+        Scalar::from(value).into()
+    }
+}
+
+impl From<()> for OperandType {
+    fn from(value: ()) -> Self {
+        Scalar::from(value).into()
+    }
+}
+
+impl FromIterator<u8> for OperandType {
+    fn from_iter<T>(iter: T) -> Self
+    where
+        T: IntoIterator<Item = u8>,
+    {
+        Scalar::from_iter(iter).into()
     }
 }
 

@@ -56,24 +56,24 @@ mod test {
 
     #[test]
     fn string() {
-        let begins_with = BeginsWith::new(Path::indexed_field("foo", 3), "foo");
+        let begins_with = BeginsWith::new(Path::new_indexed_field("foo", 3), "foo");
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
 
-        let begins_with = BeginsWith::new(Path::indexed_field("foo", 3), String::from("foo"));
-        assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
-
-        #[allow(clippy::needless_borrow)]
-        let begins_with = BeginsWith::new(Path::indexed_field("foo", 3), &String::from("foo"));
+        let begins_with = BeginsWith::new(Path::new_indexed_field("foo", 3), String::from("foo"));
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
 
         #[allow(clippy::needless_borrow)]
-        let begins_with = BeginsWith::new(Path::indexed_field("foo", 3), &"foo");
+        let begins_with = BeginsWith::new(Path::new_indexed_field("foo", 3), &String::from("foo"));
+        assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
+
+        #[allow(clippy::needless_borrow)]
+        let begins_with = BeginsWith::new(Path::new_indexed_field("foo", 3), &"foo");
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
     }
 
     #[test]
     fn value_ref() {
-        let begins_with = BeginsWith::new(Path::indexed_field("foo", 3), Ref::from("prefix"));
+        let begins_with = BeginsWith::new(Path::new_indexed_field("foo", 3), Ref::from("prefix"));
         assert_eq!("begins_with(foo[3], :prefix)", begins_with.to_string());
     }
 }

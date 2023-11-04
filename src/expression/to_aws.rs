@@ -370,11 +370,7 @@ impl Expression {
 mod test {
     use pretty_assertions::{assert_eq, assert_ne};
 
-    use crate::{
-        key::Key,
-        num_value,
-        path::{Name, Path},
-    };
+    use crate::{key::Key, path::Name, Num, Path};
 
     use super::Expression;
 
@@ -386,7 +382,7 @@ mod test {
                     "age"
                         .parse::<Path>()
                         .unwrap()
-                        .greater_than_or_equal(num_value(25)),
+                        .greater_than_or_equal(Num::new(25)),
                 ),
             )
             .with_projection(["name", "age"])
@@ -421,10 +417,10 @@ mod test {
             .with_filter(
                 Path::from(Name::from("name"))
                     .attribute_exists()
-                    .and(Path::from(Name::from("age")).greater_than_or_equal(num_value(2.5))),
+                    .and(Path::from(Name::from("age")).greater_than_or_equal(Num::new(2.5))),
             )
             .with_projection(["name", "age"])
-            .with_key_condition(Key::from(Name::from("id")).equal(num_value(42)))
+            .with_key_condition(Key::from(Name::from("id")).equal(Num::new(42)))
             .build();
         assert_eq!(None, expression.condition_expression);
 
@@ -458,7 +454,7 @@ mod test {
                     "age"
                         .parse::<Path>()
                         .unwrap()
-                        .greater_than_or_equal(num_value(25)),
+                        .greater_than_or_equal(Num::new(25)),
                 ),
             )
             .build();

@@ -29,7 +29,7 @@ impl Element {
     /// See also: [`Name`], [`Element`], [`Path`]
     ///
     /// [`Path`]: crate::path::Path
-    pub fn name<T>(name: T) -> Self
+    pub fn new_name<T>(name: T) -> Self
     where
         T: Into<Name>,
     {
@@ -44,32 +44,32 @@ impl Element {
     /// # use dynamodb_expression::path::Element;
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// assert_eq!("foo[3]", Element::indexed_field("foo", 3).to_string());
-    /// assert_eq!("foo[3]", Element::indexed_field("foo", [3]).to_string());
-    /// assert_eq!("foo[3]", Element::indexed_field("foo", &[3]).to_string());
-    /// assert_eq!("foo[3]", Element::indexed_field("foo", vec![3]).to_string());
+    /// assert_eq!("foo[3]", Element::new_indexed_field("foo", 3).to_string());
+    /// assert_eq!("foo[3]", Element::new_indexed_field("foo", [3]).to_string());
+    /// assert_eq!("foo[3]", Element::new_indexed_field("foo", &[3]).to_string());
+    /// assert_eq!("foo[3]", Element::new_indexed_field("foo", vec![3]).to_string());
     ///
-    /// assert_eq!("foo[7][4]", Element::indexed_field("foo", [7, 4]).to_string());
-    /// assert_eq!("foo[7][4]", Element::indexed_field("foo", &[7, 4]).to_string());
-    /// assert_eq!("foo[7][4]", Element::indexed_field("foo", vec![7, 4]).to_string());
+    /// assert_eq!("foo[7][4]", Element::new_indexed_field("foo", [7, 4]).to_string());
+    /// assert_eq!("foo[7][4]", Element::new_indexed_field("foo", &[7, 4]).to_string());
+    /// assert_eq!("foo[7][4]", Element::new_indexed_field("foo", vec![7, 4]).to_string());
     ///
-    /// assert_eq!("foo", Element::indexed_field("foo", []).to_string());
-    /// assert_eq!("foo", Element::indexed_field("foo", &[]).to_string());
-    /// assert_eq!("foo", Element::indexed_field("foo", vec![]).to_string());
+    /// assert_eq!("foo", Element::new_indexed_field("foo", []).to_string());
+    /// assert_eq!("foo", Element::new_indexed_field("foo", &[]).to_string());
+    /// assert_eq!("foo", Element::new_indexed_field("foo", vec![]).to_string());
     /// ```
     ///
-    /// See also: [`IndexedField`], [`Path`], [`Path::indexed_field`]
+    /// See also: [`IndexedField`], [`Path`], [`Path::new_indexed_field`]
     ///
     /// [`Path`]: crate::path::Path
-    /// [`Path::indexed_field`]: crate::path::Path::indexed_field
-    pub fn indexed_field<N, I>(name: N, indexes: I) -> Self
+    /// [`Path::new_indexed_field`]: crate::path::Path::new_indexed_field
+    pub fn new_indexed_field<N, I>(name: N, indexes: I) -> Self
     where
         N: Into<Name>,
         I: Indexes,
     {
         let indexes = indexes.into_indexes();
         if indexes.is_empty() {
-            Self::name(name)
+            Self::new_name(name)
         } else {
             Self::IndexedField(IndexedField {
                 name: name.into(),
@@ -92,7 +92,7 @@ impl From<Element> for String {
     fn from(element: Element) -> Self {
         match element {
             Element::Name(name) => name.into(),
-            Element::IndexedField(indexed_field) => indexed_field.to_string(),
+            Element::IndexedField(new_indexed_field) => new_indexed_field.to_string(),
         }
     }
 }
@@ -113,7 +113,7 @@ where
     I: Indexes,
 {
     fn from((name, indexes): (N, I)) -> Self {
-        Self::indexed_field(name, indexes)
+        Self::new_indexed_field(name, indexes)
     }
 }
 
@@ -206,10 +206,10 @@ impl FromStr for Element {
 /// the elements `foo[3][7]` and `bar[2]` would both be represented as an
 /// `IndexedField`.
 ///
-/// Created via `Element::from`, [`Element::indexed_field`], and
-/// [`Path::indexed_field`].
+/// Created via `Element::from`, [`Element::new_indexed_field`], and
+/// [`Path::new_indexed_field`].
 ///
-/// [`Path::indexed_field`]: crate::path::Path::indexed_field
+/// [`Path::new_indexed_field`]: crate::path::Path::new_indexed_field
 /// [`Path`]: crate::path::Path
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IndexedField {
@@ -228,9 +228,9 @@ impl fmt::Display for IndexedField {
 
 /// Used for [`IndexedField`]. An array, slice, `Vec` of, or single `usize`.
 ///
-/// See also: [`Element::indexed_field`], [`Path::indexed_field`]
+/// See also: [`Element::new_indexed_field`], [`Path::new_indexed_field`]
 ///
-/// [`Path::indexed_field`]: crate::path::Path::indexed_field
+/// [`Path::new_indexed_field`]: crate::path::Path::new_indexed_field
 pub trait Indexes {
     fn into_indexes(self) -> Vec<usize>;
 }
@@ -269,30 +269,30 @@ impl<const N: usize> Indexes for &[usize; N] {
 mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::{num_value, Path};
+    use crate::{Num, Path};
 
     use super::{Element, Name};
 
     #[test]
     fn display_name() {
-        let path = Element::name("foo");
+        let path = Element::new_name("foo");
         assert_eq!("foo", path.to_string());
     }
 
     #[test]
     fn display_indexed() {
-        // Also tests that `Element::indexed_field()` can accept a few different types of input.
+        // Also tests that `Element::new_indexed_field()` can accept a few different types of input.
 
         // From a usize
-        let path = Element::indexed_field("foo", 42);
+        let path = Element::new_indexed_field("foo", 42);
         assert_eq!("foo[42]", path.to_string());
 
         // From an array of usize
-        let path = Element::indexed_field("foo", [42]);
+        let path = Element::new_indexed_field("foo", [42]);
         assert_eq!("foo[42]", path.to_string());
 
         // From a slice of usize
-        let path = Element::indexed_field("foo", &([42, 37, 9])[..]);
+        let path = Element::new_indexed_field("foo", &([42, 37, 9])[..]);
         assert_eq!("foo[42][37][9]", path.to_string());
     }
 
@@ -301,13 +301,19 @@ mod test {
         let path: Path = ["foo", "bar"].into_iter().map(Name::from).collect();
         assert_eq!("foo.bar", path.to_string());
 
-        let path = Path::from_iter([Element::name("foo"), Element::indexed_field("bar", 42)]);
+        let path = Path::from_iter([
+            Element::new_name("foo"),
+            Element::new_indexed_field("bar", 42),
+        ]);
         assert_eq!("foo.bar[42]", path.to_string());
 
         // TODO: I'm not sure this is a legal path based on these examples:
         //       https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
         //       Test whether it's valid and remove this comment or handle it appropriately.
-        let path = Path::from_iter([Element::indexed_field("foo", 42), Element::name("bar")]);
+        let path = Path::from_iter([
+            Element::new_indexed_field("foo", 42),
+            Element::new_name("bar"),
+        ]);
         assert_eq!("foo[42].bar", path.to_string());
     }
 
@@ -318,7 +324,7 @@ mod test {
             "a".parse::<Path>()
                 .unwrap()
                 .size()
-                .equal(num_value(0))
+                .equal(Num::new(0))
                 .to_string()
         );
     }

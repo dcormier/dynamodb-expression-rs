@@ -32,6 +32,15 @@ pub struct Name {
     pub(crate) name: String,
 }
 
+impl Name {
+    pub fn new<T>(name: T) -> Self
+    where
+        T: Into<String>,
+    {
+        Self { name: name.into() }
+    }
+}
+
 impl fmt::Display for Name {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.name)

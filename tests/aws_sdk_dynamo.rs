@@ -9,11 +9,10 @@ use aws_sdk_dynamodb::{
     Client,
 };
 use dynamodb_expression::{
-    expression::Expression,
     path::{Element, Name, Path},
-    string_set, string_value,
-    update::{Add, Delete, Remove, Set, SetAction},
-    value::Num,
+    update::{self, Add, Delete, Remove, SetAction},
+    value::{Num, Set},
+    Expression, Scalar,
 };
 use pretty_assertions::{assert_eq, assert_ne};
 
@@ -63,20 +62,20 @@ async fn test_update_set(config: &Config, client: &Client) {
     assert_eq!(None, item.get(ATTR_NEW_FIELD));
 
     let update = Expression::builder()
-        .with_update(Set::from_iter([
-            SetAction::from(Path::name(ATTR_STRING).assign("abcdef")),
-            Path::name(ATTR_NUM).math().sub(3.5).into(),
-            Path::name(ATTR_LIST)
+        .with_update(update::Set::from_iter([
+            SetAction::from(Path::new_name(ATTR_STRING).assign("abcdef")),
+            Path::new_name(ATTR_NUM).math().sub(3.5).into(),
+            Path::new_name(ATTR_LIST)
                 .list_append()
                 .before()
                 .list(["A new value at the beginning"])
                 .into(),
             // DynamoDB won't let you append to the same list twice in the same update expression.
-            // Path::name(ATTR_LIST)
+            // Path::new_name(ATTR_LIST)
             //     .list_append()
             //     .list(["A new value at the end"])
             //     .into(),
-            Path::name(ATTR_NEW_FIELD)
+            Path::new_name(ATTR_NEW_FIELD)
                 .if_not_exists()
                 .value("A new field")
                 .into(),
@@ -94,7 +93,7 @@ async fn test_update_set(config: &Config, client: &Client) {
     // DynamoDB won't allow both in a single update expression.
     let updated_item = Expression::builder()
         .with_update(
-            Path::name(ATTR_LIST)
+            Path::new_name(ATTR_LIST)
                 .list_append()
                 .list(["A new value at the end"]),
         )
@@ -184,10 +183,10 @@ async fn test_update_remove(config: &Config, client: &Client) {
 
     let update = Expression::builder()
         .with_update(Remove::from_iter([
-            Path::name(ATTR_NULL),
+            Path::new_name(ATTR_NULL),
             Path::from_iter([
-                Element::name(ATTR_MAP),
-                Element::indexed_field(ATTR_LIST, 0),
+                Element::new_name(ATTR_MAP),
+                Element::new_indexed_field(ATTR_LIST, 0),
             ]),
             Path::from_iter([ATTR_MAP, ATTR_NULL].map(Name::from)),
         ]))
@@ -267,10 +266,10 @@ async fn test_update_add(config: &Config, client: &Client) {
     let update = Expression::builder()
         .with_update(Add::new(
             Path::from_iter([
-                Element::name(ATTR_MAP),
-                Element::indexed_field(ATTR_LIST, 1),
+                Element::new_name(ATTR_MAP),
+                Element::new_indexed_field(ATTR_LIST, 1),
             ]),
-            string_set(["d", "e", "f"]),
+            Set::new_string_set(["d", "e", "f"]),
         ))
         .build()
         .update_item(client)
@@ -284,8 +283,8 @@ async fn test_update_add(config: &Config, client: &Client) {
     let update = Expression::builder()
         .with_update(Add::new(
             Path::from_iter([
-                Element::name(ATTR_MAP),
-                Element::indexed_field(ATTR_LIST, 2),
+                Element::new_name(ATTR_MAP),
+                Element::new_indexed_field(ATTR_LIST, 2),
             ]),
             // TODO: Can it be made so `num_value()` can be used here?
             Num::new(-3.5),
@@ -366,10 +365,10 @@ async fn test_update_delete(config: &Config, client: &Client) {
     let update = Expression::builder()
         .with_update(Delete::new(
             Path::from_iter([
-                Element::name(ATTR_MAP),
-                Element::indexed_field(ATTR_LIST, 1),
+                Element::new_name(ATTR_MAP),
+                Element::new_indexed_field(ATTR_LIST, 1),
             ]),
-            string_set(["a", "c", "d"]),
+            Set::new_string_set(["a", "c", "d"]),
         ))
         .build()
         .update_item(client)
@@ -478,7 +477,11 @@ async fn get_item(
     config: &Config,
 ) -> Result<Option<HashMap<String, AttributeValue>>, SdkError<QueryError>> {
     Expression::builder()
-        .with_key_condition(Path::name(ATTR_ID).key().equal(string_value(ITEM_ID)))
+        .with_key_condition(
+            Path::new_name(ATTR_ID)
+                .key()
+                .equal(Scalar::new_string(ITEM_ID)),
+        )
         .build()
         .query(config.client().await)
         .table_name(config.table_name.clone())

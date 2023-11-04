@@ -10,10 +10,10 @@ use crate::path::{Indexes, Name, Path};
 /// ```
 /// use dynamodb_expression::{path::{Name, Path}, update::{Remove, Update}};
 ///
-/// let update = Remove::name("foo");
+/// let update = Remove::new_name("foo");
 /// assert_eq!(r#"REMOVE foo"#, update.to_string());
 ///
-/// let update = Remove::indexed_field("foo", [8]);
+/// let update = Remove::new_indexed_field("foo", [8]);
 /// assert_eq!(r#"REMOVE foo[8]"#, update.to_string());
 ///
 /// let update = Remove::from("foo[8]".parse::<Path>().unwrap());
@@ -39,7 +39,7 @@ impl Remove {
     /// Remove the specified top-level element.
     ///
     /// See also: [`Name`]
-    pub fn name<T>(name: T) -> Self
+    pub fn new_name<T>(name: T) -> Self
     where
         T: Into<Name>,
     {
@@ -50,21 +50,21 @@ impl Remove {
 
     /// Constructs a [`Remove`] for an indexed field element of a document path.
     /// For example, `foo[3]` or `foo[7][4]`. If you have a attribute name with
-    /// no indexes, you can pass an empty collection, or use [`Remove::name`].
+    /// no indexes, you can pass an empty collection, or use [`Remove::new_name`].
     ///
     /// `indexes` here can be an array, slice, `Vec` of, or single `usize`.
     ///
-    /// See also: [`IndexedField`], [`Path::indexed_field`]
+    /// See also: [`IndexedField`], [`Path::new_indexed_field`]
     ///
-    /// [`Remove::name`]: Self::name
+    /// [`Remove::new_name`]: Self::new_name
     /// [`IndexedField`]: crate::path::IndexedField
-    pub fn indexed_field<N, I>(name: N, indexes: I) -> Self
+    pub fn new_indexed_field<N, I>(name: N, indexes: I) -> Self
     where
         N: Into<Name>,
         I: Indexes,
     {
         Self {
-            paths: vec![Path::indexed_field(name, indexes)],
+            paths: vec![Path::new_indexed_field(name, indexes)],
         }
     }
 }

@@ -1,7 +1,14 @@
-use core::fmt;
-use std::collections::BTreeSet;
+mod binary_set;
+mod num_set;
+mod string_set;
 
-use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue};
+pub use binary_set::BinarySet;
+pub use num_set::NumSet;
+pub use string_set::StringSet;
+
+use core::fmt;
+
+use aws_sdk_dynamodb::types::AttributeValue;
 
 use super::base64;
 
@@ -16,6 +23,36 @@ pub enum Set {
 }
 
 impl Set {
+    /// A set of unique string values for DynamoDB
+    ///
+    /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
+    pub fn new_string_set<T>(string_set: T) -> Self
+    where
+        T: Into<StringSet>,
+    {
+        string_set.into().into()
+    }
+
+    /// A set of unique numeric values for DynamoDB
+    ///
+    /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
+    pub fn new_num_set<T>(num_set: T) -> Self
+    where
+        T: Into<NumSet>,
+    {
+        num_set.into().into()
+    }
+
+    /// A set of unique binary values for DynamoDB
+    ///
+    /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
+    pub fn new_binary_set<T>(binary_set: T) -> Self
+    where
+        T: Into<BinarySet>,
+    {
+        binary_set.into().into()
+    }
+
     // Intentionally not using `impl From<SetValue> for AttributeValue` because
     // I don't want to make this a public API people rely on. The purpose of this
     // crate is not to make creating `AttributeValues` easier. They should try
@@ -39,188 +76,22 @@ impl fmt::Display for Set {
     }
 }
 
-/// A set of unique string values for DynamoDB
-///
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct StringSet(BTreeSet<String>);
-
-impl StringSet {
-    // Intentionally not using `impl From<StringSet> for AttributeValue` because
-    // I don't want to make this a public API people rely on. The purpose of this
-    // crate is not to make creating `AttributeValues` easier. They should try
-    // `serde_dynamo`.
-    fn into_attribute_value(self) -> AttributeValue {
-        AttributeValue::Ss(self.0.into_iter().collect())
+impl From<StringSet> for Set {
+    fn from(string_set: StringSet) -> Self {
+        Self::StringSet(string_set)
     }
 }
 
-impl<T> FromIterator<T> for StringSet
-where
-    T: Into<String>,
-{
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = T>,
-    {
-        Self(iter.into_iter().map(Into::into).collect())
+impl From<NumSet> for Set {
+    fn from(num_set: NumSet) -> Self {
+        Self::NumSet(num_set)
     }
 }
 
-impl<I, T> From<I> for StringSet
-where
-    I: IntoIterator<Item = T>,
-    T: Into<String>,
-{
-    fn from(values: I) -> Self {
-        Self::from_iter(values)
+impl From<BinarySet> for Set {
+    fn from(binary_set: BinarySet) -> Self {
+        Self::BinarySet(binary_set)
     }
-}
-
-impl fmt::Display for StringSet {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_list().entries(self.0.iter()).finish()
-    }
-}
-
-/// A set of unique string values for DynamoDB
-///
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
-pub fn string_set<I, T>(set: I) -> Set
-where
-    I: IntoIterator<Item = T>,
-    T: Into<String>,
-{
-    Set::StringSet(set.into())
-}
-
-/// A set of unique numeric values for DynamoDB
-///
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NumSet(BTreeSet<String>);
-
-impl NumSet {
-    pub fn insert<T>(&mut self, num: T)
-    where
-        T: ToString + num::Num,
-    {
-        self.0.insert(Self::into_num(num));
-    }
-
-    /// Converts a numeric type into a DynamoDB numeric value
-    fn into_num<T>(num: T) -> String
-    where
-        T: ToString + num::Num,
-    {
-        num.to_string()
-    }
-
-    // Intentionally not using `impl From<NumSet> for AttributeValue` because
-    // I don't want to make this a public API people rely on. The purpose of this
-    // crate is not to make creating `AttributeValues` easier. They should try
-    // `serde_dynamo`.
-    fn into_attribute_value(self) -> AttributeValue {
-        AttributeValue::Ns(self.0.into_iter().collect())
-    }
-}
-
-impl<T> FromIterator<T> for NumSet
-where
-    T: ToString + num::Num,
-{
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = T>,
-    {
-        Self(iter.into_iter().map(Self::into_num).collect())
-    }
-}
-
-impl<I, T> From<I> for NumSet
-where
-    I: IntoIterator<Item = T>,
-    T: ToString + num::Num,
-{
-    fn from(values: I) -> Self {
-        Self::from_iter(values)
-    }
-}
-
-impl fmt::Display for NumSet {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_list().entries(self.0.iter()).finish()
-    }
-}
-
-/// A set of unique numeric values for DynamoDB
-///
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
-pub fn num_set<I, T>(set: I) -> Set
-where
-    I: IntoIterator<Item = T>,
-    T: ToString + num::Num,
-{
-    Set::NumSet(set.into())
-}
-
-/// A set of unique binary values for DynamoDB
-///
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct BinarySet(BTreeSet<Vec<u8>>);
-
-impl BinarySet {
-    // Intentionally not using `impl From<BinarySet> for AttributeValue` because
-    // I don't want to make this a public API people rely on. The purpose of this
-    // crate is not to make creating `AttributeValues` easier. They should try
-    // `serde_dynamo`.
-    fn into_attribute_value(self) -> AttributeValue {
-        AttributeValue::Bs(self.0.into_iter().map(Blob::new).collect())
-    }
-}
-
-impl<T> FromIterator<T> for BinarySet
-where
-    T: IntoIterator<Item = u8>,
-{
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = T>,
-    {
-        Self(
-            iter.into_iter()
-                .map(|value| value.into_iter().collect())
-                .collect(),
-        )
-    }
-}
-
-impl<I, T> From<I> for BinarySet
-where
-    I: IntoIterator<Item = T>,
-    T: IntoIterator<Item = u8>,
-{
-    fn from(values: I) -> Self {
-        Self::from_iter(values)
-    }
-}
-
-impl fmt::Display for BinarySet {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_list().entries(self.0.iter().map(base64)).finish()
-    }
-}
-
-/// A set of unique binary values for DynamoDB
-///
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
-pub fn binary_set<I, T>(set: I) -> Set
-where
-    I: IntoIterator<Item = T>,
-    T: IntoIterator<Item = u8>,
-{
-    Set::BinarySet(set.into())
 }
 
 #[cfg(test)]
@@ -230,11 +101,11 @@ mod test {
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
-    use crate::{binary_set, num_set, string_set, value::base64};
+    use crate::value::{base64, Set};
 
     #[test]
     fn string_set_display() {
-        let set = string_set(["foo", "bar", "!@#$%^&*()-=_+\"'{}[]\\|;:<>,./?`~"]);
+        let set = Set::new_string_set(["foo", "bar", "!@#$%^&*()-=_+\"'{}[]\\|;:<>,./?`~"]);
         assert_eq!(
             r#"["!@#$%^&*()-=_+\"'{}[]\\|;:<>,./?`~", "bar", "foo"]"#,
             set.to_string()
@@ -251,14 +122,14 @@ mod test {
     #[test]
     #[allow(clippy::approx_constant)]
     fn num_set_display() {
-        let set = num_set([-1, 0, 1, 42]);
+        let set = Set::new_num_set([-1, 0, 1, 42]);
         assert_eq!(r#"["-1", "0", "1", "42"]"#, set.to_string());
 
         let deserialized: Vec<String> =
             serde_json::from_str(&set.to_string()).expect("Must be valid JSON");
         assert_eq!(vec!["-1", "0", "1", "42"], deserialized);
 
-        let set = num_set([f64::MIN, 0.0, 3.14, f64::MAX]);
+        let set = Set::new_num_set([f64::MIN, 0.0, 3.14, f64::MAX]);
         assert_eq!(
             "[\"-17976931348623157000000000000000000000000000000000000000000000\
             0000000000000000000000000000000000000000000000000000000000000000000\
@@ -301,7 +172,7 @@ mod test {
         // These strings chosen because they produce base64 strings with all the
         // non-alphanumeric chars in the base64 set ('+', '/', and the padding
         // char, '='). Used `find_tricky_base64()`, below.
-        let set = binary_set(["  > ", "  ? "].into_iter().map(str::bytes));
+        let set = Set::new_binary_set(["  > ", "  ? "].into_iter().map(str::bytes));
         assert_eq!(r#"["ICA+IA==", "ICA/IA=="]"#, set.to_string());
 
         let deserialized: Vec<String> =

@@ -13,18 +13,18 @@ An example showing a how to use this crate to perform a query:
 # use aws_sdk_dynamodb::{error::SdkError, operation::query::QueryError};
 #
 # async fn example() -> Result<(), SdkError<QueryError>> {
-use dynamodb_expression::{Expression, num_value, Path};
+use dynamodb_expression::{Expression, Num, Path};
 
 let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
 
 let query_output = Expression::builder()
     .with_filter(
-        Path::name("name")
+        Path::new_name("name")
             .attribute_exists()
-            .and(Path::name("age").greater_than_or_equal(num_value(2.5))),
+            .and(Path::new_name("age").greater_than_or_equal(Num::new(2.5))),
     )
     .with_projection(["name", "age"])
-    .with_key_condition(Path::name("id").key().equal(num_value(42)))
+    .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
     .build()
     .query(&client)
     .table_name("your_table")
@@ -55,10 +55,6 @@ pub mod path;
 pub mod update;
 pub mod value;
 
-pub use condition::Comparator;
 pub use expression::Expression;
 pub use path::Path;
-pub use value::{
-    binary_set, binary_value, bool_value, null_value, num_set, num_value, ref_value, string_set,
-    string_value,
-};
+pub use value::{Map, Num, Scalar, Set, Value};
