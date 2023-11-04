@@ -29,22 +29,6 @@ pub enum Value {
 }
 
 impl Value {
-    // Intentionally not using `impl From<ScalarValue> for AttributeValue` because
-    // I don't want to make this a public API people rely on. The purpose of this
-    // crate is not to make creating `AttributeValues` easier. They should try
-    // `serde_dynamo`.
-    pub(crate) fn into_attribute_value(self) -> AttributeValue {
-        match self {
-            Self::Scalar(value) => value.into_attribute_value(),
-            Self::Set(value) => value.into_attribute_value(),
-            Self::Map(value) => value.into_attribute_value(),
-            Self::List(value) => value.into_attribute_value(),
-        }
-    }
-}
-
-/// Scalar values
-impl Value {
     /// Use when you need a [string][1] value for DynamoDB.
     ///
     /// See also: [`Scalar::new_string`]
@@ -54,7 +38,7 @@ impl Value {
     where
         T: Into<String>,
     {
-        Self::Scalar(value.into().into())
+        value.into().into()
     }
 
     /// Use when you need a [numeric][1] value for DynamoDB.
@@ -79,7 +63,7 @@ impl Value {
     where
         N: ToString + ::num::Num,
     {
-        Self::Scalar(Num::new(value).into())
+        Num::new(value).into()
     }
 
     /// Use when you need a [numeric][1] value for DynamoDB in exponent form
@@ -105,7 +89,7 @@ impl Value {
     where
         N: LowerExp + ::num::Num,
     {
-        Self::Scalar(Num::new_lower_exp(value).into())
+        Num::new_lower_exp(value).into()
     }
 
     /// Use when you need a [numeric][1] value for DynamoDB in exponent form
@@ -131,7 +115,7 @@ impl Value {
     where
         N: UpperExp + ::num::Num,
     {
-        Self::Scalar(Num::new_upper_exp(value).into())
+        Num::new_upper_exp(value).into()
     }
 
     /// Use when you need a [boolean][1] value for DynamoDB.
@@ -140,7 +124,7 @@ impl Value {
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-BOOL
     pub fn new_bool(b: bool) -> Self {
-        Self::Scalar(b.into())
+        b.into()
     }
 
     /// Use when you need a [binary][1] value for DynamoDB.
@@ -152,7 +136,7 @@ impl Value {
     where
         B: Into<Vec<u8>>,
     {
-        Self::Scalar(binary.into().into())
+        binary.into().into()
     }
 
     /// Use when you need a [null][1] value for DynamoDB.
@@ -162,6 +146,54 @@ impl Value {
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-NULL
     pub fn new_null() -> Self {
         Self::Scalar(Scalar::Null)
+    }
+
+    pub fn new_string_set<T>(string_set: T) -> Self
+    where
+        T: Into<StringSet>,
+    {
+        string_set.into().into()
+    }
+
+    pub fn new_num_set<T>(num_set: T) -> Self
+    where
+        T: Into<NumSet>,
+    {
+        num_set.into().into()
+    }
+
+    pub fn new_binary_set<T>(binary_set: T) -> Self
+    where
+        T: Into<BinarySet>,
+    {
+        binary_set.into().into()
+    }
+
+    pub fn new_map<T>(map: T) -> Self
+    where
+        T: Into<Map>,
+    {
+        map.into().into()
+    }
+
+    pub fn new_list<T>(list: T) -> Self
+    where
+        T: Into<List>,
+    {
+        list.into().into()
+    }
+
+    // Intentionally not using `impl From<ScalarValue> for AttributeValue` because
+    // I don't want to make this a public API people rely on. The purpose of this
+    // crate is not to make creating `AttributeValues` easier. They should try
+    // `serde_dynamo`.
+    pub(crate) fn into_attribute_value(self) -> AttributeValue {
+        match self {
+            Self::Scalar(value) => value.into_attribute_value(),
+            Self::Set(value) => value.into_attribute_value(),
+            Self::Map(value) => value.into_attribute_value(),
+            Self::List(value) => value.into_attribute_value(),
+        }
     }
 }
 
@@ -237,6 +269,24 @@ impl FromIterator<u8> for Value {
 impl From<Set> for Value {
     fn from(set: Set) -> Self {
         Self::Set(set)
+    }
+}
+
+impl From<StringSet> for Value {
+    fn from(string_set: StringSet) -> Self {
+        Self::Set(string_set.into())
+    }
+}
+
+impl From<NumSet> for Value {
+    fn from(num_set: NumSet) -> Self {
+        Self::Set(num_set.into())
+    }
+}
+
+impl From<BinarySet> for Value {
+    fn from(string_set: BinarySet) -> Self {
+        Self::Set(string_set.into())
     }
 }
 

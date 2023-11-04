@@ -21,6 +21,13 @@ pub struct Map {
 }
 
 impl Map {
+    pub fn new<T>(map: T) -> Self
+    where
+        T: Into<Map>,
+    {
+        map.into()
+    }
+
     // Intentionally not using `impl From<ScalarValue> for AttributeValue` because
     // I don't want to make this a public API people rely on. The purpose of this
     // crate is not to make creating `AttributeValues` easier. They should try
