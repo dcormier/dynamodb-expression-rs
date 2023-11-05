@@ -1,9 +1,10 @@
 /*!
 A crate to help build DynamoDB condition, filter, key condition, and update
-expressions in a type-safe way.
+expressions in a type-safe way, including handling [expression attribute names][1]
+and [expression attribute values][2].
 
-[`Expression`] is the type to use for a [DynamoDB expression][1].
-[`Path`] represents a [DynamoDB item attribute or document path][2], and has
+[`Expression`] is the type to use for a [DynamoDB expression][2].
+[`Path`] represents a [DynamoDB item attribute or document path][3], and has
 many methods for building various expressions.
 See the integration tests for [querying] and [updating] as a starting place.
 
@@ -35,8 +36,10 @@ let query_output = Expression::builder()
 # }
 ```
 
-[1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.html
-[2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html
+[1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
+[2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeValues.html
+[3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.html
+[4]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html
 [querying]: https://github.com/dcormier/dynamodb-expression-rs/blob/b18bc1c/tests/aws_sdk_dynamo.rs#L480-L486
 [updating]: https://github.com/dcormier/dynamodb-expression-rs/blob/b18bc1c/tests/aws_sdk_dynamo.rs#L52
 */

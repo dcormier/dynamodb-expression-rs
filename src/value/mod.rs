@@ -1,8 +1,8 @@
-pub mod list;
-pub mod map;
+mod list;
+mod map;
 mod num;
-pub mod scalar;
-pub mod set;
+mod scalar;
+mod set;
 mod value_or_ref;
 
 pub use list::List;
@@ -10,9 +10,9 @@ pub use map::Map;
 pub use num::Num;
 pub use scalar::Scalar;
 pub use set::{BinarySet, NumSet, Set, StringSet};
-pub use value_or_ref::Ref;
+pub use value_or_ref::{Ref, StringOrRef};
 
-pub(crate) use value_or_ref::{StringOrRef, ValueOrRef};
+pub(crate) use value_or_ref::ValueOrRef;
 
 use core::fmt::{self, LowerExp, UpperExp};
 
@@ -43,7 +43,8 @@ impl Value {
 
     /// Use when you need a [numeric][1] value for DynamoDB.
     ///
-    /// See also:, [`Value::new_num_lower_exp`], [`Value::new_num_upper_exp`], [`Num`]
+    /// See also:, [`Value::new_num_lower_exp`], [`Value::new_num_upper_exp`],
+    /// [`Scalar::new_num`], [`Num::new`]
     ///
     /// # Examples
     ///
@@ -69,7 +70,8 @@ impl Value {
     /// Use when you need a [numeric][1] value for DynamoDB in exponent form
     /// (with a lowercase `e`).
     ///
-    /// See also:, [`Value::new_num`], [`Value::new_num_upper_exp`], [`Num`]
+    /// See also:, [`Value::new_num`], [`Value::new_num_upper_exp`],
+    /// [`Scalar::new_num_lower_exp`], [`Num::new_lower_exp`]
     ///
     /// # Examples
     ///
@@ -95,7 +97,8 @@ impl Value {
     /// Use when you need a [numeric][1] value for DynamoDB in exponent form
     /// (with an uppercase `e`).
     ///
-    /// See also:, [`Value::new_num`], [`Value::new_num_lower_exp`], [`Num`]
+    /// See also:, [`Value::new_num`], [`Value::new_num_lower_exp`],
+    /// [`Scalar::new_num_upper_exp`], [`Num::new_upper_exp`]
     ///
     /// # Examples
     ///
@@ -148,6 +151,8 @@ impl Value {
         Self::Scalar(Scalar::Null)
     }
 
+    // TODO:
+    /// See also: [`Set::new_string_set`], [`StringSet::new`]
     pub fn new_string_set<T>(string_set: T) -> Self
     where
         T: Into<StringSet>,
@@ -155,6 +160,8 @@ impl Value {
         string_set.into().into()
     }
 
+    // TODO:
+    /// See also: [`Set::new_num_set`], [`NumSet::new`]
     pub fn new_num_set<T>(num_set: T) -> Self
     where
         T: Into<NumSet>,
@@ -162,6 +169,8 @@ impl Value {
         num_set.into().into()
     }
 
+    // TODO:
+    /// See also: [`Set::new_binary_set`], [`BinarySet::new`]
     pub fn new_binary_set<T>(binary_set: T) -> Self
     where
         T: Into<BinarySet>,
@@ -169,6 +178,8 @@ impl Value {
         binary_set.into().into()
     }
 
+    // TODO:
+    /// See also: [`Map::new`]
     pub fn new_map<T>(map: T) -> Self
     where
         T: Into<Map>,
@@ -176,6 +187,8 @@ impl Value {
         map.into().into()
     }
 
+    // TODO:
+    /// See also: [`List::new`]
     pub fn new_list<T>(list: T) -> Self
     where
         T: Into<List>,

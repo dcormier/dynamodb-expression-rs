@@ -42,7 +42,7 @@ use aws_sdk_dynamodb::types::AttributeValue;
 /// [`Value::new_num_upper_exp`]: crate::value::Value::new_num_upper_exp
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Num {
-    n: String,
+    pub(crate) n: String,
 }
 
 impl Num {

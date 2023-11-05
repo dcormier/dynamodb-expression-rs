@@ -13,6 +13,13 @@ pub struct List {
 }
 
 impl List {
+    pub fn new<T>(list: T) -> Self
+    where
+        T: Into<List>,
+    {
+        list.into()
+    }
+
     // Intentionally not using `impl From<ScalarValue> for AttributeValue` because
     // I don't want to make this a public API people rely on. The purpose of this
     // crate is not to make creating `AttributeValues` easier. They should try

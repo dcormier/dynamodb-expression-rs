@@ -2,7 +2,7 @@ use core::fmt::{self, Write};
 
 use super::Value;
 
-/// A DynamoDB value, or a reference to one stored in the collected expression values
+/// A DynamoDB value, or a reference to one stored in the collected expression values.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum ValueOrRef {
     Value(Value),
@@ -35,6 +35,14 @@ impl From<Ref> for ValueOrRef {
 
 /// A reference to a DynamoDB value stored in expression attribute values.
 /// Automatically prefixed with `:`.
+///
+/// ```
+/// use dynamodb_expression::value::Ref;
+/// # use pretty_assertions::assert_eq;
+///
+/// let value = Ref::new("expression_value");
+/// assert_eq!(":expression_value", value.to_string())
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ref(String);
 
@@ -88,6 +96,32 @@ impl From<Ref> for String {
 
 /// Represents a value that is either a string, or a reference to a value
 /// already in the expression attribute values.
+///
+/// ```
+/// use dynamodb_expression::value::{StringOrRef, Ref};
+///
+/// let value: StringOrRef = "a string value".into();
+/// let value: StringOrRef = Ref::new("expression_value").into();
+/// ```
+///
+/// For example, the [`BeginsWith`] operator can take a string or a reference to
+/// an extended attribute value. Here's how [`StringOrRef`] works with that.
+///
+/// ```
+/// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
+/// # use pretty_assertions::assert_eq;
+///
+///
+/// let begins_with = BeginsWith::new(Path::new_name("foo"), "T");
+/// assert_eq!(r#"begins_with(foo, "T")"#, begins_with.to_string());
+///
+/// let begins_with = BeginsWith::new(Path::new_name("foo"), Ref::new("prefix"));
+/// assert_eq!(r#"begins_with(foo, :prefix)"#, begins_with.to_string());
+/// ```
+///
+/// See also: [`Ref`]
+///
+/// [`BeginsWith`]: crate::condition::BeginsWith
 pub enum StringOrRef {
     String(String),
     Ref(Ref),

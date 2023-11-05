@@ -35,8 +35,8 @@ fn put() {
         .condition_expression("attribute_not_exists(#0) OR size(#0) = :0")
         .expression_attribute_names("#0", "name")
         .expression_attribute_values(":0", AttributeValue::N(0.to_string()))
-        .item("name", AttributeValue::S("Jane".into()))
         .table_name("people")
+        .item("name", AttributeValue::S("Jane".into()))
         .build()
         .unwrap();
 
@@ -48,8 +48,8 @@ fn put() {
         )
         .expression_attribute_names("#0", "name")
         .expression_attribute_values(":0", AttributeValue::N(0.to_string()))
-        .item("name", AttributeValue::S("Jane".into()))
         .table_name("people")
+        .item("name", AttributeValue::S("Jane".into()))
         .build()
         .unwrap();
 
@@ -61,9 +61,8 @@ fn put() {
         )
         .build()
         .to_put_builder()
-        // TODO: Expression needs to be able to build `Put`
-        .item("name", AttributeValue::S("Jane".into()))
         .table_name("people")
+        .item("name", AttributeValue::S("Jane".into()))
         .build()
         .unwrap();
 
@@ -74,7 +73,7 @@ fn put() {
 #[test]
 fn query() {
     use aws_sdk_dynamodb::{operation::query::QueryInput, types::AttributeValue};
-    use dynamodb_expression::{value::Ref, Expression, Path, Scalar};
+    use dynamodb_expression::{value::Ref, Expression, Num, Path};
     use pretty_assertions::assert_eq;
 
     // Building the `QueryInput` manually.
@@ -118,10 +117,10 @@ fn query() {
         .with_filter(
             Path::new_name("name")
                 .attribute_exists()
-                .and(Path::new_name("age").greater_than_or_equal(Scalar::new_num(2.5))),
+                .and(Path::new_name("age").greater_than_or_equal(Num::new(2.5))),
         )
         .with_projection(["name", "age"])
-        .with_key_condition(Path::new_name("id").key().equal(Scalar::new_num(42)))
+        .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
         .build()
         .to_query_input_builder()
         .table_name("the_table")

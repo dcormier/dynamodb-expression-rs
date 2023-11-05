@@ -2,6 +2,9 @@ use core::fmt::{self, Write};
 
 use crate::operand::Operand;
 
+/// A [DynamoDB `IN` operation][1].
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct In {
     pub op: Operand,
@@ -9,13 +12,32 @@ pub struct In {
 }
 
 impl In {
-    pub fn new<I, T>(op: Operand, items: I) -> Self
+    /// Creates a new [DynamoDB `IN` operation][1]. True if the value from the
+    /// [`Operand`] (the `op` parameter) is equal to any value in the list (the
+    /// `items` parameter).
+    ///
+    /// The list can contain up to 100 values. It must have at least 1.
+    ///
+    /// ```
+    /// use dynamodb_expression::{condition::In, operand::Operand, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let condition = In::new(Path::new_name("name"), ["Jack", "Jill"]);
+    /// assert_eq!(r#"name IN ("Jack","Jill")"#, condition.to_string());
+    /// ```
+    ///
+    /// See also: [`Path::in_`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
+    /// [`Path::in_`]: crate::path::Path::in_
+    pub fn new<O, I, T>(op: O, items: I) -> Self
     where
+        O: Into<Operand>,
         I: IntoIterator<Item = T>,
         T: Into<Operand>,
     {
         Self {
-            op,
+            op: op.into(),
             items: items.into_iter().map(Into::into).collect(),
         }
     }

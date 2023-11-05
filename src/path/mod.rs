@@ -317,9 +317,21 @@ impl Path {
         less_than_or_equal(self, right).into()
     }
 
-    /// `self BETWEEN b AND c` - true if `self` is greater than or equal to `b`, and less than or equal to `c`.
+    /// The [DynamoDB `BETWEEN` operator][1]. True if `self` is greater than or
+    /// equal to `lower`, and less than or equal to `upper`.
     ///
-    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    /// ```
+    /// use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let key_condition = Path::new_name("age").between(Num::new(10), Num::new(90));
+    /// assert_eq!(r#"age BETWEEN 10 AND 90"#, key_condition.to_string());
+    /// ```
+    ///
+    /// See also: [`Key::between`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
+    /// [`Key::between`]: crate::key::Key::between
     pub fn between<L, U>(self, lower: L, upper: U) -> Condition
     where
         L: Into<Operand>,
@@ -332,17 +344,26 @@ impl Path {
         })
     }
 
-    /// `self IN (b[, ..])` — true if `self` is equal to any value in the list.
+    /// A [DynamoDB `IN` operation][1]. True if the value at this [`Path`] is equal
+    /// to any value in the list.
     ///
     /// The list can contain up to 100 values. It must have at least 1.
     ///
-    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
+    /// ```
+    /// use dynamodb_expression::Path;
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let condition = Path::new_name("name").in_(["Jack", "Jill"]);
+    /// assert_eq!(r#"name IN ("Jack","Jill")"#, condition.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
     pub fn in_<I, T>(self, items: I) -> Condition
     where
         I: IntoIterator<Item = T>,
         T: Into<Operand>,
     {
-        In::new(self.into(), items).into()
+        In::new(self, items).into()
     }
 
     /// True if the item contains the attribute specified by [`Path`].
@@ -366,9 +387,27 @@ impl Path {
         AttributeType::new(self, attribute_type).into()
     }
 
-    /// True if the attribute specified by [`Path`] begins with a particular substring.
+    /// The [DynamoDB `begins_with` function][1]. True if the attribute specified by
+    ///  the [`Path`] begins with a particular substring.
     ///
-    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    /// `begins_with` can take a string or a reference to an extended attribute
+    /// value. Here's an example.
+    ///
+    /// ```
+    /// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let begins_with = Path::new_name("foo").begins_with("T");
+    /// assert_eq!(r#"begins_with(foo, "T")"#, begins_with.to_string());
+    ///
+    /// let begins_with = Path::new_name("foo").begins_with(Ref::new("prefix"));
+    /// assert_eq!(r#"begins_with(foo, :prefix)"#, begins_with.to_string());
+    /// ```
+    ///
+    /// See also: [`Ref`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
+    /// [`Ref`]: crate::value::Ref
     pub fn begins_with<T>(self, prefix: T) -> Condition
     where
         T: Into<StringOrRef>,
@@ -576,12 +615,10 @@ pub struct PathParseError;
 mod test {
     use pretty_assertions::{assert_eq, assert_str_eq};
 
-    use crate::{value::Ref, Num};
-
-    use super::{Element, Name, Path, PathParseError};
-
     #[test]
     fn parse_path() {
+        use crate::path::{Element, Name, Path, PathParseError};
+
         let path: Path = "foo".parse().unwrap();
         assert_eq!(Path::from(Name::from("foo")), path);
 
@@ -659,12 +696,16 @@ mod test {
     /// Demonstration/proof of how a [`Path`] can be expressed to prove usability.
     #[test]
     fn express_path() {
+        use crate::path::{Element, Path};
+
         let _: Element = ("foo", 0).into();
         let _: Path = ("foo", 0).into();
     }
 
     #[test]
     fn display_name() {
+        use crate::path::Element;
+
         let path = Element::new_name("foo");
         assert_str_eq!("foo", path.to_string());
     }
@@ -672,6 +713,8 @@ mod test {
     #[test]
     fn display_indexed() {
         // Also tests that `Element::new_indexed_field()` can accept a few different types of input.
+
+        use crate::path::Element;
 
         // From a usize
         let path = Element::new_indexed_field("foo", 42);
@@ -688,6 +731,8 @@ mod test {
 
     #[test]
     fn display_path() {
+        use crate::path::{Element, Name, Path};
+
         let path: Path = ["foo", "bar"].into_iter().map(Name::from).collect();
         assert_str_eq!("foo.bar", path.to_string());
 
@@ -709,6 +754,8 @@ mod test {
 
     #[test]
     fn size() {
+        use crate::{path::Path, Num};
+
         assert_str_eq!(
             "size(a) = 0",
             "a".parse::<Path>()
@@ -721,6 +768,8 @@ mod test {
 
     #[test]
     fn begins_with_string() {
+        use crate::path::Path;
+
         let begins_with = Path::new_indexed_field("foo", 3).begins_with("foo");
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
 
@@ -738,7 +787,17 @@ mod test {
 
     #[test]
     fn begins_with_value_ref() {
+        use crate::{path::Path, value::Ref};
+
         let begins_with = Path::new_indexed_field("foo", 3).begins_with(Ref::new("prefix"));
         assert_eq!("begins_with(foo[3], :prefix)", begins_with.to_string());
+    }
+
+    #[test]
+    fn in_() {
+        use crate::Path;
+
+        let condition = Path::new_name("name").in_(["Jack", "Jill"]);
+        assert_eq!(r#"name IN ("Jack","Jill")"#, condition.to_string());
     }
 }

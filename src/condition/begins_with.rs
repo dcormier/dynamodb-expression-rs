@@ -5,9 +5,28 @@ use crate::{
     value::{StringOrRef, ValueOrRef},
 };
 
-/// True if the attribute specified by `path` begins with a particular substring.
+/// The [DynamoDB `begins_with` function][1]. True if the attribute specified by
+///  the [`Path`] begins with a particular substring.
 ///
-/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+/// [`BeginsWith`] can take a string or a reference to an extended attribute
+/// value. Here's an example.
+///
+/// ```
+/// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
+/// # use pretty_assertions::assert_eq;
+///
+/// let begins_with = BeginsWith::new(Path::new_name("foo"), "T");
+/// assert_eq!(r#"begins_with(foo, "T")"#, begins_with.to_string());
+///
+/// let begins_with = BeginsWith::new(Path::new_name("foo"), Ref::new("prefix"));
+/// assert_eq!(r#"begins_with(foo, :prefix)"#, begins_with.to_string());
+/// ```
+///
+/// See also: [`Path::begins_with`], [`Key::begins_with`], [`Ref`]
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
+/// [`Key::begins_with`]: crate::key::Key::begins_with
+/// [`Ref`]: crate::value::Ref
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BeginsWith {
     // `Path` is correct here

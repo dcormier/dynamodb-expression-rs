@@ -97,7 +97,7 @@ impl Size {
         I: IntoIterator<Item = T>,
         T: Into<Operand>,
     {
-        In::new(self.into(), items)
+        In::new(self, items)
     }
 }
 

@@ -2,6 +2,13 @@ use core::fmt;
 
 use crate::operand::Operand;
 
+/// Represents the [DynamoDB `BETWEEN` operator][1].
+///
+/// See also: [`Path::between`], [`Key::between`]
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
+/// [`Path::between`]: crate::path::Path::between
+/// [`Key::between`]: crate::key::Key::between
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Between {
     pub(crate) op: Operand,

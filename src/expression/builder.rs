@@ -349,7 +349,7 @@ mod test {
                 projection_expression: None,
                 update_expression: None,
                 expression_attribute_names: None,
-                expression_attribute_values: None
+                expression_attribute_values: None,
             },
             expression,
             "An empty iterator should result in `None` for projection expression"
