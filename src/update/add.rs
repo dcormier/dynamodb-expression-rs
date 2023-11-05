@@ -60,7 +60,7 @@ impl fmt::Display for Add {
 
 /// A value that can be used for the `ADD` operation in a DynamoDB update request.
 ///
-/// See: [`Add`]
+/// See also: [`Add`]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddValue {
     Set(Set),

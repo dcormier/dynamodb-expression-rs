@@ -17,9 +17,7 @@ use super::{Name, PathParseError};
 /// [`Path`]: crate::path::Path
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Element {
-    /// See: [`Name`]
     Name(Name),
-    /// See: [`IndexedField`]
     IndexedField(IndexedField),
 }
 

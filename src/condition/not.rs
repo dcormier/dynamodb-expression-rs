@@ -2,9 +2,20 @@ use core::fmt;
 
 use crate::condition::Condition;
 
-/// A [logical `NOT`][1] operation.
+/// A [DynamoDB logical `NOT`][1] condition.
 ///
-/// See: [`Condition`]
+/// ```
+/// use dynamodb_expression::{condition::Not, Path};
+/// # use pretty_assertions::assert_eq;
+///
+/// let a = Path::new_name("a");
+/// let b = Path::new_name("b");
+///
+/// let condition = Not::from(a.greater_than(b));
+/// assert_eq!("NOT a > b", condition.to_string());
+/// ```
+///
+/// See also: [`Condition::not`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -237,5 +248,18 @@ mod test {
         //     normalized.to_string(),
         //     "`NOT NOT NOT` should be normalized to `NOT`"
         // );
+    }
+
+    // This is really for formatting of the doc tests
+    #[test]
+    fn not() {
+        use crate::{condition::Not, Path};
+        use pretty_assertions::assert_eq;
+
+        let a = Path::new_name("a");
+        let b = Path::new_name("b");
+
+        let condition = Not::from(a.greater_than(b));
+        assert_eq!("NOT a > b", condition.to_string());
     }
 }

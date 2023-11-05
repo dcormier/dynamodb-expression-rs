@@ -2,17 +2,20 @@ use core::fmt::{self, Write};
 
 use crate::operand::Operand;
 
-/// A [DynamoDB `IN` operation][1].
+/// A [DynamoDB `IN` condition][1].
+///
+/// See also: [`Path::in_`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
+/// [`Path::in_`]: crate::path::Path::in_
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct In {
-    pub op: Operand,
-    pub items: Vec<Operand>,
+    pub(crate) op: Operand,
+    pub(crate) items: Vec<Operand>,
 }
 
 impl In {
-    /// Creates a new [DynamoDB `IN` operation][1]. True if the value from the
+    /// Creates a new [DynamoDB `IN` condition][1]. True if the value from the
     /// [`Operand`] (the `op` parameter) is equal to any value in the list (the
     /// `items` parameter).
     ///

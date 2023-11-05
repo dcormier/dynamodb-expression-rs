@@ -5,7 +5,7 @@ use crate::path::Path;
 /// The [DynamoDB `attribute_not_exists` function][1]. True if the item does not
 /// contain the attribute in a specified [`Path`].
 ///
-/// See: [`Path::attribute_not_exists`]
+/// See also: [`Path::attribute_not_exists`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
