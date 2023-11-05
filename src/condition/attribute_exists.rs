@@ -1,10 +1,12 @@
 use core::fmt;
 
 use crate::path::Path;
-
-/// True if the item contains the attribute specified by `path`.
+/// The [DynamoDB `attribute_exists` function][1]. True if the item contains
+/// the attribute in a specified [`Path`].
 ///
-/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+/// See: [`Path::attribute_exists`]
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AttributeExists {
     // `Path` is correct here

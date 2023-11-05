@@ -191,9 +191,9 @@ pub struct Path {
 impl Path {
     /// Constructs a [`Path`] for a single attribute name (with no indexes or
     /// sub-attributes). If you have a attribute name with one or more indexes,
-    /// use [`Path::new_indexed_field()`].
+    /// use [`Path::new_indexed_field`].
     ///
-    /// [`Path::new_indexed_field()`]: Self::new_indexed_field
+    /// [`Path::new_indexed_field`]: Self::new_indexed_field
     pub fn new_name<T>(name: T) -> Self
     where
         T: Into<Name>,
@@ -324,8 +324,8 @@ impl Path {
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let key_condition = Path::new_name("age").between(Num::new(10), Num::new(90));
-    /// assert_eq!(r#"age BETWEEN 10 AND 90"#, key_condition.to_string());
+    /// let condition = Path::new_name("age").between(Num::new(10), Num::new(90));
+    /// assert_eq!(r#"age BETWEEN 10 AND 90"#, condition.to_string());
     /// ```
     ///
     /// See also: [`Key::between`]
@@ -366,23 +366,50 @@ impl Path {
         In::new(self, items).into()
     }
 
-    /// True if the item contains the attribute specified by [`Path`].
+    /// The [DynamoDB `attribute_exists` function][1]. True if the item contains
+    /// the attribute specified by [`Path`].
     ///
-    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    /// ```
+    /// use dynamodb_expression::Path;
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let condition = Path::new_name("foo").attribute_exists();
+    /// assert_eq!("attribute_exists(foo)", condition.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
     pub fn attribute_exists(self) -> Condition {
         Condition::AttributeExists(self.into())
     }
 
-    /// True if the attribute specified by [`Path`] does not exist in the item.
+    /// The [DynamoDB `attribute_not_exists` function][1]. True if the item does
+    /// not contain the attribute specified by [`Path`].
     ///
-    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    /// ```
+    /// use dynamodb_expression::Path;
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let condition = Path::new_name("foo").attribute_not_exists();
+    /// assert_eq!("attribute_not_exists(foo)", condition.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
     pub fn attribute_not_exists(self) -> Condition {
         Condition::AttributeNotExists(self.into())
     }
 
-    /// True if the attribute at the specified [`Path`] is of a particular data type.
+    /// The [DynamoDB `attribute_type` function][1]. True if the attribute at
+    /// the specified [`Path`] is of the specified data type.
     ///
-    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    /// ```
+    /// use dynamodb_expression::{condition::attribute_type::Type, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let condition = Path::new_name("foo").attribute_type(Type::String);
+    /// assert_eq!("attribute_type(foo, S)", condition.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
     pub fn attribute_type(self, attribute_type: Type) -> Condition {
         AttributeType::new(self, attribute_type).into()
     }
@@ -415,15 +442,36 @@ impl Path {
         BeginsWith::new(self, prefix).into()
     }
 
-    /// True if the attribute specified by [`Path`] is one of the following:
+    /// The [DynamoDB `contains` function][1]. True if the attribute specified
+    /// by [`Path`] is one of the following:
     /// * A `String` that contains a particular substring.
     /// * A `Set` that contains a particular element within the set.
     /// * A `List` that contains a particular element within the list.
     ///
-    /// The operand must be a `String` if the attribute specified by path is a `String`.
-    /// If the attribute specified by path is a `Set`, the operand must be the set's element type.
+    /// The operand must be a `String` if the attribute specified by path is a
+    /// `String`. If the attribute specified by path is a `Set`, the operand
+    /// must be the sets element type.
     ///
-    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    /// ```
+    /// use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// // String
+    /// let condition = Path::new_name("foo").contains("Quinn");
+    /// assert_eq!(r#"contains(foo, "Quinn")"#, condition.to_string());
+    ///
+    /// // Number
+    /// let condition = Path::new_name("foo").contains(Num::new(42));
+    /// assert_eq!(r#"contains(foo, 42)"#, condition.to_string());
+    ///
+    /// // Binary
+    /// let condition = Path::new_name("foo").contains(Vec::<u8>::from("fish"));
+    /// assert_eq!(r#"contains(foo, "ZmlzaA==")"#, condition.to_string());
+    /// ```
+    ///
+    /// See also: [`Contains`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
     pub fn contains<V>(self, operand: V) -> Condition
     where
         V: Into<Scalar>,
@@ -431,9 +479,17 @@ impl Path {
         Contains::new(self, operand).into()
     }
 
-    /// Returns a number representing an attribute's size.
+    /// The [DynamoDB `size` function][1]. Returns a number representing an attributes size.
     ///
-    /// [DynamoDB documentation.](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+    /// ```
+    /// use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let condition = Path::new_name("foo").size().greater_than(Num::new(0));
+    /// assert_eq!("size(foo) > 0", condition.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
     pub fn size(self) -> Size {
         self.into()
     }
@@ -799,5 +855,22 @@ mod test {
 
         let condition = Path::new_name("name").in_(["Jack", "Jill"]);
         assert_eq!(r#"name IN ("Jack","Jill")"#, condition.to_string());
+    }
+
+    #[test]
+    fn contains() {
+        use crate::{Num, Path};
+
+        // String
+        let condition = Path::new_name("foo").contains("Quinn");
+        assert_eq!(r#"contains(foo, "Quinn")"#, condition.to_string());
+
+        // Number
+        let condition = Path::new_name("foo").contains(Num::new(42));
+        assert_eq!(r#"contains(foo, 42)"#, condition.to_string());
+
+        // Binary
+        let condition = Path::new_name("foo").contains(Vec::<u8>::from("fish"));
+        assert_eq!(r#"contains(foo, "ZmlzaA==")"#, condition.to_string());
     }
 }

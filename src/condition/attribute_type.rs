@@ -2,9 +2,12 @@ use core::fmt;
 
 use crate::path::Path;
 
-/// True if the value at the specified [`Path`] is of a particular data type.
+/// The [DynamoDB `attribute_type` function][1]. True if the attribute at
+/// the specified [`Path`] is of the specified data type.
 ///
-/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+/// See also: [`Path::attribute_type`], [Type]
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AttributeType {
     // `Path` is correct here
@@ -36,6 +39,9 @@ impl fmt::Display for AttributeType {
     }
 }
 
+/// The type of an attribute for the DynamoDB `attribute_type` function.
+///
+/// See also: [Path::attribute_type]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Type {
     String,

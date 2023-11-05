@@ -111,7 +111,6 @@ impl From<Ref> for String {
 /// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
 /// # use pretty_assertions::assert_eq;
 ///
-///
 /// let begins_with = BeginsWith::new(Path::new_name("foo"), "T");
 /// assert_eq!(r#"begins_with(foo, "T")"#, begins_with.to_string());
 ///

@@ -2,9 +2,12 @@ use core::fmt;
 
 use crate::path::Path;
 
-/// True if the attribute specified by `path` does not exist in the item.
+/// The [DynamoDB `attribute_not_exists` function][1]. True if the item does not
+/// contain the attribute in a specified [`Path`].
 ///
-/// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions)
+/// See: [`Path::attribute_not_exists`]
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AttributeNotExists {
     // `Path` is correct here
