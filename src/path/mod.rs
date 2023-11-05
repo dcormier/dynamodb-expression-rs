@@ -28,7 +28,7 @@ use crate::{
         },
         Add, Assign, Delete, IfNotExists, ListAppend, Math, Remove,
     },
-    value::{self, Scalar, StringOrRef, Value},
+    value::{self, StringOrRef, Value},
 };
 
 /// Represents a DynamoDB [document path][1]. For example, `foo[3][7].bar[2].baz`.
@@ -474,7 +474,7 @@ impl Path {
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
     pub fn contains<V>(self, operand: V) -> Condition
     where
-        V: Into<Scalar>,
+        V: Into<Value>,
     {
         Contains::new(self, operand).into()
     }
@@ -631,7 +631,7 @@ impl TryFrom<Path> for Name {
     /// let path: Path = "foo".parse().unwrap();
     /// let name = Name::try_from(path).unwrap();
     /// assert_eq!(Name::from("foo"), name);
-    ///```
+    /// ```
     ///
     /// If the [`Path`] has indexes, or has sub-attributes, it cannot be
     /// converted, and the original [`Path`] is returned.

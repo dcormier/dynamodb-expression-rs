@@ -2,7 +2,7 @@ use core::fmt;
 
 use crate::{
     path::Path,
-    value::{Scalar, ValueOrRef},
+    value::{Value, ValueOrRef},
 };
 
 /// The [DynamoDB `contains` function][1]. True if the attribute specified
@@ -46,7 +46,7 @@ impl Contains {
     pub fn new<P, S>(path: P, operand: S) -> Self
     where
         P: Into<Path>,
-        S: Into<Scalar>,
+        S: Into<Value>,
     {
         Self {
             path: path.into(),

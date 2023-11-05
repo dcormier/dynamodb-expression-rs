@@ -11,7 +11,7 @@ use aws_sdk_dynamodb::{
 use dynamodb_expression::{
     path::{Element, Name, Path},
     update::{self, Add, Delete, Remove, SetAction},
-    value::{Num, Set},
+    value::{Num, Set, StringSet},
     Expression, Scalar,
 };
 use pretty_assertions::{assert_eq, assert_ne};
@@ -38,6 +38,117 @@ async fn test_query(config: &Config) {
         .expect("Where is the item?");
 
     assert_eq!(DebugItem(item), DebugItem(got));
+}
+
+#[tokio::test]
+async fn scan() {
+    test("scan", |config| Box::pin(test_scan(config))).await;
+}
+
+async fn test_scan(config: &Config) {
+    let item = fresh_item(config).await;
+
+    let [got]: [_; 1] = Expression::builder()
+        .build()
+        .scan(config.client().await)
+        .table_name(&config.table_name)
+        .send()
+        .await
+        .expect("Failed to scan item")
+        .items
+        .expect("Where is the item?")
+        .try_into()
+        .expect("The table should have a single item");
+
+    assert_eq!(DebugItem(item), DebugItem(got));
+
+    test_scan_list_contains(config).await;
+    test_scan_list_not_contains(config).await;
+}
+
+async fn test_scan_list_contains(config: &Config) {
+    let client = config.client().await;
+
+    let [expected]: [_; 1] = client
+        .scan()
+        .filter_expression("contains(#list, :ss)")
+        .expression_attribute_names("#list", "list")
+        .expression_attribute_values(
+            ":ss",
+            AttributeValue::Ss(["a", "b", "c"].map(Into::into).into()),
+        )
+        .table_name(&config.table_name)
+        .send()
+        .await
+        .expect("Failed to scan")
+        .items
+        .expect("Where is the item?")
+        .try_into()
+        .expect("Expected exactly one item");
+
+    let [got]: [_; 1] = Expression::builder()
+        .with_filter(
+            "list"
+                .parse::<Path>()
+                .unwrap()
+                .contains(StringSet::new(["a", "b", "c"])),
+        )
+        .build()
+        .scan(client)
+        .table_name(&config.table_name)
+        .send()
+        .await
+        .expect("Failed to scan")
+        .items
+        .expect("Where is the item?")
+        .try_into()
+        .expect("Expected exactly one item");
+
+    assert_eq!(DebugItem(expected), DebugItem(got));
+}
+
+async fn test_scan_list_not_contains(config: &Config) {
+    let client = config.client().await;
+
+    // The value being checked for doesn't exist in the list.
+
+    let [expected]: [_; 1] = client
+        .scan()
+        .filter_expression("NOT contains(#list, :ss)")
+        .expression_attribute_names("#list", "list")
+        .expression_attribute_values(
+            ":ss",
+            AttributeValue::Ss(["d", "e", "f"].map(Into::into).into()),
+        )
+        .table_name(&config.table_name)
+        .send()
+        .await
+        .expect("Failed to scan")
+        .items
+        .expect("Where is the item?")
+        .try_into()
+        .expect("Expected exactly one item");
+
+    let [got]: [_; 1] = Expression::builder()
+        .with_filter(
+            "list"
+                .parse::<Path>()
+                .unwrap()
+                .contains(StringSet::new(["d", "e", "f"]))
+                .not(),
+        )
+        .build()
+        .scan(client)
+        .table_name(&config.table_name)
+        .send()
+        .await
+        .expect("Failed to scan")
+        .items
+        .expect("Where is the item?")
+        .try_into()
+        .expect("Expected exactly one item");
+
+    assert_eq!(DebugItem(expected), DebugItem(got));
 }
 
 #[tokio::test]
@@ -472,11 +583,11 @@ fn item_key(item: &HashMap<String, AttributeValue>) -> HashMap<String, Attribute
     [(ATTR_ID.into(), item[ATTR_ID].clone())].into()
 }
 
-/// Gets the item from the configured table
+/// Gets the one item from the configured table
 async fn get_item(
     config: &Config,
 ) -> Result<Option<HashMap<String, AttributeValue>>, SdkError<QueryError>> {
-    Expression::builder()
+    let output = Expression::builder()
         .with_key_condition(
             Path::new_name(ATTR_ID)
                 .key()
@@ -486,12 +597,11 @@ async fn get_item(
         .query(config.client().await)
         .table_name(config.table_name.clone())
         .send()
-        .await
-        .map(|resp| {
-            let mut items = resp.items.expect("Should have found items");
+        .await?;
 
-            assert_eq!(1, items.len(), "Should have gotten one item");
+    Ok(output.items.map(|items| {
+        let [item]: [_; 1] = items.try_into().expect("Should have gotten a single item");
 
-            items.pop()
-        })
+        item
+    }))
 }
