@@ -7,31 +7,9 @@ use crate::{
 
 /// Represents an update expression to [append elements to a list][1].
 ///
-/// # Examples
-///
-/// ```
-/// use dynamodb_expression::{Num, path::Name, Path, update::ListAppend};
-/// # use pretty_assertions::assert_eq;
-///
-/// let list_append = ListAppend::builder(Name::new("foo")).list([7, 8, 9].map(Num::new));
-/// assert_eq!("foo = list_append(foo, [7, 8, 9])", list_append.to_string());
-///
-/// let list_append_2 = Path::new_name("foo").list_append().list([7, 8, 9].map(Num::new));
-/// assert_eq!(list_append, list_append_2);
-/// ```
-///
-/// If you want to add the new values to the _beginning_ of the list instead,
-/// use the [`.before()`] method.
-/// ```
-/// use dynamodb_expression::{Num, Path, update::ListAppend};
-/// # use pretty_assertions::assert_eq;
-///
-/// let list_append = Path::new_name("foo").list_append().before().list([1, 2, 3].map(Num::new));
-/// assert_eq!("foo = list_append([1, 2, 3], foo)", list_append.to_string());
-/// ```
+/// See also: [`Path::list_append`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements
-/// [`.before()`]: Builder::before
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ListAppend {
     /// The field to set the newly combined list to
@@ -93,7 +71,9 @@ enum Order {
     After,
 }
 
-/// Builds an [`ListAppend`] instance. Create an instance of this by using [`ListAppend::builder`].
+/// Builds an [`ListAppend`] instance.
+///
+/// See also: [`Path::list_append`]
 #[must_use = "Consume the `Builder` using its `.list()` method"]
 #[derive(Debug, Clone)]
 pub struct Builder {

@@ -22,22 +22,7 @@ use crate::{
 /// let key: Key = Path::new_name("foo").into();
 /// ```
 ///
-/// Use the methods on [`Key`] to build a key condition expression.
-///
-/// ```
-/// use dynamodb_expression::{Num, Path};
-/// # use pretty_assertions::assert_eq;
-///
-/// let key_condition = Path::new_name("name").key().begins_with("J").and(
-///     Path::new_name("age")
-///         .key()
-///         .between(Num::new(10), Num::new(90)),
-/// );
-/// assert_eq!(
-///     r#"begins_with(name, "J") AND age BETWEEN 10 AND 90"#,
-///     key_condition.to_string()
-/// );
-/// ```
+/// See also: [`Path::key`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -109,6 +94,8 @@ impl Key {
         }
     }
 
+    /// A simple comparison that the specified attribute is equal to the
+    /// provided value.
     pub fn equal<T>(self, right: T) -> KeyCondition
     where
         T: Into<Operand>,
@@ -118,6 +105,8 @@ impl Key {
         }
     }
 
+    /// A simple comparison that the specified attribute is greater than the
+    /// provided value.
     pub fn greater_than<T>(self, right: T) -> KeyCondition
     where
         T: Into<Operand>,
@@ -127,6 +116,8 @@ impl Key {
         }
     }
 
+    /// A simple comparison that the specified attribute is greater than or
+    /// equal to the provided value.
     pub fn greater_than_or_equal<T>(self, right: T) -> KeyCondition
     where
         T: Into<Operand>,
@@ -136,6 +127,8 @@ impl Key {
         }
     }
 
+    /// A simple comparison that the specified attribute is less than the
+    /// provided value.
     pub fn less_than<T>(self, right: T) -> KeyCondition
     where
         T: Into<Operand>,
@@ -145,6 +138,8 @@ impl Key {
         }
     }
 
+    /// A simple comparison that the specified attribute is less than or
+    /// equal to the provided value.
     pub fn less_than_or_equal<T>(self, right: T) -> KeyCondition
     where
         T: Into<Operand>,

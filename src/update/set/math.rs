@@ -7,31 +7,11 @@ use crate::{
 
 /// Represents a [DynamoDB math operation][1] used as a part of an update expression.
 ///
-/// See also: [`Update`](crate::update::Update)
-///
-/// # Examples
-///
-/// ```
-/// use dynamodb_expression::{path::{Name, Path}, update::Math};
-/// # use pretty_assertions::assert_eq;
-///
-/// let math = Math::builder(Name::from("foo")).add(4);
-/// assert_eq!("foo = foo + 4", math.to_string());
-///
-/// let math_2 = Path::from(Name::from("foo")).math().add(4);
-/// assert_eq!(math, math_2);
-///
-/// let math = Math::builder(Name::from("foo")).src(Name::from("bar")).sub(7);
-/// assert_eq!("foo = bar - 7", math.to_string());
-///
-/// let math_2 = Path::from(Name::from("foo")).math().src(Name::from("bar")).sub(7);
-/// assert_eq!(math, math_2);
-/// ```
+/// See also: [`Path::math`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Math {
-    // TODO: Name or Path for these?
     pub(crate) dst: Path,
     pub(crate) src: Option<Path>,
     op: MathOp,
@@ -40,6 +20,8 @@ pub struct Math {
 
 /// A [math operation][1] to modify a field and assign the updated value
 /// to another (possibly different) field.
+///
+/// See also: [`Path::math`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement
 impl Math {
@@ -86,7 +68,7 @@ impl fmt::Display for MathOp {
     }
 }
 
-/// Builds a [`Math`] instance. Create an instance of this by using [`Math::builder`].
+/// See: [`Path::math`]
 #[must_use = "Consume the `Builder` using its `.add()` or `.sub()` methods"]
 #[derive(Debug, Clone)]
 pub struct Builder {

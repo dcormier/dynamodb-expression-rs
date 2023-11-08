@@ -6,7 +6,6 @@ and [expression attribute values][2].
 [`Expression`] is the type to use for a [DynamoDB expression][2].
 [`Path`] represents a [DynamoDB item attribute or document path][3], and has
 many methods for building various expressions.
-See the integration tests for [querying] and [updating] as a starting place.
 
 An example showing a how to use this crate to perform a query:
 
@@ -36,12 +35,12 @@ let query_output = Expression::builder()
 # }
 ```
 
+From here, see [`Expression`] and [`Path`] for more examples.
+
 [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
 [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeValues.html
 [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.html
 [4]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html
-[querying]: https://github.com/dcormier/dynamodb-expression-rs/blob/b18bc1c/tests/aws_sdk_dynamo.rs#L480-L486
-[updating]: https://github.com/dcormier/dynamodb-expression-rs/blob/b18bc1c/tests/aws_sdk_dynamo.rs#L52
 */
 
 extern crate alloc;

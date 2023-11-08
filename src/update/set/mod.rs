@@ -148,7 +148,9 @@ impl fmt::Display for SetAction {
     }
 }
 
-/// Represents assigning a value of a [field][1], [list][2], or [map][3].
+/// Represents assigning a value of an [attribute][1], [list][2], or [map][3].
+///
+/// See also: [`Path::assign`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.ModifyingAttributes
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingListElements

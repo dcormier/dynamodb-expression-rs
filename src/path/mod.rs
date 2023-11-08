@@ -497,7 +497,17 @@ impl Path {
 
 /// Methods relating to building update expressions.
 impl Path {
-    /// See [`Assign`]
+    /// Represents assigning a value of a [attribute][1], [list][2], or [map][3].
+    ///
+    /// ```
+    /// use dynamodb_expression::{Num, Path, update::Update};
+    ///
+    /// let update: Update = Path::new_name("name").assign("Jill").into();
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.ModifyingAttributes
+    /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingListElements
+    /// [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingNestedMapAttributes
     pub fn assign<T>(self, value: T) -> Assign
     where
         T: Into<Value>,
@@ -505,12 +515,64 @@ impl Path {
         Assign::new(self, value)
     }
 
+    /// Use for doing [math on a numeric attribute][1].
+    ///
     /// Sets this as the destination in a [`Math`] builder.
+    ///
+    /// See also: [`Update`]
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dynamodb_expression::{Path, update::Update};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let math = Path::new_name("foo").math().add(4);
+    /// assert_eq!("foo = foo + 4", math.to_string());
+    ///
+    /// let math = Path::new_name("foo").math().src(Path::new_name("bar")).sub(7);
+    /// assert_eq!("foo = bar - 7", math.to_string());
+    ///
+    /// let update = Update::from(math);
+    /// assert_eq!("SET foo = bar - 7", update.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement
+    /// [`Update`]: crate::update::Update
     pub fn math(self) -> MathBuilder {
         Math::builder(self)
     }
 
-    /// Sets this as the destination in a [`ListAppend`] builder.
+    /// Represents an update expression to [append elements to a list][1].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dynamodb_expression::{Num, Path, update::Update};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let list_append = Path::new_name("foo").list_append().list([7, 8, 9].map(Num::new));
+    /// assert_eq!("foo = list_append(foo, [7, 8, 9])", list_append.to_string());
+    ///
+    /// let update = Update::from(list_append);
+    /// assert_eq!("SET foo = list_append(foo, [7, 8, 9])", update.to_string());
+    /// ```
+    ///
+    /// If you want to add the new values to the _beginning_ of the list instead,
+    /// use the [`.before()`] method.
+    /// ```
+    /// use dynamodb_expression::{Num, Path, update::Update};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let list_append = Path::new_name("foo").list_append().before().list([1, 2, 3].map(Num::new));
+    /// assert_eq!("foo = list_append([1, 2, 3], foo)", list_append.to_string());
+    ///
+    /// let update = Update::from(list_append);
+    /// assert_eq!("SET foo = list_append([1, 2, 3], foo)", update.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements
+    /// [`.before()`]: ListAppendBuilder::before
     pub fn list_append(self) -> ListAppendBuilder {
         ListAppend::builder(self)
     }
@@ -538,8 +600,6 @@ impl Path {
     }
 
     /// See [`Remove`]
-    ///
-    /// [`Remove`]: crate::update::Remove
     pub fn remove(self) -> Remove {
         self.into()
     }
@@ -547,6 +607,17 @@ impl Path {
 
 impl Path {
     /// Turns this [`Path`] into a [`Key`], for building a [key condition expression][1].
+    ///
+    /// ```
+    /// use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let key_condition = Path::new_name("id").key().equal(Num::new(42))
+    ///     .and(Path::new_name("category").key().begins_with("hardware"));
+    /// assert_eq!(r#"id = 42 AND begins_with(category, "hardware")"#, key_condition.to_string());
+    /// ```
+    ///
+    /// See methods on [`Key`] for more docs and examples.
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
     pub fn key(self) -> Key {
