@@ -13,18 +13,16 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ListAppend {
     /// The field to set the newly combined list to
-    // TODO: Name or Path?
     pub(crate) dst: Path,
 
     /// The field to get the current list from
-    // TODO: Name or Path?
     pub(crate) src: Option<Path>,
 
     /// The value(s) to add to the list
     pub(crate) list: ValueOrRef,
 
     /// Whether to add the new values to the beginning or end of the source list
-    order: Order,
+    after: bool,
 }
 
 impl ListAppend {
@@ -35,7 +33,7 @@ impl ListAppend {
         Builder {
             dst: dst.into(),
             src: None,
-            order: None,
+            after: true,
         }
     }
 }
@@ -46,7 +44,7 @@ impl fmt::Display for ListAppend {
             dst,
             src,
             list,
-            order,
+            after,
         } = self;
 
         // If no source field is specified, default to using the destination.
@@ -54,21 +52,12 @@ impl fmt::Display for ListAppend {
 
         write!(f, "{dst} = list_append(")?;
 
-        match order {
-            Order::Before => write!(f, "{list}, {src})"),
-            Order::After => write!(f, "{src}, {list})"),
+        if *after {
+            write!(f, "{src}, {list})")
+        } else {
+            write!(f, "{list}, {src})")
         }
     }
-}
-
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
-enum Order {
-    /// Put the new elements before the existing elements.
-    Before,
-
-    /// Add the new elements after the existing elements.
-    #[default]
-    After,
 }
 
 /// Builds an [`ListAppend`] instance.
@@ -79,13 +68,36 @@ enum Order {
 pub struct Builder {
     dst: Path,
     src: Option<Path>,
-    order: Option<Order>,
+    after: bool,
 }
 
 impl Builder {
-    /// Sets the source field to read the initial value from.
+    /// Sets the source [`Path`] to read the initial list from.
     ///
-    /// Defaults to the destination field.
+    /// Defaults to the [`Path`] the combined list is being assigned to.
+    ///
+    /// ```
+    /// # use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// let list_append = Path::new_name("foo")
+    ///     .list_append()
+    ///     .src(Path::new_name("bar"))
+    ///     .list([1, 2, 3].map(Num::new));
+    /// assert_eq!("foo = list_append(bar, [1, 2, 3])", list_append.to_string());
+    /// ```
+    ///
+    /// Compare with what happens without specifying a source [`Path`]:
+    ///
+    /// ```
+    /// # use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// let list_append = Path::new_name("foo")
+    ///     .list_append()
+    ///     .list([1, 2, 3].map(Num::new));
+    /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
+    /// ```
     pub fn src<T>(mut self, src: T) -> Self
     where
         T: Into<Path>,
@@ -98,38 +110,94 @@ impl Builder {
     /// The new values will be appended to the end of the existing values.
     ///
     /// This is the default.
+    ///
+    /// ```
+    /// # use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// let list_append = Path::new_name("foo").list_append().after().list([1, 2, 3].map(Num::new));
+    /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
+    /// ```
+    ///
+    /// Compare with when [`before`] is used:
+    ///
+    /// ```
+    /// # use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// let list_append = Path::new_name("foo").list_append().before().list([1, 2, 3].map(Num::new));
+    /// assert_eq!("foo = list_append([1, 2, 3], foo)", list_append.to_string());
+    /// ```
+    ///
+    /// The default, with the same behavior as `after`:
+    ///
+    /// ```
+    /// # use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// let list_append = Path::new_name("foo").list_append().list([1, 2, 3].map(Num::new));
+    /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
+    /// ```
+    ///
+    /// [`before`]: crate::update::set::list_append::Builder::before
     pub fn after(mut self) -> Self {
-        self.order = Some(Order::After);
+        self.after = true;
 
         self
     }
 
     /// The new values will be placed before the existing values.
     ///
-    /// Defaults to appending new values after existing values.
+    /// Defaults to appending new values [`after`] existing values.
+    ///
+    /// ```
+    /// # use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// let list_append = Path::new_name("foo").list_append().before().list([1, 2, 3].map(Num::new));
+    /// assert_eq!("foo = list_append([1, 2, 3], foo)", list_append.to_string());
+    /// ```
+    ///
+    /// Compare with when [`after`] is used:
+    ///
+    /// ```
+    /// # use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// let list_append = Path::new_name("foo").list_append().after().list([1, 2, 3].map(Num::new));
+    /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
+    /// ```
+    ///
+    /// The default, with the same behavior as [`after`]:
+    ///
+    /// ```
+    /// # use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// let list_append = Path::new_name("foo").list_append().list([1, 2, 3].map(Num::new));
+    /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
+    /// ```
+    ///
+    /// [`after`]: crate::update::set::list_append::Builder::after
     pub fn before(mut self) -> Self {
-        self.order = Some(Order::Before);
+        self.after = false;
 
         self
     }
 
     /// Sets the new value(s) to concatenate with the specified field.
     ///
-    /// Builds the [`ListAppend`] instance.
+    /// Consumes this [`Builder`] and creates a [`ListAppend`] instance.
     pub fn list<T>(self, list: T) -> ListAppend
     where
         T: Into<List>,
     {
-        let Self {
-            dst,
-            src,
-            order: op,
-        } = self;
+        let Self { dst, src, after } = self;
 
         ListAppend {
             dst,
             src,
-            order: op.unwrap_or_default(),
+            after,
             list: list.into().into(),
         }
     }
