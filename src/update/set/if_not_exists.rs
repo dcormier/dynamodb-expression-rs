@@ -7,23 +7,11 @@ use crate::{
 
 /// Represents an update expression to [set an attribute if it doesn't exist][1].
 ///
-/// # Examples
-///
-/// ```
-/// use dynamodb_expression::{Num, path::Name, Path, update::IfNotExists};
-/// # use pretty_assertions::assert_eq;
-///
-/// let if_not_exists = IfNotExists::builder(Name::new("foo")).value(Num::new(7));
-/// assert_eq!("foo = if_not_exists(foo, 7)", if_not_exists.to_string());
-///
-/// let if_not_exists_2 = Path::new_name("foo").if_not_exists().value(Num::new(7));
-/// assert_eq!(if_not_exists, if_not_exists_2);
-/// ```
+/// See also: [`Path::if_not_exists`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.PreventingAttributeOverwrites
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IfNotExists {
-    // TODO: Is `Path` the right thing, here?
     pub(crate) dst: Path,
     pub(crate) src: Option<Path>,
     pub(crate) value: ValueOrRef,
@@ -53,7 +41,9 @@ impl fmt::Display for IfNotExists {
 }
 
 /// Builds an [`IfNotExists`] instance. Create an instance of this by using [`IfNotExists::builder`].
-#[must_use = "Consume the `Builder` using its `.value()` method"]
+///
+/// See also: [`Path::if_not_exists`]
+#[must_use = "Consume this `Builder` by using its `.value()` method"]
 #[derive(Debug, Clone)]
 pub struct Builder {
     dst: Path,
@@ -61,7 +51,32 @@ pub struct Builder {
 }
 
 impl Builder {
-    /// Sets the source field check for existence. Defaults to the destination field.
+    /// Sets the source [`Path`] to check for existence.
+    ///
+    /// Defaults to the destination [`Path`].
+    ///
+    /// ```
+    /// # use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// let if_not_exists = Path::new_name("foo")
+    ///     .if_not_exists()
+    ///     .src(Path::new_name("bar"))
+    ///     .value(Num::new(42));
+    /// assert_eq!("foo = if_not_exists(bar, 42)", if_not_exists.to_string());
+    /// ```
+    ///
+    /// Compare with the default, where the destination [`Path`] is used:
+    ///
+    /// ```
+    /// # use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// let if_not_exists = Path::new_name("foo")
+    ///     .if_not_exists()
+    ///     .value(Num::new(42));
+    /// assert_eq!("foo = if_not_exists(foo, 42)", if_not_exists.to_string());
+    /// ```
     pub fn src<T>(mut self, src: T) -> Self
     where
         T: Into<Path>,
@@ -71,7 +86,11 @@ impl Builder {
         self
     }
 
-    /// The value to conditionally set. Builds the `IfNotExists` instance.
+    /// The value to conditionally set.
+    ///
+    /// Consumes this [`Builder`] and creates an [`IfNotExists`] instance.
+    ///
+    /// See also: [`Path::if_not_exists`]
     pub fn value<T>(self, value: T) -> IfNotExists
     where
         T: Into<Value>,

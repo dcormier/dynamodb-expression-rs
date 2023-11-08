@@ -63,7 +63,7 @@ impl fmt::Display for ListAppend {
 /// Builds an [`ListAppend`] instance.
 ///
 /// See also: [`Path::list_append`]
-#[must_use = "Consume the `Builder` using its `.list()` method"]
+#[must_use = "Consume this `Builder` by using its `.list()` method"]
 #[derive(Debug, Clone)]
 pub struct Builder {
     dst: Path,

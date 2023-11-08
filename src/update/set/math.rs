@@ -69,7 +69,7 @@ impl fmt::Display for MathOp {
 }
 
 /// See: [`Path::math`]
-#[must_use = "Consume the `Builder` using its `.add()` or `.sub()` methods"]
+#[must_use = "Consume this `Builder` by using its `.add()` or `.sub()` methods"]
 #[derive(Debug, Clone)]
 pub struct Builder {
     dst: Path,

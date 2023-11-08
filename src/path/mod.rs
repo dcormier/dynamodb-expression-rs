@@ -496,18 +496,30 @@ impl Path {
 }
 
 /// Methods relating to building update expressions.
+///
+/// See also: [`Update`]
+///
+/// [`Update`]: crate::update::Update
 impl Path {
     /// Represents assigning a value of a [attribute][1], [list][2], or [map][3].
     ///
+    /// See also: [`Update`]
+    ///
     /// ```
     /// use dynamodb_expression::{Num, Path, update::Update};
+    /// # use pretty_assertions::assert_eq;
     ///
-    /// let update: Update = Path::new_name("name").assign("Jill").into();
+    /// let assign = Path::new_name("name").assign("Jill");
+    /// assert_eq!(r#"name = "Jill""#, assign.to_string());
+    ///
+    /// let update = Update::from(assign);
+    /// assert_eq!(r#"SET name = "Jill""#, update.to_string());
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.ModifyingAttributes
     /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingListElements
     /// [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingNestedMapAttributes
+    /// [`Update`]: crate::update::Update
     pub fn assign<T>(self, value: T) -> Assign
     where
         T: Into<Value>,
@@ -545,6 +557,8 @@ impl Path {
 
     /// Represents an update expression to [append elements to a list][1].
     ///
+    /// See also: [`Update`]
+    ///
     /// # Examples
     ///
     /// ```
@@ -572,12 +586,31 @@ impl Path {
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements
+    /// [`Update`]: crate::update::Update
     /// [`.before()`]: ListAppendBuilder::before
     pub fn list_append(self) -> ListAppendBuilder {
         ListAppend::builder(self)
     }
 
-    /// Sets this as the destination in an [`IfNotExists`] builder.
+    /// Represents an update expression to [set an attribute if it doesn't exist][1].
+    ///
+    /// See also: [`Update`]
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dynamodb_expression::{Num, path::Name, Path, update::Update};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let if_not_exists = Path::new_name("foo").if_not_exists().value(Num::new(7));
+    /// assert_eq!("foo = if_not_exists(foo, 7)", if_not_exists.to_string());
+    ///
+    /// let update = Update::from(if_not_exists);
+    /// assert_eq!("SET foo = if_not_exists(foo, 7)", update.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.PreventingAttributeOverwrites
+    /// [`Update`]: crate::update::Update
     pub fn if_not_exists(self) -> IfNotExistsBuilder {
         IfNotExists::builder(self)
     }
