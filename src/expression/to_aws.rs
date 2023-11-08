@@ -76,12 +76,37 @@ impl Expression {
             .set_expression_attribute_values(self.expression_attribute_values)
     }
 
-    /// Sets up a `put_item` using the provided [`Client`] and uses this [`Expression`]
+    /// Sets up a [`put_item`][1] using the provided [`Client`] and uses this [`Expression`]
     /// to set the following on the [`PutItemFluentBuilder`] before returning it:
     /// * Condition expression
     /// * Expression attribute names
     /// * Expression attribute values
-    // TODO: An example
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # async fn example_put_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    /// use aws_sdk_dynamodb::{types::AttributeValue, Client};
+    /// use dynamodb_expression::{Expression, Path};
+    ///
+    /// let client = Client::new(&aws_config::load_from_env().await);
+    ///
+    /// let output = Expression::builder()
+    ///     .with_condition(Path::new_name("name").attribute_not_exists())
+    ///     .build()
+    ///     .put_item(&client)
+    ///     .table_name("people")
+    ///     .item("name", AttributeValue::S(String::from("Jill")))
+    ///     .item("age", AttributeValue::N(40.to_string()))
+    ///     .send()
+    ///     .await?;
+    /// #
+    /// # _ = output;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_PutItem.html
     pub fn put_item(self, client: &Client) -> PutItemFluentBuilder {
         self.to_put_item_fluent_builder(client.put_item())
     }
@@ -120,11 +145,33 @@ impl Expression {
             .set_expression_attribute_names(self.expression_attribute_names)
     }
 
-    /// Sets up a `get_item` using the provided [`Client`] and uses this [`Expression`]
+    /// Sets up a [`get_item`][1] using the provided [`Client`] and uses this [`Expression`]
     /// to set the following on the [`GetItemFluentBuilder`] before returning it:
     /// * Projection expression
     /// * Expression attribute names
-    // TODO: An example
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # async fn example_get_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    /// use dynamodb_expression::Expression;
+    ///
+    /// let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+    ///
+    /// let output = Expression::builder()
+    ///     .with_projection(["name", "age"])
+    ///     .build()
+    ///     .get_item(&client)
+    ///     .table_name("people")
+    ///     .send()
+    ///     .await?;
+    /// #
+    /// # _ = output;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_GetItem.html
     pub fn get_item(self, client: &Client) -> GetItemFluentBuilder {
         self.to_get_item_fluent_builder(client.get_item())
     }
@@ -178,13 +225,40 @@ impl Expression {
             .set_expression_attribute_values(self.expression_attribute_values)
     }
 
-    /// Sets up an `update_item` using the provided [`Client`] and uses this [`Expression`]
+    /// Sets up an [`update_item`][1] using the provided [`Client`] and uses this [`Expression`]
     /// to set the following on the [`UpdateItemFluentBuilder`] before returning it:
     /// * Update expression
     /// * Condition expression
     /// * Expression attribute names
     /// * Expression attribute values
-    // TODO: An example
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # async fn example_update_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
+    /// # {
+    /// use aws_sdk_dynamodb::{types::AttributeValue, Client};
+    /// use dynamodb_expression::{Expression, Num, Path};
+    ///
+    /// let client = Client::new(&aws_config::load_from_env().await);
+    ///
+    /// let age = Path::new_name("age");
+    /// let output = Expression::builder()
+    ///     .with_condition(age.clone().equal(Num::new(40)))
+    ///     .with_update(age.math().add(1))
+    ///     .build()
+    ///     .update_item(&client)
+    ///     .table_name("people")
+    ///     .key("name", AttributeValue::S(String::from("Jack")))
+    ///     .send()
+    ///     .await?;
+    /// #
+    /// # _ = output;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html
     pub fn update_item(self, client: &Client) -> UpdateItemFluentBuilder {
         self.to_update_item_fluent_builder(client.update_item())
     }
@@ -232,12 +306,37 @@ impl Expression {
             .set_expression_attribute_values(self.expression_attribute_values)
     }
 
-    /// Sets up a `delete_item` using the provided [`Client`] and uses this [`Expression`]
+    /// Sets up a [`delete_item`][1] using the provided [`Client`] and uses this [`Expression`]
     /// to set the following on the [`DeleteItemFluentBuilder`] before returning it:
     /// * Condition expression
     /// * Expression attribute names
     /// * Expression attribute values
-    // TODO: An example
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # async fn example_delete_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
+    /// # {
+    /// use aws_sdk_dynamodb::{types::AttributeValue, Client};
+    /// use dynamodb_expression::{Expression, Num, Path};
+    ///
+    /// let client = Client::new(&aws_config::load_from_env().await);
+    ///
+    /// let output = Expression::builder()
+    ///     .with_condition(Path::new_name("age").less_than(Num::new(20)))
+    ///     .build()
+    ///     .delete_item(&client)
+    ///     .table_name("people")
+    ///     .key("name", AttributeValue::S(String::from("Jack")))
+    ///     .send()
+    ///     .await?;
+    /// #
+    /// # _ = output;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_DeleteItem.html
     pub fn delete_item(self, client: &Client) -> DeleteItemFluentBuilder {
         self.to_delete_item_fluent_builder(client.delete_item())
     }
@@ -279,14 +378,42 @@ impl Expression {
             .set_expression_attribute_values(self.expression_attribute_values)
     }
 
-    /// Sets up a `query` using the provided [`Client`] and uses this [`Expression`]
+    /// Sets up a [`query`][1] using the provided [`Client`] and uses this [`Expression`]
     /// to set the following on the [`QueryFluentBuilder`] before returning it:
     /// * Key condition expression
     /// * Filter expression
     /// * Projection expression
     /// * Expression attribute names
     /// * Expression attribute values
-    // TODO: An example
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # async fn example_query() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    /// use dynamodb_expression::{Expression, Num, Path};
+    ///
+    /// let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+    ///
+    /// let output = Expression::builder()
+    ///     .with_filter(
+    ///         Path::new_name("name")
+    ///             .attribute_exists()
+    ///             .and(Path::new_name("age").greater_than_or_equal(Num::new(25))),
+    ///     )
+    ///     .with_projection(["name", "age"])
+    ///     .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
+    ///     .build()
+    ///     .query(&client)
+    ///     .table_name("people")
+    ///     .send()
+    ///     .await?;
+    /// #
+    /// # _ = output;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html
     pub fn query(self, client: &Client) -> QueryFluentBuilder {
         self.to_query_fluent_builder(client.query())
     }
@@ -324,13 +451,36 @@ impl Expression {
             .set_expression_attribute_values(self.expression_attribute_values)
     }
 
-    /// Sets up a `scan` using the provided [`Client`] and uses this [`Expression`]
+    /// Sets up a [`scan`][1] using the provided [`Client`] and uses this [`Expression`]
     /// to set the following on the [`ScanFluentBuilder`] before returning it:
     /// * Filter expression
     /// * Projection expression
     /// * Expression attribute names
     /// * Expression attribute values
-    // TODO: An example
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # async fn example_scan() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    /// use dynamodb_expression::{Expression, Num, Path};
+    ///
+    /// let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+    ///
+    /// let output = Expression::builder()
+    ///     .with_filter(Path::new_name("age").greater_than_or_equal(Num::new(25)))
+    ///     .with_projection(["name", "age"])
+    ///     .build()
+    ///     .scan(&client)
+    ///     .table_name("people")
+    ///     .send()
+    ///     .await?;
+    /// #
+    /// # _ = output;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Scan.html
     pub fn scan(self, client: &Client) -> ScanFluentBuilder {
         self.to_scan_fluent_builder(client.scan())
     }
@@ -368,14 +518,144 @@ impl Expression {
 
 #[cfg(test)]
 mod test {
-    use pretty_assertions::{assert_eq, assert_ne};
 
-    use crate::{key::Key, path::Name, Num, Path};
+    /// Exists to simplify the doc examples
+    #[allow(dead_code)]
+    async fn example_put_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        use crate::{Expression, Path};
+        use aws_sdk_dynamodb::{types::AttributeValue, Client};
 
-    use super::Expression;
+        let client = Client::new(&aws_config::load_from_env().await);
+
+        let output = Expression::builder()
+            .with_condition(Path::new_name("name").attribute_not_exists())
+            .build()
+            .put_item(&client)
+            .table_name("people")
+            .item("name", AttributeValue::S(String::from("Jill")))
+            .item("age", AttributeValue::N(40.to_string()))
+            .send()
+            .await?;
+
+        _ = output;
+        Ok(())
+    }
+
+    /// Exists to simplify the doc examples
+    #[allow(dead_code)]
+    async fn example_get_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        use crate::Expression;
+
+        let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+
+        let output = Expression::builder()
+            .with_projection(["name", "age"])
+            .build()
+            .get_item(&client)
+            .table_name("people")
+            .send()
+            .await?;
+
+        _ = output;
+        Ok(())
+    }
+
+    /// Exists to simplify the doc examples
+    #[allow(dead_code)]
+    async fn example_scan() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        use crate::{Expression, Num, Path};
+
+        let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+
+        let output = Expression::builder()
+            .with_filter(Path::new_name("age").greater_than_or_equal(Num::new(25)))
+            .with_projection(["name", "age"])
+            .build()
+            .scan(&client)
+            .table_name("people")
+            .send()
+            .await?;
+
+        _ = output;
+        Ok(())
+    }
+
+    /// Exists to simplify the doc examples
+    #[allow(dead_code)]
+    async fn example_query() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        use crate::{Expression, Num, Path};
+
+        let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+
+        let output = Expression::builder()
+            .with_filter(
+                Path::new_name("name")
+                    .attribute_exists()
+                    .and(Path::new_name("age").greater_than_or_equal(Num::new(25))),
+            )
+            .with_projection(["name", "age"])
+            .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
+            .build()
+            .query(&client)
+            .table_name("people")
+            .send()
+            .await?;
+
+        _ = output;
+        Ok(())
+    }
+
+    /// Exists to simplify the doc examples
+    #[allow(dead_code)]
+    async fn example_update_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
+    {
+        use crate::{Expression, Num, Path};
+        use aws_sdk_dynamodb::{types::AttributeValue, Client};
+
+        let client = Client::new(&aws_config::load_from_env().await);
+
+        let age = Path::new_name("age");
+        let output = Expression::builder()
+            .with_condition(age.clone().equal(Num::new(40)))
+            .with_update(age.math().add(1))
+            .build()
+            .update_item(&client)
+            .table_name("people")
+            .key("name", AttributeValue::S(String::from("Jack")))
+            .send()
+            .await?;
+
+        _ = output;
+        Ok(())
+    }
+
+    /// Exists to simplify the doc examples
+    #[allow(dead_code)]
+    async fn example_delete_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
+    {
+        use crate::{Expression, Num, Path};
+        use aws_sdk_dynamodb::{types::AttributeValue, Client};
+
+        let client = Client::new(&aws_config::load_from_env().await);
+
+        let output = Expression::builder()
+            .with_condition(Path::new_name("age").less_than(Num::new(20)))
+            .build()
+            .delete_item(&client)
+            .table_name("people")
+            .key("name", AttributeValue::S(String::from("Jack")))
+            .send()
+            .await?;
+
+        _ = output;
+        Ok(())
+    }
 
     #[test]
     fn scan_input() {
+        use crate::{Expression, Num, Path};
+        use pretty_assertions::assert_eq;
+
         let expression = Expression::builder()
             .with_filter(
                 "name".parse::<Path>().unwrap().begins_with("prefix").and(
@@ -413,6 +693,9 @@ mod test {
 
     #[test]
     fn query_input() {
+        use crate::{key::Key, path::Name, Expression, Num, Path};
+        use pretty_assertions::{assert_eq, assert_ne};
+
         let expression = Expression::builder()
             .with_filter(
                 Path::from(Name::from("name"))
@@ -448,6 +731,9 @@ mod test {
 
     #[test]
     fn update() {
+        use crate::{Expression, Num, Path};
+        use pretty_assertions::assert_ne;
+
         let expression = Expression::builder()
             .with_condition(
                 "name".parse::<Path>().unwrap().attribute_exists().and(
