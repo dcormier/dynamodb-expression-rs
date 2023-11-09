@@ -192,8 +192,6 @@ impl Path {
     /// Constructs a [`Path`] for a single attribute name (with no indexes or
     /// sub-attributes). If you have a attribute name with one or more indexes,
     /// use [`Path::new_indexed_field`].
-    ///
-    /// [`Path::new_indexed_field`]: Self::new_indexed_field
     pub fn new_name<T>(name: T) -> Self
     where
         T: Into<Name>,
@@ -227,8 +225,6 @@ impl Path {
     /// ```
     ///
     /// See also: [`IndexedField`], [`Element::new_indexed_field`]
-    ///
-    /// [`Path::new_name`]: Self::new_name
     pub fn new_indexed_field<N, I>(name: N, indexes: I) -> Self
     where
         N: Into<Name>,
@@ -643,7 +639,31 @@ impl Path {
         Delete::new(self, set)
     }
 
-    /// See [`Add`]
+    /// Represents an DynamoDB [`ADD` statement][1] in an [update expression][2].
+    ///
+    /// The [DynamoDB documentation recommends][1] against using `ADD`:
+    ///
+    /// > In general, we recommend using `SET` rather than `ADD`.
+    ///
+    /// See also: [`AddValue`], [`Update`], [`Set`]
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dynamodb_expression::{Num, Path, update::{Add, Update}};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let add = Path::new_name("foo").add(Num::from(1));
+    /// assert_eq!("ADD foo 1", add.to_string());
+    ///
+    /// let update = Update::from(add);
+    /// assert_eq!("ADD foo 1", update.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.ADD
+    /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
+    /// [`Update`]: crate::update::Update
+    /// [`Set`]: crate::update::Set
     #[allow(clippy::should_implement_trait)]
     pub fn add<T>(self, value: T) -> Add
     where
@@ -666,8 +686,8 @@ impl Path {
     /// # use pretty_assertions::assert_eq;
     ///
     /// let key_condition = Path::new_name("id").key().equal(Num::new(42))
-    ///     .and(Path::new_name("category").key().begins_with("hardware"));
-    /// assert_eq!(r#"id = 42 AND begins_with(category, "hardware")"#, key_condition.to_string());
+    ///     .and(Path::new_name("category").key().begins_with("hardware."));
+    /// assert_eq!(r#"id = 42 AND begins_with(category, "hardware.")"#, key_condition.to_string());
     /// ```
     ///
     /// See methods on [`Key`] for more docs and examples.

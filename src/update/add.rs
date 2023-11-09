@@ -11,24 +11,11 @@ use crate::{
 ///
 /// > In general, we recommend using `SET` rather than `ADD`.
 ///
-/// See also: [`Update`], [`Set`].
-///
-/// # Examples
-///
-/// ```
-/// use dynamodb_expression::{path::{Name, Path}, update::Add, value::Num};
-///
-/// let update = Add::new(Name::from("foo"), Num::from(1));
-/// assert_eq!("ADD foo 1", update.to_string());
-///
-/// let update = Add::new("foo[4]".parse::<Path>().unwrap(), Num::from(1));
-/// assert_eq!("ADD foo[4] 1", update.to_string());
-/// ```
+/// See also: [`Path::add`], [`Update`], [`Set`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.ADD
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
 /// [`Update`]: crate::update::Update
-/// [`Set`]: crate::update::Set
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Add {
     pub(crate) path: Path,
@@ -60,7 +47,7 @@ impl fmt::Display for Add {
 
 /// A value that can be used for the `ADD` operation in a DynamoDB update request.
 ///
-/// See also: [`Add`]
+/// See also: [`Path::add`], [`Add`]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddValue {
     Set(Set),
