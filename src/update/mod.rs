@@ -21,13 +21,10 @@ pub use self::{
 /// # Examples
 ///
 /// ```
-/// use core::str::FromStr;
-///
 /// use dynamodb_expression::{
 ///     update::{Remove, Update},
 ///     Path,
 /// };
-/// use itertools::Itertools;
 /// # use pretty_assertions::assert_eq;
 ///
 /// let update = Update::from(Path::new_name("foo").math().add(7));
@@ -45,13 +42,9 @@ pub use self::{
 /// let update = Update::from("foo[3].bar[0]".parse::<Path>().unwrap().remove());
 /// assert_eq!(r#"REMOVE foo[3].bar[0]"#, update.to_string());
 ///
-/// let update = Update::remove(
-///     ["foo", "bar", "baz"]
-///         .into_iter()
-///         .map(Path::from_str)
-///         .try_collect::<_, Remove, _>()
-///         .unwrap(),
-/// );
+/// let update = Update::from(Remove::from_iter(
+///     ["foo", "bar", "baz"].into_iter().map(Path::new_name),
+/// ));
 /// assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
 /// ```
 ///
@@ -66,7 +59,7 @@ pub enum Update {
 
 impl Update {
     /// A new update expression for a [`Set`] statement.
-    pub fn set<T>(set: T) -> Self
+    pub fn new_set<T>(set: T) -> Self
     where
         T: Into<Set>,
     {
@@ -74,7 +67,7 @@ impl Update {
     }
 
     /// A new update expression for a [`Remove`] statement.
-    pub fn remove<T>(remove: T) -> Self
+    pub fn new_remove<T>(remove: T) -> Self
     where
         T: Into<Remove>,
     {
@@ -82,7 +75,7 @@ impl Update {
     }
 
     /// A new update expression for an [`Add`] statement.
-    pub fn add<T>(add: T) -> Self
+    pub fn new_add<T>(add: T) -> Self
     where
         T: Into<Add>,
     {
@@ -90,7 +83,7 @@ impl Update {
     }
 
     /// A new update expression for a [`Delete`] statement.
-    pub fn delete<T>(delete: T) -> Self
+    pub fn new_delete<T>(delete: T) -> Self
     where
         T: Into<Delete>,
     {
@@ -168,13 +161,10 @@ mod test {
     #[test]
     #[ignore = "This is just to help with formatting the example for `Update`"]
     fn example() {
-        use core::str::FromStr;
-
         use crate::{
             update::{Remove, Update},
             Path,
         };
-        use itertools::Itertools;
         use pretty_assertions::assert_eq;
 
         let update = Update::from(Path::new_name("foo").math().add(7));
@@ -192,13 +182,9 @@ mod test {
         let update = Update::from("foo[3].bar[0]".parse::<Path>().unwrap().remove());
         assert_eq!(r#"REMOVE foo[3].bar[0]"#, update.to_string());
 
-        let update = Update::remove(
-            ["foo", "bar", "baz"]
-                .into_iter()
-                .map(Path::from_str)
-                .try_collect::<_, Remove, _>()
-                .unwrap(),
-        );
+        let update = Update::from(Remove::from_iter(
+            ["foo", "bar", "baz"].into_iter().map(Path::new_name),
+        ));
         assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
     }
 }
