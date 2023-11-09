@@ -599,7 +599,7 @@ impl Path {
     /// # Examples
     ///
     /// ```
-    /// use dynamodb_expression::{Num, path::Name, Path, update::Update};
+    /// use dynamodb_expression::{Num, Path, update::Update};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let if_not_exists = Path::new_name("foo").if_not_exists().value(Num::new(7));
@@ -615,7 +615,27 @@ impl Path {
         IfNotExists::builder(self)
     }
 
-    /// See [`Delete`]
+    /// Creates a [`DELETE` statement for an update expression][1], for removing
+    /// one or more items from a value that is a [set][2].
+    ///
+    /// See also: [`Update`]
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dynamodb_expression::{Path, update::Update, value::StringSet};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let delete = Path::new_name("foo").delete(StringSet::new(["a", "b", "c"]));
+    /// assert_eq!(r#"DELETE foo ["a", "b", "c"]"#, delete.to_string());
+    ///
+    /// let update = Update::from(delete);
+    /// assert_eq!(r#"DELETE foo ["a", "b", "c"]"#, update.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.DELETE
+    /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
+    /// [`Update`]: crate::update::Update
     pub fn delete<T>(self, set: T) -> Delete
     where
         T: Into<value::Set>,
