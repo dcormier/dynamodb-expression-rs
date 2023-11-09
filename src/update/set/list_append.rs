@@ -2,6 +2,7 @@ use core::fmt;
 
 use crate::{
     path::Path,
+    update::Set,
     value::{List, ValueOrRef},
 };
 
@@ -35,6 +36,23 @@ impl ListAppend {
             src: None,
             after: true,
         }
+    }
+
+    /// Add an additional action to this `SET` statement.
+    ///
+    /// ```
+    /// use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let set = Path::new_name("foo").list_append().list([7, 8, 9].map(Num::new))
+    ///     .and(Path::new_name("bar").assign("a value"));
+    /// assert_eq!(r#"SET foo = list_append(foo, [7, 8, 9]), bar = "a value""#, set.to_string());
+    /// ```
+    pub fn and<T>(self, action: T) -> Set
+    where
+        T: Into<Set>,
+    {
+        Set::from(self).and(action)
     }
 }
 

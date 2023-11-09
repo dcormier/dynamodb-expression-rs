@@ -188,7 +188,7 @@ async fn test_update_set(config: &Config, client: &Client) {
             //     .into(),
             Path::new_name(ATTR_NEW_FIELD)
                 .if_not_exists()
-                .value("A new field")
+                .assign("A new field")
                 .into(),
         ]))
         .build()

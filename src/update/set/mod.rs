@@ -17,6 +17,25 @@ use crate::{
 ///
 /// See also: [`Update`]
 ///
+/// # Examples
+///
+/// ```
+/// use dynamodb_expression::{update::Set, Path};
+/// # use pretty_assertions::assert_eq;
+///
+/// let set_foo = Set::from(Path::new_name("foo").math().add(7));
+/// assert_eq!("SET foo = foo + 7", set_foo.to_string());
+///
+/// let set_bar = Set::from(Path::new_name("bar").if_not_exists().assign("a value"));
+/// assert_eq!(r#"SET bar = if_not_exists(bar, "a value")"#, set_bar.to_string());
+///
+/// let set_foo_and_bar = set_foo.and(set_bar);
+/// assert_eq!(
+///     r#"SET foo = foo + 7, bar = if_not_exists(bar, "a value")"#,
+///     set_foo_and_bar.to_string(),
+/// );
+/// ```
+///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET
 /// [`Update`]: crate::update::Update
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,11 +45,22 @@ pub struct Set {
 
 impl Set {
     /// Add an additional action to this `SET` statement.
+    ///
+    /// ```
+    /// use dynamodb_expression::{Num, Path, update::Set};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let set = Set::from(Path::new_name("foo").assign(Num::new(7)))
+    ///     .and(Path::new_name("bar").assign("a value"));
+    /// assert_eq!(r#"SET foo = 7, bar = "a value""#, set.to_string());
+    /// ```
     pub fn and<T>(mut self, action: T) -> Self
     where
-        T: Into<SetAction>,
+        T: Into<Set>,
     {
-        self.actions.push(action.into());
+        let mut set = action.into();
+
+        self.actions.append(&mut set.actions);
 
         self
     }
@@ -113,6 +143,25 @@ pub enum SetAction {
     IfNotExists(IfNotExists),
 }
 
+impl SetAction {
+    /// Add an additional action to this `SET` statement.
+    ///
+    /// ```
+    /// use dynamodb_expression::{Num, Path, update::SetAction};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let set = SetAction::from(Path::new_name("foo").assign(Num::new(7)))
+    ///     .and(Path::new_name("bar").assign("a value"));
+    /// assert_eq!(r#"SET foo = 7, bar = "a value""#, set.to_string());
+    /// ```
+    pub fn and<T>(self, action: T) -> Set
+    where
+        T: Into<Set>,
+    {
+        Set::from(self).and(action)
+    }
+}
+
 impl From<Assign> for SetAction {
     fn from(assign: Assign) -> Self {
         Self::Assign(assign)
@@ -171,6 +220,23 @@ impl Assign {
             path: path.into(),
             value: value.into().into(),
         }
+    }
+
+    /// Add an additional action to this `SET` statement.
+    ///
+    /// ```
+    /// use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let set = Path::new_name("foo").assign(Num::new(7))
+    ///     .and(Path::new_name("bar").assign("a value"));
+    /// assert_eq!(r#"SET foo = 7, bar = "a value""#, set.to_string());
+    /// ```
+    pub fn and<T>(self, action: T) -> Set
+    where
+        T: Into<Set>,
+    {
+        Set::from(self).and(action)
     }
 }
 

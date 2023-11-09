@@ -8,7 +8,8 @@ use crate::path::{Indexes, Name, Path};
 /// # Examples
 ///
 /// ```
-/// use dynamodb_expression::{path::{Name, Path}, update::{Remove, Update}};
+/// use dynamodb_expression::{Path, update::{Remove, Update}};
+/// # use pretty_assertions::assert_eq;
 ///
 /// let update = Remove::new_name("foo");
 /// assert_eq!(r#"REMOVE foo"#, update.to_string());
@@ -19,10 +20,7 @@ use crate::path::{Indexes, Name, Path};
 /// let update = Remove::from("foo[8]".parse::<Path>().unwrap());
 /// assert_eq!(r#"REMOVE foo[8]"#, update.to_string());
 ///
-/// let update = Remove::from_iter(["foo", "bar", "baz"].map(Name::from));
-/// assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
-///
-/// let update = ["foo", "bar", "baz"].into_iter().map(Name::from).collect::<Remove>();
+/// let update = Remove::from_iter(["foo", "bar", "baz"].map(Path::new_name));
 /// assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
 /// ```
 ///
@@ -30,8 +28,6 @@ use crate::path::{Indexes, Name, Path};
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE.RemovingListElements
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Remove {
-    // Path is correct here.
-    // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE.RemovingListElements
     pub(crate) paths: Vec<Path>,
 }
 

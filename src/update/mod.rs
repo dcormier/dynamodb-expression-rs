@@ -30,7 +30,7 @@ pub use self::{
 /// let update = Update::from(Path::new_name("foo").math().add(7));
 /// assert_eq!("SET foo = foo + 7", update.to_string());
 ///
-/// let update = Update::from(Path::new_name("foo").if_not_exists().value("a value"));
+/// let update = Update::from(Path::new_name("foo").if_not_exists().assign("a value"));
 /// assert_eq!(
 ///     r#"SET foo = if_not_exists(foo, "a value")"#,
 ///     update.to_string()
@@ -170,7 +170,7 @@ mod test {
         let update = Update::from(Path::new_name("foo").math().add(7));
         assert_eq!("SET foo = foo + 7", update.to_string());
 
-        let update = Update::from(Path::new_name("foo").if_not_exists().value("a value"));
+        let update = Update::from(Path::new_name("foo").if_not_exists().assign("a value"));
         assert_eq!(
             r#"SET foo = if_not_exists(foo, "a value")"#,
             update.to_string()

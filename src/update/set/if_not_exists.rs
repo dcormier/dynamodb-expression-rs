@@ -2,6 +2,7 @@ use core::fmt;
 
 use crate::{
     path::Path,
+    update::Set,
     value::{Value, ValueOrRef},
 };
 
@@ -26,6 +27,23 @@ impl IfNotExists {
             dst: dst.into(),
             src: None,
         }
+    }
+
+    /// Add an additional action to this `SET` statement.
+    ///
+    /// ```
+    /// use dynamodb_expression::{Num, Path, update::Set};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let set = Path::new_name("foo").if_not_exists().assign(Num::new(7))
+    ///     .and(Path::new_name("bar").assign("a value"));
+    /// assert_eq!(r#"SET foo = if_not_exists(foo, 7), bar = "a value""#, set.to_string());
+    /// ```
+    pub fn and<T>(self, action: T) -> Set
+    where
+        T: Into<Set>,
+    {
+        Set::from(self).and(action)
     }
 }
 
@@ -62,7 +80,7 @@ impl Builder {
     /// let if_not_exists = Path::new_name("foo")
     ///     .if_not_exists()
     ///     .src(Path::new_name("bar"))
-    ///     .value(Num::new(42));
+    ///     .assign(Num::new(42));
     /// assert_eq!("foo = if_not_exists(bar, 42)", if_not_exists.to_string());
     /// ```
     ///
@@ -74,7 +92,7 @@ impl Builder {
     /// #
     /// let if_not_exists = Path::new_name("foo")
     ///     .if_not_exists()
-    ///     .value(Num::new(42));
+    ///     .assign(Num::new(42));
     /// assert_eq!("foo = if_not_exists(foo, 42)", if_not_exists.to_string());
     /// ```
     pub fn src<T>(mut self, src: T) -> Self
@@ -91,7 +109,7 @@ impl Builder {
     /// Consumes this [`Builder`] and creates an [`IfNotExists`] instance.
     ///
     /// See also: [`Path::if_not_exists`]
-    pub fn value<T>(self, value: T) -> IfNotExists
+    pub fn assign<T>(self, value: T) -> IfNotExists
     where
         T: Into<Value>,
     {

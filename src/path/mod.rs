@@ -598,7 +598,7 @@ impl Path {
     /// use dynamodb_expression::{Num, Path, update::Update};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let if_not_exists = Path::new_name("foo").if_not_exists().value(Num::new(7));
+    /// let if_not_exists = Path::new_name("foo").if_not_exists().assign(Num::new(7));
     /// assert_eq!("foo = if_not_exists(foo, 7)", if_not_exists.to_string());
     ///
     /// let update = Update::from(if_not_exists);
