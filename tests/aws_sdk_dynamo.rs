@@ -10,7 +10,7 @@ use aws_sdk_dynamodb::{
 };
 use dynamodb_expression::{
     path::{Element, Name, Path},
-    update::{self, Add, Delete, Remove, SetAction},
+    update::{Add, Delete, Remove},
     value::{Num, Set, StringSet},
     Expression, Scalar,
 };
@@ -173,24 +173,28 @@ async fn test_update_set(config: &Config, client: &Client) {
     assert_eq!(None, item.get(ATTR_NEW_FIELD));
 
     let update = Expression::builder()
-        .with_update(update::Set::from_iter([
-            SetAction::from(Path::new_name(ATTR_STRING).assign("abcdef")),
-            Path::new_name(ATTR_NUM).math().sub(3.5).into(),
-            Path::new_name(ATTR_LIST)
-                .list_append()
-                .before()
-                .list(["A new value at the beginning"])
-                .into(),
-            // DynamoDB won't let you append to the same list twice in the same update expression.
-            // Path::new_name(ATTR_LIST)
-            //     .list_append()
-            //     .list(["A new value at the end"])
-            //     .into(),
-            Path::new_name(ATTR_NEW_FIELD)
-                .if_not_exists()
-                .assign("A new field")
-                .into(),
-        ]))
+        .with_update(
+            Path::new_name(ATTR_STRING)
+                .assign("abcdef")
+                .and(Path::new_name(ATTR_NUM).math().sub(3.5))
+                .and(
+                    Path::new_name(ATTR_LIST)
+                        .list_append()
+                        .before()
+                        .list(["A new value at the beginning"]),
+                )
+                // DynamoDB won't let you append to the same list twice in the same update expression.
+                // .and(
+                //     Path::new_name(ATTR_LIST)
+                //         .list_append()
+                //         .list(["A new value at the end"]),
+                // )
+                .and(
+                    Path::new_name(ATTR_NEW_FIELD)
+                        .if_not_exists()
+                        .assign("A new field"),
+                ),
+        )
         .build()
         .update_item(client)
         .table_name(&config.table_name)
