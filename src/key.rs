@@ -14,6 +14,8 @@ use crate::{
 /// An instance can be constructed using the [`Path::key`] method, or the
 /// the `From<T: Into<Path>>` implementation.
 ///
+/// See also: [`Path::key`]
+///
 /// ```
 /// use dynamodb_expression::{key::Key, Path};
 /// # use pretty_assertions::assert_eq;
@@ -21,8 +23,6 @@ use crate::{
 /// let key: Key = Path::new_name("foo").key();
 /// let key: Key = Path::new_name("foo").into();
 /// ```
-///
-/// See also: [`Path::key`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -43,6 +43,8 @@ impl Key {
     /// `begins_with` can take a string or a reference to an extended attribute
     /// value. Here's an example.
     ///
+    /// See also: [`Ref`]
+    ///
     /// ```
     /// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
     /// # use pretty_assertions::assert_eq;
@@ -53,8 +55,6 @@ impl Key {
     /// let begins_with = Path::new_name("foo").key().begins_with(Ref::new("prefix"));
     /// assert_eq!(r#"begins_with(foo, :prefix)"#, begins_with.to_string());
     /// ```
-    ///
-    /// See also: [`Ref`]
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
     /// [`Ref`]: crate::value::Ref
@@ -70,6 +70,8 @@ impl Key {
     /// The [DynamoDB `BETWEEN` operator][1]. True if `self` is greater than or
     /// equal to `lower`, and less than or equal to `upper`.
     ///
+    /// See also: [`Path::between`]
+    ///
     /// ```
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
@@ -79,8 +81,6 @@ impl Key {
     ///     .between(Num::new(10), Num::new(90));
     /// assert_eq!(r#"age BETWEEN 10 AND 90"#, key_condition.to_string());
     /// ```
-    ///
-    /// See also: [`Path::between`]
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
     /// [`Path::between`]: crate::path::Path::between

@@ -31,7 +31,10 @@ use core::{fmt, ops};
 
 /// Represents a logical condition in a [DynamoDB expression][1].
 ///
+/// You will usually create these using the methods on [`Path`].
+///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Syntax
+/// [`Path`]: crate::path::Path
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Condition {
     AttributeExists(AttributeExists),
@@ -121,7 +124,19 @@ impl Condition {
     }
 
     /// Wraps a condition in [parentheses][1].
-    /// For example, `a < b AND c > d` becomes `(a < b AND c > d)`.
+    ///
+    /// ```
+    /// use dynamodb_expression::Path;
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let a = Path::new_name("a");
+    /// let b = Path::new_name("b");
+    /// let c = Path::new_name("c");
+    /// let d = Path::new_name("d");
+    ///
+    /// let condition = a.greater_than(b).parenthesize().and(c.less_than(d).parenthesize());
+    /// assert_eq!("(a > b) AND (c < d)", condition.to_string());
+    /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Parentheses
     pub fn parenthesize(self) -> Self {

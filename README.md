@@ -27,3 +27,5 @@ let query_output = Expression::builder()
     .send()
     .await?;
 ```
+
+For more, see [the docs](https://docs.rs/dynamodb-expression/).

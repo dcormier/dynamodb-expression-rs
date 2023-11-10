@@ -69,7 +69,7 @@ use crate::{
 ///
 /// Each of these are ways to create a [`Path`] instance for `foo[3][7].bar[2].baz`.
 /// ```
-/// use dynamodb_expression::{path::{Element, Path}};
+/// use dynamodb_expression::{path::Element, Path};
 /// # use pretty_assertions::assert_eq;
 /// #
 /// # let expected = Path::from_iter([
@@ -135,7 +135,7 @@ use crate::{
 ///
 /// A [`Name`] can be converted into a [`Path`].
 /// ```
-/// use dynamodb_expression::path::{Element, Name, Path};
+/// use dynamodb_expression::{path::{Element, Name}, Path};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let name = Name::from("foo");
@@ -150,7 +150,7 @@ use crate::{
 /// Here are some ways you can correctly construct a [`Path`] using `attr.name`
 /// as the problematic attribute name.
 /// ```
-/// use dynamodb_expression::path::{Element, Path};
+/// use dynamodb_expression::{path::Element, Path};
 /// # use pretty_assertions::assert_eq;
 ///
 /// // As a top-level attribute name:
@@ -672,7 +672,33 @@ impl Path {
         Add::new(self, value)
     }
 
-    /// See [`Remove`]
+    /// Creates an update expression to [remove attributes from an item][1], or
+    /// [elements from a list][2].
+    ///
+    /// See also: [`Remove`], [`Update`]
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dynamodb_expression::{Path, update::{Remove, Update}};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let remove = Path::new_name("foo").remove();
+    /// assert_eq!(r#"REMOVE foo"#, remove.to_string());
+    ///
+    /// let update = Update::from(remove);
+    /// assert_eq!(r#"REMOVE foo"#, update.to_string());
+    ///
+    /// let remove = Path::new_indexed_field("foo", [8]).remove();
+    /// assert_eq!(r#"REMOVE foo[8]"#, remove.to_string());
+    ///
+    /// let update = Update::from(remove);
+    /// assert_eq!(r#"REMOVE foo[8]"#, update.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE
+    /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE.RemovingListElements
+    /// [`Update`]: crate::update::Update
     pub fn remove(self) -> Remove {
         self.into()
     }
@@ -680,6 +706,8 @@ impl Path {
 
 impl Path {
     /// Turns this [`Path`] into a [`Key`], for building a [key condition expression][1].
+    ///
+    /// See also: [`Key`]
     ///
     /// ```
     /// use dynamodb_expression::{Num, Path};
@@ -689,8 +717,6 @@ impl Path {
     ///     .and(Path::new_name("category").key().begins_with("hardware."));
     /// assert_eq!(r#"id = 42 AND begins_with(category, "hardware.")"#, key_condition.to_string());
     /// ```
-    ///
-    /// See methods on [`Key`] for more docs and examples.
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
     pub fn key(self) -> Key {

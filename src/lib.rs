@@ -66,7 +66,7 @@ let input = UpdateItemInput {
     expression_attribute_names: expression.expression_attribute_names,
     expression_attribute_values: expression
         .expression_attribute_values
-        .map(|eav| eav.into_iter().map_values(convert_av).collect()),
+        .map(|values| values.into_iter().map_values(convert_av).collect()),
     table_name: String::from("things"),
     key: [(
         String::from("id"),
@@ -108,7 +108,7 @@ fn convert_av(av: AwsAv) -> RusotoAv {
         AwsAv::Ss(av) => rav.ss = av.into(),
         _ => unimplemented!(
             "A variant was added to aws_sdk_dynamodb::types::AttributeValue \
-                and not implemented here",
+                and not implemented here: {av:?}",
         ),
     }
 
@@ -123,8 +123,6 @@ fn convert_av(av: AwsAv) -> RusotoAv {
 [5]: https://docs.rs/rusoto_dynamodb/
 [`rusoto_dynamodb::AttributeValue`]: https://docs.rs/rusoto_dynamodb/latest/rusoto_dynamodb/struct.AttributeValue.html
 */
-
-extern crate alloc;
 
 // Re-export the crates publicly exposed in our API
 pub use ::aws_sdk_dynamodb;
@@ -165,7 +163,7 @@ mod examples {
             expression_attribute_names: expression.expression_attribute_names,
             expression_attribute_values: expression
                 .expression_attribute_values
-                .map(|eav| eav.into_iter().map_values(convert_av).collect()),
+                .map(|values| values.into_iter().map_values(convert_av).collect()),
             table_name: String::from("things"),
             key: [(
                 String::from("id"),
@@ -206,7 +204,7 @@ mod examples {
                 AwsAv::Ss(av) => rav.ss = av.into(),
                 _ => unimplemented!(
                     "A variant was added to aws_sdk_dynamodb::types::AttributeValue \
-                        and not implemented here",
+                        and not implemented here: {av:?}",
                 ),
             }
 

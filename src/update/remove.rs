@@ -2,8 +2,10 @@ use core::fmt;
 
 use crate::path::{Indexes, Name, Path};
 
-/// For use an in an [`Update`](crate::update::Update) expression to
-/// [remove attributes from an item][1], or [elements from a list][2].
+/// For use an in an update expression to [remove attributes from an
+/// item][1], or [elements from a list][2].
+///
+/// See also: [`Path::remove`], [`Update`]
 ///
 /// # Examples
 ///
@@ -26,6 +28,7 @@ use crate::path::{Indexes, Name, Path};
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE.RemovingListElements
+/// [`Update`]: crate::update::Update
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Remove {
     pub(crate) paths: Vec<Path>,
