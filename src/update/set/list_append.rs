@@ -223,9 +223,13 @@ impl Builder {
 
 #[cfg(test)]
 mod test {
-    use pretty_assertions::assert_str_eq;
+    use pretty_assertions::assert_eq;
 
-    use crate::path::Name;
+    use crate::{
+        path::Name,
+        update::{Assign, Set, SetAction},
+        Num, Path,
+    };
 
     use super::ListAppend;
 
@@ -235,30 +239,61 @@ mod test {
             .src(Name::from("bar"))
             .after()
             .list(["a", "b"]);
-        assert_str_eq!(r#"foo = list_append(bar, ["a", "b"])"#, append.to_string());
+        assert_eq!(r#"foo = list_append(bar, ["a", "b"])"#, append.to_string());
 
         let append = ListAppend::builder(Name::from("foo"))
             .src(Name::from("bar"))
             .list(["a", "b"]);
-        assert_str_eq!(r#"foo = list_append(bar, ["a", "b"])"#, append.to_string());
+        assert_eq!(r#"foo = list_append(bar, ["a", "b"])"#, append.to_string());
 
         let append = ListAppend::builder(Name::from("foo"))
             .src(Name::from("bar"))
             .before()
             .list(["a", "b"]);
-        assert_str_eq!(r#"foo = list_append(["a", "b"], bar)"#, append.to_string());
+        assert_eq!(r#"foo = list_append(["a", "b"], bar)"#, append.to_string());
 
         let append = ListAppend::builder(Name::from("foo"))
             .after()
             .list(["a", "b"]);
-        assert_str_eq!(r#"foo = list_append(foo, ["a", "b"])"#, append.to_string());
+        assert_eq!(r#"foo = list_append(foo, ["a", "b"])"#, append.to_string());
 
         let append = ListAppend::builder(Name::from("foo")).list(["a", "b"]);
-        assert_str_eq!(r#"foo = list_append(foo, ["a", "b"])"#, append.to_string());
+        assert_eq!(r#"foo = list_append(foo, ["a", "b"])"#, append.to_string());
 
         let append = ListAppend::builder(Name::from("foo"))
             .before()
             .list(["a", "b"]);
-        assert_str_eq!(r#"foo = list_append(["a", "b"], foo)"#, append.to_string());
+        assert_eq!(r#"foo = list_append(["a", "b"], foo)"#, append.to_string());
+    }
+
+    #[test]
+    fn and() {
+        let list_append = Path::new_name("foo").list_append().list(["d", "e", "f"]);
+        let assign: Assign = Path::new_name("bar").assign(Num::new(8));
+
+        // Should be able to concatenate anything that can be turned into a SetAction.
+
+        let combined = list_append.clone().and(assign.clone());
+        assert_eq!(
+            r#"SET foo = list_append(foo, ["d", "e", "f"]), bar = 8"#,
+            combined.to_string()
+        );
+
+        // Should be able to concatenate a SetAction instance.
+
+        let combined = list_append.clone().and(SetAction::from(assign.clone()));
+        assert_eq!(
+            r#"SET foo = list_append(foo, ["d", "e", "f"]), bar = 8"#,
+            combined.to_string()
+        );
+
+        // Should be able to concatenate a Set instance
+
+        let set: Set = assign.and(Path::new_name("baz").math().add(1));
+        let combined = list_append.and(set);
+        assert_eq!(
+            r#"SET foo = list_append(foo, ["d", "e", "f"]), bar = 8, baz = baz + 1"#,
+            combined.to_string()
+        );
     }
 }

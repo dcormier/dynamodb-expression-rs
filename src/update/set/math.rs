@@ -42,9 +42,9 @@ impl Math {
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let set = Path::new_name("foo").math().add(7)
+    /// let set = Path::new_name("foo").math().add(1)
     ///     .and(Path::new_name("bar").assign("a value"));
-    /// assert_eq!(r#"SET foo = foo + 7, bar = "a value""#, set.to_string());
+    /// assert_eq!(r#"SET foo = foo + 1, bar = "a value""#, set.to_string());
     /// ```
     pub fn and<T>(self, action: T) -> Set
     where
@@ -136,5 +136,42 @@ impl Builder {
             op,
             num: num.into().into(),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use pretty_assertions::assert_eq;
+
+    use crate::{
+        update::{Assign, Set, SetAction},
+        Num, Path,
+    };
+
+    use super::Math;
+
+    #[test]
+    fn and() {
+        let math: Math = Path::new_name("foo").math().add(1);
+        let assign: Assign = Path::new_name("bar").assign(Num::new(8));
+
+        // Should be able to concatenate anything that can be turned into a SetAction.
+
+        let combined = math.clone().and(assign.clone());
+        assert_eq!(r#"SET foo = foo + 1, bar = 8"#, combined.to_string());
+
+        // Should be able to concatenate a SetAction instance.
+
+        let combined = math.clone().and(SetAction::from(assign.clone()));
+        assert_eq!(r#"SET foo = foo + 1, bar = 8"#, combined.to_string());
+
+        // Should be able to concatenate a Set instance
+
+        let set: Set = assign.and(Path::new_name("baz").list_append().list(["d", "e", "f"]));
+        let combined = math.and(set);
+        assert_eq!(
+            r#"SET foo = foo + 1, bar = 8, baz = list_append(baz, ["d", "e", "f"])"#,
+            combined.to_string()
+        );
     }
 }

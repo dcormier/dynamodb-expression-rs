@@ -122,3 +122,46 @@ impl Builder {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use pretty_assertions::assert_eq;
+
+    use crate::{
+        update::{Assign, Set, SetAction},
+        Num, Path,
+    };
+
+    use super::IfNotExists;
+
+    #[test]
+    fn and() {
+        let if_not_exists: IfNotExists = Path::new_name("foo").if_not_exists().assign("a value");
+        let assign: Assign = Path::new_name("bar").assign(Num::new(8));
+
+        // Should be able to concatenate anything that can be turned into a SetAction.
+
+        let combined = if_not_exists.clone().and(assign.clone());
+        assert_eq!(
+            r#"SET foo = if_not_exists(foo, "a value"), bar = 8"#,
+            combined.to_string()
+        );
+
+        // Should be able to concatenate a SetAction instance.
+
+        let combined = if_not_exists.clone().and(SetAction::from(assign.clone()));
+        assert_eq!(
+            r#"SET foo = if_not_exists(foo, "a value"), bar = 8"#,
+            combined.to_string()
+        );
+
+        // Should be able to concatenate a Set instance
+
+        let set: Set = assign.and(Path::new_name("baz").math().add(1));
+        let combined = if_not_exists.and(set);
+        assert_eq!(
+            r#"SET foo = if_not_exists(foo, "a value"), bar = 8, baz = baz + 1"#,
+            combined.to_string()
+        );
+    }
+}
