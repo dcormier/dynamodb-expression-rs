@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, Write};
 
 use crate::{
     path::Path,
@@ -57,6 +57,10 @@ impl Contains {
 
 impl fmt::Display for Contains {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "contains({}, {})", self.path, self.operand)
+        f.write_str("contains(")?;
+        self.path.fmt(f)?;
+        f.write_str(", ")?;
+        self.operand.fmt(f)?;
+        f.write_char(')')
     }
 }

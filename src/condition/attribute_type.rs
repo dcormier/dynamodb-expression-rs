@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, Write};
 
 use crate::path::Path;
 
@@ -30,12 +30,11 @@ impl AttributeType {
 
 impl fmt::Display for AttributeType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "attribute_type({}, {})",
-            self.path,
-            self.attribute_type.as_str()
-        )
+        f.write_str("attribute_type(")?;
+        self.path.fmt(f)?;
+        f.write_str(", ")?;
+        self.attribute_type.fmt(f)?;
+        f.write_char(')')
     }
 }
 

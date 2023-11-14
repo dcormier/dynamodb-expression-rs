@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, Write};
 
 use crate::{
     path::Path,
@@ -58,23 +58,22 @@ impl ListAppend {
 
 impl fmt::Display for ListAppend {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Self {
-            dst,
-            src,
-            list,
-            after,
-        } = self;
+        self.dst.fmt(f)?;
+        f.write_str(" = list_append(")?;
 
         // If no source field is specified, default to using the destination.
-        let src = src.as_ref().unwrap_or(dst);
+        let src = self.src.as_ref().unwrap_or(&self.dst);
 
-        write!(f, "{dst} = list_append(")?;
-
-        if *after {
-            write!(f, "{src}, {list})")
+        let (first, second): (&dyn fmt::Display, &dyn fmt::Display) = if self.after {
+            (src, &self.list)
         } else {
-            write!(f, "{list}, {src})")
-        }
+            (&self.list, src)
+        };
+
+        first.fmt(f)?;
+        f.write_str(", ")?;
+        second.fmt(f)?;
+        f.write_char(')')
     }
 }
 

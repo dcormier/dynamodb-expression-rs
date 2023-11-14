@@ -15,7 +15,9 @@ pub struct Or {
 
 impl fmt::Display for Or {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} OR {}", self.left, self.right)
+        self.left.fmt(f)?;
+        f.write_str(" OR ")?;
+        self.right.fmt(f)
     }
 }
 

@@ -56,12 +56,14 @@ impl Math {
 
 impl fmt::Display for Math {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Self { dst, src, op, num } = self;
-
+        self.dst.fmt(f)?;
+        f.write_str(" = ")?;
         // If no source field is specified, default to using the destination field.
-        let src = src.as_ref().unwrap_or(dst);
-
-        write!(f, "{dst} = {src} {op} {num}")
+        self.src.as_ref().unwrap_or(&self.dst).fmt(f)?;
+        f.write_char(' ')?;
+        self.op.fmt(f)?;
+        f.write_char(' ')?;
+        self.num.fmt(f)
     }
 }
 

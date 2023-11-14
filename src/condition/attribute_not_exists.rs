@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, Write};
 
 use crate::path::Path;
 
@@ -17,7 +17,9 @@ pub struct AttributeNotExists {
 
 impl fmt::Display for AttributeNotExists {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "attribute_not_exists({})", self.path)
+        f.write_str("attribute_not_exists(")?;
+        self.path.fmt(f)?;
+        f.write_char(')')
     }
 }
 

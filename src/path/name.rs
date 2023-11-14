@@ -43,7 +43,7 @@ impl Name {
 
 impl fmt::Display for Name {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.name)
+        self.name.fmt(f)
     }
 }
 

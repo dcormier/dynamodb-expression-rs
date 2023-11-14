@@ -15,7 +15,9 @@ pub struct And {
 
 impl fmt::Display for And {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} AND {}", self.left, self.right)
+        self.left.fmt(f)?;
+        f.write_str(" AND ")?;
+        self.right.fmt(f)
     }
 }
 

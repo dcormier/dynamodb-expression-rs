@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, Write};
 
 use crate::{
     path::Path,
@@ -49,12 +49,13 @@ impl IfNotExists {
 
 impl fmt::Display for IfNotExists {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Self { dst, src, value } = self;
-
+        self.dst.fmt(f)?;
+        f.write_str(" = if_not_exists(")?;
         // If no source field is specified, default to using the destination.
-        let src = src.as_ref().unwrap_or(dst);
-
-        write!(f, "{dst} = if_not_exists({src}, {value})")
+        self.src.as_ref().unwrap_or(&self.dst).fmt(f)?;
+        f.write_str(", ")?;
+        self.value.fmt(f)?;
+        f.write_char(')')
     }
 }
 

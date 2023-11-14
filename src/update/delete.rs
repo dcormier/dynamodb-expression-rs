@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, Write};
 
 use crate::{
     path::Path,
@@ -39,6 +39,9 @@ impl Delete {
 
 impl fmt::Display for Delete {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "DELETE {} {}", self.path, self.subset)
+        f.write_str("DELETE ")?;
+        self.path.fmt(f)?;
+        f.write_char(' ')?;
+        self.subset.fmt(f)
     }
 }

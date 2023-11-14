@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, Write};
 
 use crate::{
     path::Path,
@@ -41,7 +41,10 @@ impl Add {
 
 impl fmt::Display for Add {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ADD {} {}", self.path, self.value)
+        f.write_str("ADD ")?;
+        self.path.fmt(f)?;
+        f.write_char(' ')?;
+        self.value.fmt(f)
     }
 }
 

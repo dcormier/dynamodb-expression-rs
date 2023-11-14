@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, Write};
 
 use crate::{
     condition::{
@@ -134,7 +134,9 @@ impl Size {
 
 impl fmt::Display for Size {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "size({})", self.path)
+        f.write_str("size(")?;
+        self.path.fmt(f)?;
+        f.write_char(')')
     }
 }
 

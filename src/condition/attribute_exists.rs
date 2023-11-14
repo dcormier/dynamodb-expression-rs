@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, Write};
 
 use crate::path::Path;
 /// The [DynamoDB `attribute_exists` function][1]. True if the item contains
@@ -16,7 +16,9 @@ pub struct AttributeExists {
 
 impl fmt::Display for AttributeExists {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "attribute_exists({})", self.path)
+        f.write_str("attribute_exists(")?;
+        self.path.fmt(f)?;
+        f.write_char(')')
     }
 }
 

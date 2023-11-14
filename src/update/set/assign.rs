@@ -53,7 +53,9 @@ impl Assign {
 
 impl fmt::Display for Assign {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} = {}", self.path, self.value)
+        self.path.fmt(f)?;
+        f.write_str(" = ")?;
+        self.value.fmt(f)
     }
 }
 

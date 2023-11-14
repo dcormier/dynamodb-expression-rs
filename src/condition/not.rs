@@ -70,7 +70,8 @@ where
 
 impl fmt::Display for Not {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "NOT {}", self.condition)
+        f.write_str("NOT ")?;
+        self.condition.fmt(f)
     }
 }
 

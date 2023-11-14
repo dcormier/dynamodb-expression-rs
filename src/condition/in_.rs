@@ -52,15 +52,15 @@ impl fmt::Display for In {
         f.write_str(" IN (")?;
 
         let mut first = true;
-        for item in &self.items {
+        self.items.iter().try_for_each(|item| {
             if first {
                 first = false;
             } else {
                 f.write_char(',')?;
             }
 
-            item.fmt(f)?;
-        }
+            item.fmt(f)
+        })?;
 
         f.write_char(')')
     }

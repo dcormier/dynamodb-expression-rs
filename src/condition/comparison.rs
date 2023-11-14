@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, Write};
 
 use crate::operand::Operand;
 
@@ -15,9 +15,11 @@ pub struct Comparison {
 
 impl fmt::Display for Comparison {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Self { left, cmp, right } = self;
-
-        write!(f, "{left} {cmp} {right}")
+        self.left.fmt(f)?;
+        f.write_char(' ')?;
+        self.cmp.fmt(f)?;
+        f.write_char(' ')?;
+        self.right.fmt(f)
     }
 }
 

@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, Write};
 
 use crate::{
     path::Path,
@@ -61,7 +61,11 @@ impl BeginsWith {
 
 impl fmt::Display for BeginsWith {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "begins_with({}, {})", self.path, self.substr)
+        f.write_str("begins_with(")?;
+        self.path.fmt(f)?;
+        f.write_str(", ")?;
+        self.substr.fmt(f)?;
+        f.write_char(')')
     }
 }
 

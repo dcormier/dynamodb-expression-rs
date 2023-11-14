@@ -1,7 +1,7 @@
 //! DynamoDB document path elements
 
 use core::{
-    fmt::{self},
+    fmt::{self, Write},
     mem,
     str::FromStr,
 };
@@ -191,6 +191,8 @@ impl FromStr for Element {
 
             let name = name.ok_or(PathParseError)?;
 
+            indexes.shrink_to_fit();
+
             Self::IndexedField(IndexedField {
                 name: name.into(),
                 indexes,
@@ -218,9 +220,11 @@ pub struct IndexedField {
 impl fmt::Display for IndexedField {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.name.fmt(f)?;
-        self.indexes
-            .iter()
-            .try_for_each(|index| write!(f, "[{}]", index))
+        self.indexes.iter().try_for_each(|index| {
+            f.write_char('[')?;
+            index.fmt(f)?;
+            f.write_char(']')
+        })
     }
 }
 
