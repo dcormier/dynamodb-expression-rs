@@ -833,9 +833,16 @@ impl TryFrom<Path> for Name {
 }
 
 /// A [`Path`] (or [`Element`] of a path) failed to parse.
-#[derive(Debug, PartialEq, Eq, thiserror::Error)]
-#[error("invalid document path")]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PathParseError;
+
+impl std::error::Error for PathParseError {}
+
+impl fmt::Display for PathParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("invalid document path")
+    }
+}
 
 #[cfg(test)]
 mod test {
