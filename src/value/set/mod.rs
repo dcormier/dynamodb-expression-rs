@@ -101,7 +101,10 @@ mod test {
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
-    use crate::value::{base64, Set};
+    use crate::{
+        value::{base64, Set},
+        Num,
+    };
 
     #[test]
     fn string_set_display() {
@@ -123,48 +126,33 @@ mod test {
     #[allow(clippy::approx_constant)]
     fn num_set_display() {
         let set = Set::new_num_set([-1, 0, 1, 42]);
-        assert_eq!(r#"["-1", "0", "1", "42"]"#, set.to_string());
+        assert_eq!("[-1, 0, 1, 42]", set.to_string());
 
-        let deserialized: Vec<String> =
+        let deserialized: Vec<i32> =
             serde_json::from_str(&set.to_string()).expect("Must be valid JSON");
-        assert_eq!(vec!["-1", "0", "1", "42"], deserialized);
+        assert_eq!(vec![-1, 0, 1, 42], deserialized);
 
-        let set = Set::new_num_set([f64::MIN, 0.0, 3.14, f64::MAX]);
+        let set = Set::new_num_set([
+            Num::new_lower_exp(f32::MIN),
+            Num::new(0.0),
+            Num::new(3.14),
+            Num::new(1000),
+            Num::new_upper_exp(f32::MAX),
+        ]);
         assert_eq!(
-            "[\"-17976931348623157000000000000000000000000000000000000000000000\
-            0000000000000000000000000000000000000000000000000000000000000000000\
-            0000000000000000000000000000000000000000000000000000000000000000000\
-            0000000000000000000000000000000000000000000000000000000000000000000\
-            0000000000000000000000000000000000000000000000\", \
-            \"0\", \
-            \"17976931348623157000000000000000000000000000000000000000000000000\
-            0000000000000000000000000000000000000000000000000000000000000000000\
-            0000000000000000000000000000000000000000000000000000000000000000000\
-            0000000000000000000000000000000000000000000000000000000000000000000\
-            0000000000000000000000000000000000000000000\", \
-            \"3.14\"]",
+            "[\
+                -3.4028235e38, \
+                0, \
+                1000, \
+                3.14, \
+                3.4028235E38\
+            ]",
             set.to_string()
         );
 
-        let deserialized: Vec<String> =
+        let deserialized: Vec<f32> =
             serde_json::from_str(&set.to_string()).expect("Must be valid JSON");
-        assert_eq!(
-            vec![
-                "-17976931348623157000000000000000000000000000000000000000000000\
-                    0000000000000000000000000000000000000000000000000000000000000000000\
-                    0000000000000000000000000000000000000000000000000000000000000000000\
-                    0000000000000000000000000000000000000000000000000000000000000000000\
-                    0000000000000000000000000000000000000000000000",
-                "0",
-                "17976931348623157000000000000000000000000000000000000000000000000\
-                    0000000000000000000000000000000000000000000000000000000000000000000\
-                    0000000000000000000000000000000000000000000000000000000000000000000\
-                    0000000000000000000000000000000000000000000000000000000000000000000\
-                    0000000000000000000000000000000000000000000",
-                "3.14",
-            ],
-            deserialized
-        );
+        assert_eq!(vec![f32::MIN, 0.0, 1000.0, 3.14, f32::MAX], deserialized);
     }
 
     #[test]
@@ -193,7 +181,7 @@ mod test {
         // Check that the encoded value contains at least one of the
         // non-alphanumeric (and non-padding) base64 chars.
         let specials = RefCell::new(['+', '/'].into_iter().peekable());
-        let values = [charset(), charset(), charset(), charset()]
+        [charset(), charset(), charset(), charset()]
             .into_iter()
             .multi_cartesian_product()
             .take_while(|_| specials.borrow_mut().peek().is_some())
@@ -211,13 +199,11 @@ mod test {
                     false
                 }
             })
-            .collect_vec();
-
-        for (index, raw, encoded) in values {
-            println!(
-                "The encoded version of iteration {index}, {raw:?}, \
+            .for_each(|(index, raw, encoded)| {
+                println!(
+                    "The encoded version of iteration {index}, {raw:?}, \
                         includes special characters: {encoded}"
-            )
-        }
+                )
+            });
     }
 }

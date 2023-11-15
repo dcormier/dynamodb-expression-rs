@@ -54,9 +54,9 @@ async fn test_scan(config: &Config) {
         .table_name(&config.table_name)
         .send()
         .await
-        .expect("Failed to scan item")
+        .expect("Failed to scan")
         .items
-        .expect("Where is the item?")
+        .expect("Where are the items?")
         .try_into()
         .expect("The table should have a single item");
 
@@ -541,7 +541,7 @@ async fn test_update_delete(config: &Config, client: &Client) {
 
 /// Wraps a test function in code to set up and tear down the DynamoDB table.
 ///
-/// The `name` value must be safe for use as a DynamoDB table name.
+/// The `name` value must be safe for use in a DynamoDB table name.
 async fn test<F, T>(name: &str, test_fn: F) -> T
 where
     F: FnOnce(&Config) -> Pin<Box<dyn Future<Output = T> + '_>>,

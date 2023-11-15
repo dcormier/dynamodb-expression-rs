@@ -63,6 +63,14 @@ where
 
 impl fmt::Display for NumSet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_list().entries(self.0.iter()).finish()
+        f.debug_list().entries(self.0.iter().map(DebugNum)).finish()
+    }
+}
+
+struct DebugNum<'a>(&'a String);
+
+impl<'a> fmt::Debug for DebugNum<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.0)
     }
 }

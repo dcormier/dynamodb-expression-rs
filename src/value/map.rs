@@ -10,9 +10,10 @@ use crate::path::Name;
 
 use super::Value;
 
-type MapType<K, V> = std::collections::HashMap<K, V>;
+type MapType<K, V> = std::collections::BTreeMap<K, V>;
 // TODO: Allow this to be configured via feature to switch between HashMap and BTreeMap
-// type MapType<K, V> = std::collections::BTreeMap<K, V>;
+//       Using BTreeMap for stable testing.
+// type MapType<K, V> = std::collections::HashMap<K, V>;
 
 /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Document.Map>
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -68,7 +69,9 @@ impl fmt::Display for Map {
                 f.write_str(", ")?;
             }
 
-            write!(f, "{k}: {v}")
+            k.fmt(f)?;
+            f.write_str(": ")?;
+            v.fmt(f)
         })?;
 
         f.write_char('}')
