@@ -47,6 +47,8 @@ where
     }
 }
 
+// TODO: There's an inconsistency between what turn `Into` a `Binary` and `Into` a `BinarySet`.
+
 impl<I, T> From<I> for BinarySet
 where
     I: IntoIterator<Item = T>,

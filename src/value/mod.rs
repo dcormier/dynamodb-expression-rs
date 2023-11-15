@@ -333,3 +333,58 @@ where
 {
     general_purpose::STANDARD.encode(b)
 }
+
+#[cfg(test)]
+mod test {
+    use pretty_assertions::assert_eq;
+
+    use crate::Num;
+
+    use super::Value;
+
+    #[test]
+    fn display() {
+        assert_eq!(r#""a""#, Value::new_string("a").to_string());
+        assert_eq!(r#"1000"#, Value::new_num(1000).to_string());
+        assert_eq!(r#"1e3"#, Value::new_num_lower_exp(1000).to_string());
+        assert_eq!(r#"1E3"#, Value::new_num_upper_exp(1000).to_string());
+        assert_eq!(r#""YQ==""#, Value::new_binary("a").to_string());
+        assert_eq!("true", Value::new_bool(true).to_string());
+        assert_eq!("NULL", Value::new_null().to_string());
+
+        // Sets are unordered
+        assert_eq!(
+            r#"["a", "b", "c"]"#,
+            Value::new_string_set(["a", "c", "b"]).to_string()
+        );
+        assert_eq!(
+            r#"[-7, 1e3, 42]"#,
+            Value::new_num_set([Num::new_lower_exp(1000), Num::new(42), Num::new(-7)]).to_string()
+        );
+        // TODO: There's an inconsistency between what turn `Into` a `Binary` and `Into` a `BinarySet`.
+        assert_eq!(
+            r#"["YQ==", "Yg==", "Yw=="]"#,
+            Value::new_binary_set([b"a".to_vec(), b"b".to_vec(), b"c".to_vec()]).to_string()
+        );
+
+        assert_eq!(
+            r#"[NULL, 8, "a string"]"#,
+            Value::new_list([
+                Value::new_null(),
+                Value::new_num(8),
+                Value::new_string("a string")
+            ])
+            .to_string()
+        );
+
+        assert_eq!(
+            r#"{n: 8, null: NULL, s: "a string"}"#,
+            Value::new_map([
+                (String::from("s"), Value::new_string("a string")),
+                (String::from("n"), Value::new_num(8)),
+                (String::from("null"), Value::new_null()),
+            ])
+            .to_string()
+        );
+    }
+}
