@@ -160,7 +160,7 @@ mod test {
         // These strings chosen because they produce base64 strings with all the
         // non-alphanumeric chars in the base64 set ('+', '/', and the padding
         // char, '='). Used `find_tricky_base64()`, below.
-        let set = Set::new_binary_set(["  > ", "  ? "].into_iter().map(str::bytes));
+        let set = Set::new_binary_set(["  > ", "  ? "]);
         assert_eq!(r#"["ICA+IA==", "ICA/IA=="]"#, set.to_string());
 
         let deserialized: Vec<String> =

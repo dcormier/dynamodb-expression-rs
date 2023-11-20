@@ -361,10 +361,9 @@ mod test {
             r#"[-7, 1e3, 42]"#,
             Value::new_num_set([Num::new_lower_exp(1000), Num::new(42), Num::new(-7)]).to_string()
         );
-        // TODO: There's an inconsistency between what turn `Into` a `Binary` and `Into` a `BinarySet`.
         assert_eq!(
             r#"["YQ==", "Yg==", "Yw=="]"#,
-            Value::new_binary_set([b"a".to_vec(), b"b".to_vec(), b"c".to_vec()]).to_string()
+            Value::new_binary_set([b"a", b"b", b"c"]).to_string()
         );
 
         assert_eq!(
