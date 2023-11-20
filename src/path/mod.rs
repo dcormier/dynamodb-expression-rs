@@ -1009,11 +1009,11 @@ mod test {
         let begins_with = Path::new_indexed_field("foo", 3).begins_with(String::from("foo"));
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
 
-        #[allow(clippy::needless_borrow)]
+        #[allow(clippy::needless_borrows_for_generic_args)]
         let begins_with = Path::new_indexed_field("foo", 3).begins_with(&String::from("foo"));
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
 
-        #[allow(clippy::needless_borrow)]
+        #[allow(clippy::needless_borrows_for_generic_args)]
         let begins_with = Path::new_indexed_field("foo", 3).begins_with(&"foo");
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
     }

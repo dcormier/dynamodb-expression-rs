@@ -401,7 +401,6 @@ async fn test_update_add(config: &Config, client: &Client) {
                 Element::new_name(ATTR_MAP),
                 Element::new_indexed_field(ATTR_LIST, 2),
             ]),
-            // TODO: Can it be made so `num_value()` can be used here?
             Num::new(-3.5),
         ))
         .build()
