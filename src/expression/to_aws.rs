@@ -86,10 +86,11 @@ impl Expression {
     ///
     /// ```no_run
     /// # async fn example_put_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    /// use aws_config::BehaviorVersion;
     /// use aws_sdk_dynamodb::{types::AttributeValue, Client};
     /// use dynamodb_expression::{Expression, Path};
     ///
-    /// let client = Client::new(&aws_config::load_from_env().await);
+    /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
     ///
     /// let output = Expression::builder()
     ///     .with_condition(Path::new_name("name").attribute_not_exists())
@@ -154,9 +155,11 @@ impl Expression {
     ///
     /// ```no_run
     /// # async fn example_get_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    /// use aws_config::BehaviorVersion;
+    /// use aws_sdk_dynamodb::Client;
     /// use dynamodb_expression::Expression;
     ///
-    /// let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+    /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
     ///
     /// let output = Expression::builder()
     ///     .with_projection(["name", "age"])
@@ -237,10 +240,11 @@ impl Expression {
     /// ```no_run
     /// # async fn example_update_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
     /// # {
+    /// use aws_config::BehaviorVersion;
     /// use aws_sdk_dynamodb::{types::AttributeValue, Client};
     /// use dynamodb_expression::{Expression, Num, Path};
     ///
-    /// let client = Client::new(&aws_config::load_from_env().await);
+    /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
     ///
     /// let age = Path::new_name("age");
     /// let output = Expression::builder()
@@ -317,10 +321,11 @@ impl Expression {
     /// ```no_run
     /// # async fn example_delete_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
     /// # {
+    /// use aws_config::BehaviorVersion;
     /// use aws_sdk_dynamodb::{types::AttributeValue, Client};
     /// use dynamodb_expression::{Expression, Num, Path};
     ///
-    /// let client = Client::new(&aws_config::load_from_env().await);
+    /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
     ///
     /// let output = Expression::builder()
     ///     .with_condition(Path::new_name("age").less_than(Num::new(20)))
@@ -390,9 +395,11 @@ impl Expression {
     ///
     /// ```no_run
     /// # async fn example_query() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    /// use aws_config::BehaviorVersion;
+    /// use aws_sdk_dynamodb::Client;
     /// use dynamodb_expression::{Expression, Num, Path};
     ///
-    /// let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+    /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
     ///
     /// let output = Expression::builder()
     ///     .with_filter(
@@ -462,9 +469,11 @@ impl Expression {
     ///
     /// ```no_run
     /// # async fn example_scan() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    /// use aws_config::BehaviorVersion;
+    /// use aws_sdk_dynamodb::Client;
     /// use dynamodb_expression::{Expression, Num, Path};
     ///
-    /// let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+    /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
     ///
     /// let output = Expression::builder()
     ///     .with_filter(Path::new_name("age").greater_than_or_equal(Num::new(25)))
@@ -523,9 +532,10 @@ mod test {
     #[allow(dead_code)]
     async fn example_put_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::{Expression, Path};
+        use aws_config::BehaviorVersion;
         use aws_sdk_dynamodb::{types::AttributeValue, Client};
 
-        let client = Client::new(&aws_config::load_from_env().await);
+        let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
         let output = Expression::builder()
             .with_condition(Path::new_name("name").attribute_not_exists())
@@ -545,8 +555,10 @@ mod test {
     #[allow(dead_code)]
     async fn example_get_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::Expression;
+        use aws_config::BehaviorVersion;
+        use aws_sdk_dynamodb::Client;
 
-        let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+        let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
         let output = Expression::builder()
             .with_projection(["name", "age"])
@@ -564,8 +576,10 @@ mod test {
     #[allow(dead_code)]
     async fn example_scan() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::{Expression, Num, Path};
+        use aws_config::BehaviorVersion;
+        use aws_sdk_dynamodb::Client;
 
-        let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+        let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
         let output = Expression::builder()
             .with_filter(Path::new_name("age").greater_than_or_equal(Num::new(25)))
@@ -584,8 +598,10 @@ mod test {
     #[allow(dead_code)]
     async fn example_query() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::{Expression, Num, Path};
+        use aws_config::BehaviorVersion;
+        use aws_sdk_dynamodb::Client;
 
-        let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+        let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
         let output = Expression::builder()
             .with_filter(
@@ -610,9 +626,10 @@ mod test {
     async fn example_update_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
     {
         use crate::{Expression, Num, Path};
+        use aws_config::BehaviorVersion;
         use aws_sdk_dynamodb::{types::AttributeValue, Client};
 
-        let client = Client::new(&aws_config::load_from_env().await);
+        let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
         let age = Path::new_name("age");
         let output = Expression::builder()
@@ -634,9 +651,10 @@ mod test {
     async fn example_delete_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
     {
         use crate::{Expression, Num, Path};
+        use aws_config::BehaviorVersion;
         use aws_sdk_dynamodb::{types::AttributeValue, Client};
 
-        let client = Client::new(&aws_config::load_from_env().await);
+        let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
         let output = Expression::builder()
             .with_condition(Path::new_name("age").less_than(Num::new(20)))

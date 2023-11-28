@@ -5,30 +5,22 @@ use aws_sdk_dynamodb::types::AttributeValue;
 
 use crate::Num;
 
-/// A set of unique numeric values for DynamoDB
+/// Represents a [DynamoDB number set][1].
 ///
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NumSet(BTreeSet<String>);
 
 impl NumSet {
-    /// A set of unique numeric values for DynamoDB
+    /// Creates a value to use as a [DynamoDB number set][1].
     ///
-    /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
     pub fn new<T>(set: T) -> Self
     where
         T: Into<NumSet>,
     {
         set.into()
     }
-
-    // I don't want to make this a public API right now.
-    // pub fn insert<T>(&mut self, num: T)
-    // where
-    //     T: Into<Num>,
-    // {
-    //     self.0.insert(num.into().into());
-    // }
 
     // Intentionally not using `impl From<NumSet> for AttributeValue` because
     // I don't want to make this a public API people rely on. The purpose of this

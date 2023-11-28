@@ -138,9 +138,11 @@ fn query() {
 // Intentionally not marked as a test because this isn't expected to run on its own.
 #[allow(dead_code)]
 async fn query_example() -> Result<(), Box<dyn Error + Send + Sync>> {
+    use aws_config::BehaviorVersion;
+    use aws_sdk_dynamodb::Client;
     use dynamodb_expression::{Expression, Num, Path};
 
-    let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+    let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
     let query_output = Expression::builder()
         .with_filter(

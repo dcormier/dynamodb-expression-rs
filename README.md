@@ -9,9 +9,11 @@ expressions](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Ex
 An example showing a how to use this crate to perform a query:
 
 ```rust
+use aws_config::BehaviorVersion;
+use aws_sdk_dynamodb::Client;
 use dynamodb_expression::{Expression, Num, Path};
 
-let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
 let query_output = Expression::builder()
     .with_filter(

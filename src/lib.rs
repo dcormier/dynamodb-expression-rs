@@ -10,12 +10,14 @@ many methods for building various expressions.
 An example showing a how to use this crate to perform a query:
 
 ```no_run
-# use aws_sdk_dynamodb::{error::SdkError, operation::query::QueryError};
-#
-# async fn example() -> Result<(), SdkError<QueryError>> {
+# async fn example_query(
+# ) -> Result<(), aws_sdk_dynamodb::error::SdkError<aws_sdk_dynamodb::operation::query::QueryError>>
+# {
+use aws_config::BehaviorVersion;
+use aws_sdk_dynamodb::Client;
 use dynamodb_expression::{Expression, Num, Path};
 
-let client = aws_sdk_dynamodb::Client::new(&aws_config::load_from_env().await);
+let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
 let query_output = Expression::builder()
     .with_filter(
@@ -31,6 +33,7 @@ let query_output = Expression::builder()
     .send()
     .await?;
 #
+# _ = query_output;
 # Ok(())
 # }
 ```
@@ -42,48 +45,41 @@ From here, see [`Expression`] and [`Path`] for more docs and examples.
 [Rusoto][5] is intentionally not supported.
 
 If you are using Rusoto and want to take advantage of this crate, you can still
-build an expression, then convert the [`aws_sdk_dynamodb::types::AttributeValue`]
+build an [`Expression`], then convert the [`aws_sdk_dynamodb::types::AttributeValue`]
 that are in the `expression_attribute_values` field into [`rusoto_dynamodb::AttributeValue`].
 The rest of the fields are already what's needed.
 
 ```no_run
+# async fn example_rusoto() -> Result<(), rusoto_core::RusotoError<rusoto_dynamodb::QueryError>> {
 use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue as AwsAv};
-use dynamodb_expression::{Expression, Path};
+use dynamodb_expression::{Expression, Num, Path};
 use itermap::IterMap;
 use rusoto_core::Region;
-use rusoto_dynamodb::{
-    AttributeValue as RusotoAv, DynamoDb, DynamoDbClient, UpdateItemInput,
-};
+use rusoto_dynamodb::{AttributeValue as RusotoAv, DynamoDb, DynamoDbClient, QueryInput};
 
-# async fn example() {
 let expression = Expression::builder()
-    .with_update(Path::new_name("foo").assign("a value"))
+    .with_filter(
+        Path::new_name("name")
+            .attribute_exists()
+            .and(Path::new_name("age").greater_than_or_equal(Num::new(2.5))),
+    )
+    .with_projection(["name", "age"])
+    .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
     .build();
 
-let input = UpdateItemInput {
-    update_expression: expression.update_expression,
-    condition_expression: expression.condition_expression,
+let input = QueryInput {
+    filter_expression: expression.filter_expression,
+    projection_expression: expression.projection_expression,
+    key_condition_expression: expression.key_condition_expression,
     expression_attribute_names: expression.expression_attribute_names,
     expression_attribute_values: expression
         .expression_attribute_values
         .map(|values| values.into_iter().map_values(convert_av).collect()),
-    table_name: String::from("things"),
-    key: [(
-        String::from("id"),
-        RusotoAv {
-            n: Some(42.to_string()),
-            ..RusotoAv::default()
-        },
-    )]
-    .into(),
-    ..UpdateItemInput::default()
+    table_name: String::from("people"),
+    ..QueryInput::default()
 };
 
-DynamoDbClient::new(Region::UsEast1)
-    .update_item(input)
-    .await
-    .expect("Failed to update item");
-# }
+let output = DynamoDbClient::new(Region::UsEast1).query(input).await?;
 
 fn convert_av(av: AwsAv) -> RusotoAv {
     let mut rav = RusotoAv::default();
@@ -114,6 +110,10 @@ fn convert_av(av: AwsAv) -> RusotoAv {
 
     rav
 }
+#
+# _ = output;
+# Ok(())
+# }
 ```
 
 [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
@@ -140,46 +140,68 @@ pub use expression::Expression;
 pub use path::Path;
 pub use value::{Map, Num, Scalar, Set, Value};
 
+/// This exists just for formatting the doc examples.
 #[cfg(test)]
 mod examples {
-    /// This exists just for formatting the doctest.
     #[allow(dead_code)]
-    async fn example_rusoto() {
-        use crate::{Expression, Path};
+    async fn example_query(
+    ) -> Result<(), aws_sdk_dynamodb::error::SdkError<aws_sdk_dynamodb::operation::query::QueryError>>
+    {
+        use crate::{Expression, Num, Path};
+        use aws_config::BehaviorVersion;
+        use aws_sdk_dynamodb::Client;
+
+        let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
+
+        let query_output = Expression::builder()
+            .with_filter(
+                Path::new_name("name")
+                    .attribute_exists()
+                    .and(Path::new_name("age").greater_than_or_equal(Num::new(2.5))),
+            )
+            .with_projection(["name", "age"])
+            .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
+            .build()
+            .query(&client)
+            .table_name("people")
+            .send()
+            .await?;
+
+        _ = query_output;
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    async fn example_rusoto() -> Result<(), rusoto_core::RusotoError<rusoto_dynamodb::QueryError>> {
+        use crate::{Expression, Num, Path};
         use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue as AwsAv};
         use itermap::IterMap;
         use rusoto_core::Region;
-        use rusoto_dynamodb::{
-            AttributeValue as RusotoAv, DynamoDb, DynamoDbClient, UpdateItemInput,
-        };
+        use rusoto_dynamodb::{AttributeValue as RusotoAv, DynamoDb, DynamoDbClient, QueryInput};
 
         let expression = Expression::builder()
-            .with_update(Path::new_name("foo").assign("a value"))
+            .with_filter(
+                Path::new_name("name")
+                    .attribute_exists()
+                    .and(Path::new_name("age").greater_than_or_equal(Num::new(2.5))),
+            )
+            .with_projection(["name", "age"])
+            .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
             .build();
 
-        let input = UpdateItemInput {
-            update_expression: expression.update_expression,
-            condition_expression: expression.condition_expression,
+        let input = QueryInput {
+            filter_expression: expression.filter_expression,
+            projection_expression: expression.projection_expression,
+            key_condition_expression: expression.key_condition_expression,
             expression_attribute_names: expression.expression_attribute_names,
             expression_attribute_values: expression
                 .expression_attribute_values
                 .map(|values| values.into_iter().map_values(convert_av).collect()),
-            table_name: String::from("things"),
-            key: [(
-                String::from("id"),
-                RusotoAv {
-                    n: Some(42.to_string()),
-                    ..RusotoAv::default()
-                },
-            )]
-            .into(),
-            ..UpdateItemInput::default()
+            table_name: String::from("people"),
+            ..QueryInput::default()
         };
 
-        DynamoDbClient::new(Region::UsEast1)
-            .update_item(input)
-            .await
-            .expect("Failed to update item");
+        let output = DynamoDbClient::new(Region::UsEast1).query(input).await?;
 
         fn convert_av(av: AwsAv) -> RusotoAv {
             let mut rav = RusotoAv::default();
@@ -197,7 +219,7 @@ mod examples {
                 }
                 AwsAv::L(av) => rav.l = Some(av.into_iter().map(convert_av).collect()),
                 AwsAv::M(av) => rav.m = Some(av.into_iter().map_values(convert_av).collect()),
-                AwsAv::N(av) => rav.s = av.into(),
+                AwsAv::N(av) => rav.n = av.into(),
                 AwsAv::Ns(av) => rav.ns = av.into(),
                 AwsAv::Null(av) => rav.null = av.into(),
                 AwsAv::S(av) => rav.s = av.into(),
@@ -210,5 +232,8 @@ mod examples {
 
             rav
         }
+
+        _ = output;
+        Ok(())
     }
 }

@@ -3,27 +3,22 @@ use std::collections::BTreeSet;
 
 use aws_sdk_dynamodb::types::AttributeValue;
 
-/// A set of unique string values for DynamoDB
+/// Represents a [DynamoDB string set][1].
 ///
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StringSet(BTreeSet<String>);
 
 impl StringSet {
+    /// Creates a value to use as a [DynamoDB string set][1].
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
     pub fn new<T>(set: T) -> Self
     where
         T: Into<StringSet>,
     {
         set.into()
     }
-
-    // pub fn new<I, T>(set: I) -> Self
-    // where
-    //     I: IntoIterator<Item = T>,
-    //     T: Into<String>,
-    // {
-    //     set.into()
-    // }
 
     // Intentionally not using `impl From<StringSet> for AttributeValue` because
     // I don't want to make this a public API people rely on. The purpose of this

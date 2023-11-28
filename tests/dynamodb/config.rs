@@ -1,3 +1,4 @@
+use aws_config::BehaviorVersion;
 use aws_sdk_dynamodb::{
     config::{Builder, Credentials, Region},
     Client,
@@ -25,25 +26,32 @@ impl Config {
     pub fn new_local() -> Self {
         Self {
             endpoint: Some("http://127.0.0.1:8000".into()),
-            creds: Some(("1234".into(), "abcd".into())),
+            creds: Some((
+                "AKIAIOSFODNN7EXAMPLE".into(),
+                "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY".into(),
+            )),
             table_name: "dynamodb-expression-test".into(),
             client: OnceCell::default(),
         }
     }
 
     async fn dynamodb_config(&self) -> aws_sdk_dynamodb::Config {
-        let mut builder = Builder::from(&aws_config::load_from_env().await);
+        let mut loader = aws_config::defaults(BehaviorVersion::latest());
+
+        if let Some((key, secret)) = &self.creds {
+            let creds = Credentials::new(key, secret, None, None, "StaticDummy");
+
+            loader = loader
+                .credentials_provider(creds)
+                .region(Region::new("us-local-1"));
+        }
+
+        let mut builder = Builder::from(&loader.load().await);
 
         if let Some(endpoint) = &self.endpoint {
             println!("Using DynamoDB endpoint: {endpoint}");
 
             builder = builder.endpoint_url(endpoint)
-        }
-
-        if let Some((key, secret)) = &self.creds {
-            builder = builder
-                .credentials_provider(Credentials::new(key, secret, None, None, "static"))
-                .region(Region::new("us-local-1"));
         }
 
         builder.build()
