@@ -650,7 +650,7 @@ impl Path {
     /// # Examples
     ///
     /// ```
-    /// use dynamodb_expression::{Num, Path, update::{Add, Update}};
+    /// use dynamodb_expression::{Num, Path, update::Update};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let add = Path::new_name("foo").add(Num::from(1));
@@ -680,7 +680,7 @@ impl Path {
     /// # Examples
     ///
     /// ```
-    /// use dynamodb_expression::{Path, update::{Remove, Update}};
+    /// use dynamodb_expression::{Path, update::Update};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let remove = Path::new_name("foo").remove();
@@ -796,8 +796,8 @@ impl TryFrom<Path> for Name {
     /// A [`Path`] consisting of a single, unindexed attribute can be converted
     /// into a [`Name`].
     /// ```
-    /// use dynamodb_expression::path::{Element, Name, Path};
-    ///
+    /// # use dynamodb_expression::path::{Element, Name, Path};
+    /// #
     /// let path: Path = "foo".parse().unwrap();
     /// let name = Name::try_from(path).unwrap();
     /// assert_eq!(Name::from("foo"), name);

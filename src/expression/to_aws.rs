@@ -68,7 +68,6 @@ impl Expression {
     /// * Condition expression
     /// * Expression attribute names
     /// * Expression attribute values
-    // TODO: An example
     pub fn to_put_item_fluent_builder(self, builder: PutItemFluentBuilder) -> PutItemFluentBuilder {
         builder
             .set_condition_expression(self.condition_expression)
@@ -139,7 +138,6 @@ impl Expression {
     /// before returning it:
     /// * Projection expression
     /// * Expression attribute names
-    // TODO: An example
     pub fn to_get_item_fluent_builder(self, builder: GetItemFluentBuilder) -> GetItemFluentBuilder {
         builder
             .set_projection_expression(self.projection_expression)
@@ -156,7 +154,7 @@ impl Expression {
     /// ```no_run
     /// # async fn example_get_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     /// use aws_config::BehaviorVersion;
-    /// use aws_sdk_dynamodb::Client;
+    /// use aws_sdk_dynamodb::{types::AttributeValue, Client};
     /// use dynamodb_expression::Expression;
     ///
     /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
@@ -166,6 +164,7 @@ impl Expression {
     ///     .build()
     ///     .get_item(&client)
     ///     .table_name("people")
+    ///     .key("id", AttributeValue::N(42.to_string()))
     ///     .send()
     ///     .await?;
     /// #
@@ -216,7 +215,6 @@ impl Expression {
     /// * Condition expression
     /// * Expression attribute names
     /// * Expression attribute values
-    // TODO: An example
     pub fn to_update_item_fluent_builder(
         self,
         builder: UpdateItemFluentBuilder,
@@ -299,7 +297,6 @@ impl Expression {
     /// * Condition expression
     /// * Expression attribute names
     /// * Expression attribute values
-    // TODO: An example
     pub fn to_delete_item_fluent_builder(
         self,
         builder: DeleteItemFluentBuilder,
@@ -373,7 +370,6 @@ impl Expression {
     /// * Projection expression
     /// * Expression attribute names
     /// * Expression attribute values
-    // TODO: An example
     pub fn to_query_fluent_builder(self, builder: QueryFluentBuilder) -> QueryFluentBuilder {
         builder
             .set_key_condition_expression(self.key_condition_expression)
@@ -449,7 +445,6 @@ impl Expression {
     /// * Projection expression
     /// * Expression attribute names
     /// * Expression attribute values
-    // TODO: An example
     pub fn to_scan_fluent_builder(self, builder: ScanFluentBuilder) -> ScanFluentBuilder {
         builder
             .set_filter_expression(self.filter_expression)
@@ -556,7 +551,7 @@ mod test {
     async fn example_get_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::Expression;
         use aws_config::BehaviorVersion;
-        use aws_sdk_dynamodb::Client;
+        use aws_sdk_dynamodb::{types::AttributeValue, Client};
 
         let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
@@ -565,6 +560,7 @@ mod test {
             .build()
             .get_item(&client)
             .table_name("people")
+            .key("id", AttributeValue::N(42.to_string()))
             .send()
             .await?;
 

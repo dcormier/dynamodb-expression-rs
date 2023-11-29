@@ -73,6 +73,55 @@ impl Builder {
     }
 
     /// Sets the projection for this [`Expression`], overwriting any previously set.
+    ///
+    /// Each of these examples produce the same projection expression.
+    ///
+    /// ```
+    /// # use dynamodb_expression::{path::Name, Expression};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// let expected = Expression {
+    ///     condition_expression: None,
+    ///     key_condition_expression: None,
+    ///     update_expression: None,
+    ///     filter_expression: None,
+    ///     projection_expression: Some(String::from("#0, #1")),
+    ///     expression_attribute_names: Some(
+    ///         [("#0", "id"), ("#1", "name")]
+    ///             .into_iter()
+    ///             .map(|(k, v)| (String::from(k), String::from(v)))
+    ///             .collect(),
+    ///     ),
+    ///     expression_attribute_values: None,
+    /// };
+    ///
+    /// let expression = Expression::builder()
+    ///     .with_projection(["id", "name"])
+    ///     .build();
+    /// assert_eq!(expected, expression);
+    ///
+    /// let expression = Expression::builder()
+    ///     .with_projection([String::from("id"), String::from("name")])
+    ///     .build();
+    /// assert_eq!(expected, expression);
+    ///
+    /// let expression = Expression::builder()
+    ///     .with_projection([Name::from("id"), Name::from("name")])
+    ///     .build();
+    /// assert_eq!(expected, expression);
+    ///
+    /// // Anything that's `IntoIterator` will work. A `Vec`, for example.
+    /// let expression = Expression::builder()
+    ///     .with_projection(vec!["id", "name"])
+    ///     .build();
+    /// assert_eq!(expected, expression);
+    ///
+    /// // Or an `Iterator`.
+    /// let expression = Expression::builder()
+    ///     .with_projection(["id", "name"].into_iter().map(Name::from))
+    ///     .build();
+    /// assert_eq!(expected, expression);
+    /// ```
     pub fn with_projection<I, T>(mut self, names: I) -> Self
     where
         I: IntoIterator<Item = T>,
@@ -357,5 +406,56 @@ mod test {
 
         let query = expression.to_query_input_builder();
         assert_eq!(QueryInputBuilder::default(), query);
+    }
+}
+
+#[cfg(test)]
+mod doc_examples {
+    #[test]
+    fn example_projection_expression() {
+        use crate::{path::Name, Expression};
+        use pretty_assertions::assert_eq;
+
+        let expected = Expression {
+            condition_expression: None,
+            key_condition_expression: None,
+            update_expression: None,
+            filter_expression: None,
+            projection_expression: Some(String::from("#0, #1")),
+            expression_attribute_names: Some(
+                [("#0", "id"), ("#1", "name")]
+                    .into_iter()
+                    .map(|(k, v)| (String::from(k), String::from(v)))
+                    .collect(),
+            ),
+            expression_attribute_values: None,
+        };
+
+        let expression = Expression::builder()
+            .with_projection(["id", "name"])
+            .build();
+        assert_eq!(expected, expression);
+
+        let expression = Expression::builder()
+            .with_projection([String::from("id"), String::from("name")])
+            .build();
+        assert_eq!(expected, expression);
+
+        let expression = Expression::builder()
+            .with_projection([Name::from("id"), Name::from("name")])
+            .build();
+        assert_eq!(expected, expression);
+
+        // Anything that's `IntoIterator` will work. A `Vec`, for example.
+        let expression = Expression::builder()
+            .with_projection(vec!["id", "name"])
+            .build();
+        assert_eq!(expected, expression);
+
+        // Or an `Iterator`.
+        let expression = Expression::builder()
+            .with_projection(["id", "name"].into_iter().map(Name::from))
+            .build();
+        assert_eq!(expected, expression);
     }
 }

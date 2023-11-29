@@ -29,8 +29,7 @@ use aws_sdk_dynamodb::types::AttributeValue;
 /// this to automatically build or populate one of those types.
 ///
 #[must_use = "Use the fields or methods to create an input type for `aws_sdk_dynamodb"]
-#[derive(Debug, Clone)]
-#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Expression {
     /// The string to use as a DynamoDB [condition expression][1].
     ///

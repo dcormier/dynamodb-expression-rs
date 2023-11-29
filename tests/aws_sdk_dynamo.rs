@@ -4,7 +4,7 @@ use std::{collections::HashMap, future::Future, pin::Pin};
 
 use aws_sdk_dynamodb::{
     error::SdkError,
-    operation::query::QueryError,
+    operation::{get_item::GetItemError, query::QueryError},
     types::{AttributeValue, ReturnValue},
     Client,
 };
@@ -14,6 +14,7 @@ use dynamodb_expression::{
     value::{Num, Set, StringSet},
     Expression, Scalar,
 };
+use itermap::IterMap;
 use pretty_assertions::{assert_eq, assert_ne};
 
 use crate::dynamodb::{
@@ -26,13 +27,49 @@ use crate::dynamodb::{
 const ITEM_ID: &str = "sanity item";
 
 #[tokio::test]
+async fn get_item() {
+    test("get_item", |config| Box::pin(test_get_item(config))).await;
+}
+
+async fn test_get_item(config: &Config) {
+    let item = fresh_item(config).await;
+    let got = get_known_item(config)
+        .await
+        .expect("Failed to get item")
+        .expect("Where is the item?");
+
+    assert_eq!(DebugItem(&item), DebugItem(&got));
+
+    let got = Expression::builder()
+        .with_projection([ATTR_ID, ATTR_NEW_FIELD])
+        .build()
+        .get_item(config.client().await)
+        .table_name(config.table_name.clone())
+        .key(ATTR_ID, AttributeValue::S(ITEM_ID.into()))
+        .send()
+        .await
+        .expect("Failed to get item")
+        .item
+        .expect("Where is the item?");
+
+    let expect: HashMap<_, _> = item
+        .get_key_value(&ATTR_ID.to_string())
+        .into_iter()
+        .map_keys(Clone::clone)
+        .map_values(Clone::clone)
+        .collect();
+
+    assert_eq!(DebugItem(&expect), DebugItem(&got));
+}
+
+#[tokio::test]
 async fn query() {
     test("query", |config| Box::pin(test_query(config))).await;
 }
 
 async fn test_query(config: &Config) {
     let item = fresh_item(config).await;
-    let got = get_item(config)
+    let got = query_known_item(config)
         .await
         .expect("Failed to get item")
         .expect("Where is the item?");
@@ -587,7 +624,7 @@ fn item_key(item: &HashMap<String, AttributeValue>) -> HashMap<String, Attribute
 }
 
 /// Gets the one item from the configured table
-async fn get_item(
+async fn query_known_item(
     config: &Config,
 ) -> Result<Option<HashMap<String, AttributeValue>>, SdkError<QueryError>> {
     let output = Expression::builder()
@@ -607,4 +644,19 @@ async fn get_item(
 
         item
     }))
+}
+
+/// Gets the one item from the configured table
+async fn get_known_item(
+    config: &Config,
+) -> Result<Option<HashMap<String, AttributeValue>>, SdkError<GetItemError>> {
+    let output = Expression::builder()
+        .build()
+        .get_item(config.client().await)
+        .table_name(config.table_name.clone())
+        .key(ATTR_ID, AttributeValue::S(ITEM_ID.into()))
+        .send()
+        .await?;
+
+    Ok(output.item)
 }
