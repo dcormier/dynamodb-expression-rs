@@ -12,7 +12,7 @@ use aws_sdk_dynamodb::types::AttributeValue;
 /// Use [`Builder`] (via [`Expression::builder`]) to create a DynamoDB
 /// condition, filter, key condition, or update expression.
 ///
-/// You can use the these methods (see their docs for examples) to consume this
+/// You can use these methods (see their docs for examples) to consume this
 /// and set up a DynamoDB operation:
 /// * [`Expression::put_item`]
 /// * [`Expression::get_item`]
