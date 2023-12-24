@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use itermap::IterMap;
 use itertools::Itertools;
 use optempty::EmptyIntoNone;
 
@@ -172,14 +173,17 @@ impl Builder {
             expression_attribute_names: Some(
                 names
                     .into_iter()
-                    .map(|(name, name_ref)| (name_ref, name.name))
+                    .map_keys(|name| name.name)
+                    .swap()
                     .collect(),
             )
             .empty_into_none(),
             expression_attribute_values: Some(
                 values
                     .into_iter()
-                    .map(|(value, value_ref)| (value_ref.into(), value.into_attribute_value()))
+                    .swap()
+                    .map_keys(String::from)
+                    .map_values(Value::into_attribute_value)
                     .collect(),
             )
             .empty_into_none(),
