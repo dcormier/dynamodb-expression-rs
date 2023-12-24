@@ -28,7 +28,7 @@ const ITEM_ID: &str = "sanity item";
 
 #[tokio::test]
 async fn get_item() {
-    test("get_item", |config| Box::pin(test_get_item(config))).await;
+    dynamodb_test("get_item", |config| Box::pin(test_get_item(config))).await;
 }
 
 async fn test_get_item(config: &Config) {
@@ -64,7 +64,7 @@ async fn test_get_item(config: &Config) {
 
 #[tokio::test]
 async fn query() {
-    test("query", |config| Box::pin(test_query(config))).await;
+    dynamodb_test("query", |config| Box::pin(test_query(config))).await;
 }
 
 async fn test_query(config: &Config) {
@@ -79,7 +79,7 @@ async fn test_query(config: &Config) {
 
 #[tokio::test]
 async fn scan() {
-    test("scan", |config| Box::pin(test_scan(config))).await;
+    dynamodb_test("scan", |config| Box::pin(test_scan(config))).await;
 }
 
 async fn test_scan(config: &Config) {
@@ -190,7 +190,7 @@ async fn test_scan_list_not_contains(config: &Config) {
 
 #[tokio::test]
 async fn update() {
-    test("update", |config| Box::pin(test_update(config))).await;
+    dynamodb_test("update", |config| Box::pin(test_update(config))).await;
 }
 
 /// A name for a field that doesn't exist in generated item from [`new_item`] and [`fresh_item`].
@@ -578,7 +578,7 @@ async fn test_update_delete(config: &Config, client: &Client) {
 /// Wraps a test function in code to set up and tear down the DynamoDB table.
 ///
 /// The `name` value must be safe for use in a DynamoDB table name.
-async fn test<F, T>(name: &str, test_fn: F) -> T
+async fn dynamodb_test<F, T>(name: &str, test_fn: F) -> T
 where
     F: FnOnce(&Config) -> Pin<Box<dyn Future<Output = T> + '_>>,
 {
