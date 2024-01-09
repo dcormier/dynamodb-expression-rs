@@ -9,7 +9,7 @@ use crate::Num;
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NumSet(BTreeSet<String>);
+pub struct NumSet(BTreeSet<Num>);
 
 impl NumSet {
     /// Creates a value to use as a [DynamoDB number set][1].
@@ -27,7 +27,7 @@ impl NumSet {
     // crate is not to make creating `AttributeValues` easier. They should try
     // `serde_dynamo`.
     pub(super) fn into_attribute_value(self) -> AttributeValue {
-        AttributeValue::Ns(self.0.into_iter().collect())
+        AttributeValue::Ns(self.0.into_iter().map(Into::into).collect())
     }
 }
 
@@ -39,7 +39,7 @@ where
     where
         I: IntoIterator<Item = T>,
     {
-        Self(iter.into_iter().map(Into::into).map(Into::into).collect())
+        Self(iter.into_iter().map(Into::into).collect())
     }
 }
 
@@ -59,10 +59,10 @@ impl fmt::Display for NumSet {
     }
 }
 
-struct DebugNum<'a>(&'a String);
+struct DebugNum<'a>(&'a Num);
 
 impl<'a> fmt::Debug for DebugNum<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.0)
+        f.write_str(&self.0.n)
     }
 }
