@@ -16,9 +16,10 @@ pub(crate) use value_or_ref::ValueOrRef;
 
 use core::fmt::{self, LowerExp, UpperExp};
 
-use aws_sdk_dynamodb::types::AttributeValue;
+use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue};
 use base64::{engine::general_purpose, Engine as _};
 use itermap::IterMap;
+use itertools::Itertools;
 
 /// A DynamoDB value
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -316,12 +317,53 @@ impl From<List> for Value {
     }
 }
 
+impl TryFrom<AttributeValue> for Value {
+    type Error = AttributeValue;
+
+    /// On error, the unknown `AttributeValue` is returned. This will only occur
+    /// if a new `AttributeValue` variant is added to the AWS DynamoDB SDK.
+    ///
+    /// See: [`AttributeValue::Unknown`]
+    fn try_from(value: AttributeValue) -> Result<Self, Self::Error> {
+        Ok(match value {
+            AttributeValue::B(value) => Scalar::Binary(value.into_inner()).into(),
+            AttributeValue::Bool(value) => Scalar::Bool(value).into(),
+            AttributeValue::Bs(value) => {
+                BinarySet::from_iter(value.into_iter().map(Blob::into_inner)).into()
+            }
+            AttributeValue::L(value) => List::from(
+                value
+                    .into_iter()
+                    .map(Self::try_from)
+                    .try_collect::<_, Vec<_>, _>()?,
+            )
+            .into(),
+            AttributeValue::M(value) => Map::from(
+                value
+                    .into_iter()
+                    .map(|(k, v)| Self::try_from(v).map(|v| (k, v)))
+                    .try_collect::<_, Vec<_>, _>()?,
+            )
+            .into(),
+            AttributeValue::N(value) => Num { n: value }.into(),
+            AttributeValue::Ns(value) => {
+                NumSet::from_iter(value.into_iter().map(|n| Num { n })).into()
+            }
+            AttributeValue::Null(_value) => Scalar::Null.into(),
+            AttributeValue::S(value) => Scalar::String(value).into(),
+            AttributeValue::Ss(value) => StringSet::from(value).into(),
+            _ => return Err(value),
+        })
+    }
+}
+
 impl From<serde_json::Value> for Value {
     /// Converts a [`serde_json::Value`] into a [`Value`].
     ///
-    /// A shortcoming of this is that `serde_json::Value` doesn't contain
+    /// A shortcoming of this is that [`serde_json::Value`] doesn't contain
     /// variants to differentiate between a DynamoDB [list][1] and a [set][2].
-    /// The results is that a `serde_json::Value::Array` becomes a `Value::List`.
+    /// The result is that a [`serde_json::Value::Array`] becomes a
+    /// [`Value::List`].
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Document.List
     /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
@@ -365,10 +407,11 @@ where
 
 #[cfg(test)]
 mod test {
+    use aws_sdk_dynamodb::types::AttributeValue;
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
-    use crate::Num;
+    use crate::value::{List, Map, Num};
 
     use super::Value;
 
@@ -445,6 +488,54 @@ mod test {
                 "no": false,
                 "list": ["foo", 42, null],
             })),
+        );
+    }
+
+    #[test]
+    fn from_attribute_value() {
+        // TODO: Test all of the variants. Currently missing:
+        // AttributeValue::B
+        // AttributeValue::Bs
+        // AttributeValue::Ns
+        // AttributeValue::Ss
+
+        assert_eq!(
+            Value::from(Map::from([
+                ("s", Value::from("a string")),
+                ("int", Value::from(Num::from(8))),
+                ("null", Value::from(())),
+                ("yes", Value::from(true)),
+                ("no", Value::from(false)),
+                (
+                    "list",
+                    List::from([
+                        Value::from("foo"),
+                        Value::from(Num::from(42)),
+                        Value::from(()),
+                    ])
+                    .into(),
+                ),
+            ])),
+            Value::try_from(AttributeValue::M(
+                [
+                    ("s".to_string(), AttributeValue::S("a string".to_string())),
+                    ("int".to_string(), AttributeValue::N("8".to_string())),
+                    ("null".to_string(), AttributeValue::Null(true)),
+                    ("yes".to_string(), AttributeValue::Bool(true)),
+                    ("no".to_string(), AttributeValue::Bool(false)),
+                    (
+                        "list".to_string(),
+                        AttributeValue::L(vec![
+                            AttributeValue::S("foo".to_string()),
+                            AttributeValue::N("42".to_string()),
+                            AttributeValue::Null(true),
+                        ]),
+                    ),
+                ]
+                .into_iter()
+                .collect(),
+            ))
+            .expect("Could not convert AttributeValue to Value"),
         );
     }
 }
