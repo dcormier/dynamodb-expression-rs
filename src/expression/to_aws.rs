@@ -491,18 +491,63 @@ impl Expression {
 }
 
 impl Expression {
-    // TODO: This ultimately ends up being a part of a `BatchGetItemInput`.
-    //       See how that gets used in practice.
-    // https://docs.rs/aws-sdk-dynamodb/latest/aws_sdk_dynamodb/operation/batch_get_item/builders/struct.BatchGetItemInputBuilder.html#method.request_items
-    // ----
     /// Uses this [`Expression`] to create a [`KeysAndAttributesBuilder`] with the following set:
     /// * Projection expression
     /// * Expression attribute names
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # async fn example_to_keys_and_attributes_builder(
+    /// # ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    /// use std::collections::HashMap;
+    ///
+    /// use aws_config::BehaviorVersion;
+    /// use aws_sdk_dynamodb::{types::AttributeValue, Client};
+    /// use dynamodb_expression::Expression;
+    ///
+    /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
+    ///
+    /// let expression = Expression::builder()
+    ///     .with_projection(["name", "age"])
+    ///     .build();
+    ///
+    /// let key = HashMap::from([("id".to_string(), AttributeValue::N(42.to_string()))]);
+    ///
+    /// let output = client
+    ///     .batch_get_item()
+    ///     .request_items(
+    ///         "leads",
+    ///         expression
+    ///             .clone()
+    ///             .to_keys_and_attributes_builder()
+    ///             .keys(key.clone())
+    ///             .build()
+    ///             .unwrap(),
+    ///     )
+    ///     .request_items(
+    ///         "customers",
+    ///         expression
+    ///             .to_keys_and_attributes_builder()
+    ///             .keys(key)
+    ///             .build()
+    ///             .unwrap(),
+    ///     )
+    ///     .send()
+    ///     .await?;
+    ///
+    /// # _ = output;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn to_keys_and_attributes_builder(self) -> KeysAndAttributesBuilder {
         KeysAndAttributes::builder()
             .set_projection_expression(self.projection_expression)
             .set_expression_attribute_names(self.expression_attribute_names)
     }
+
+    // TODO: Is the a more ergonomic way to use `to_keys_and_attributes_builder()`
+    //       that's in line with the rest of this crate?
 
     // TODO: This ultimately ends up being a part of a `TransactWriteItem`.
     //       See how that gets used in practice.
@@ -522,8 +567,7 @@ impl Expression {
 
 #[cfg(test)]
 mod test {
-
-    /// Exists to simplify the doc examples
+    /// Exists to format the doc examples
     #[allow(dead_code)]
     async fn example_put_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::{Expression, Path};
@@ -546,7 +590,7 @@ mod test {
         Ok(())
     }
 
-    /// Exists to simplify the doc examples
+    /// Exists to format the doc examples
     #[allow(dead_code)]
     async fn example_get_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::Expression;
@@ -568,7 +612,51 @@ mod test {
         Ok(())
     }
 
-    /// Exists to simplify the doc examples
+    /// Exists to format the doc examples
+    #[allow(dead_code)]
+    async fn example_to_keys_and_attributes_builder(
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        use std::collections::HashMap;
+
+        use crate::Expression;
+        use aws_config::BehaviorVersion;
+        use aws_sdk_dynamodb::{types::AttributeValue, Client};
+
+        let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
+
+        let expression = Expression::builder()
+            .with_projection(["name", "age"])
+            .build();
+
+        let key = HashMap::from([("id".to_string(), AttributeValue::N(42.to_string()))]);
+
+        let output = client
+            .batch_get_item()
+            .request_items(
+                "leads",
+                expression
+                    .clone()
+                    .to_keys_and_attributes_builder()
+                    .keys(key.clone())
+                    .build()
+                    .unwrap(),
+            )
+            .request_items(
+                "customers",
+                expression
+                    .to_keys_and_attributes_builder()
+                    .keys(key)
+                    .build()
+                    .unwrap(),
+            )
+            .send()
+            .await?;
+
+        _ = output;
+        Ok(())
+    }
+
+    /// Exists to format the doc examples
     #[allow(dead_code)]
     async fn example_scan() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::{Expression, Num, Path};
@@ -590,7 +678,7 @@ mod test {
         Ok(())
     }
 
-    /// Exists to simplify the doc examples
+    /// Exists to format the doc examples
     #[allow(dead_code)]
     async fn example_query() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::{Expression, Num, Path};
@@ -617,7 +705,7 @@ mod test {
         Ok(())
     }
 
-    /// Exists to simplify the doc examples
+    /// Exists to format the doc examples
     #[allow(dead_code)]
     async fn example_update_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
     {
@@ -642,7 +730,7 @@ mod test {
         Ok(())
     }
 
-    /// Exists to simplify the doc examples
+    /// Exists to format the doc examples
     #[allow(dead_code)]
     async fn example_delete_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
     {

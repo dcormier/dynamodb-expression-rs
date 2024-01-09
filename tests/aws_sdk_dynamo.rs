@@ -15,6 +15,7 @@ use dynamodb_expression::{
     Expression, Scalar,
 };
 use itermap::IterMap;
+use itertools::Itertools;
 use pretty_assertions::{assert_eq, assert_ne};
 
 use crate::dynamodb::{
@@ -60,6 +61,62 @@ async fn test_get_item(config: &Config) {
         .collect();
 
     assert_eq!(DebugItem(&expect), DebugItem(&got));
+}
+
+#[tokio::test]
+async fn batch_get_item() {
+    dynamodb_test("batch_get_item", |config| {
+        Box::pin(test_batch_get_item(config))
+    })
+    .await;
+}
+
+async fn test_batch_get_item(config: &Config) {
+    let item = fresh_item(config).await;
+    let got = get_known_item(config)
+        .await
+        .expect("Failed to get item")
+        .expect("Where is the item?");
+
+    assert_eq!(DebugItem(&item), DebugItem(&got));
+
+    let expression = Expression::builder()
+        .with_projection([ATTR_ID, ATTR_NEW_FIELD])
+        .build();
+
+    let got = config
+        .client()
+        .await
+        .batch_get_item()
+        .request_items(
+            config.table_name.clone(),
+            expression
+                .to_keys_and_attributes_builder()
+                .keys([(ATTR_ID.to_string(), AttributeValue::S(ITEM_ID.into()))].into())
+                .build()
+                .unwrap(),
+        )
+        .send()
+        .await
+        .expect("Failed to get item")
+        .responses
+        .expect("Where is the item?")
+        .remove(&config.table_name)
+        .expect("Should have found an item in the table")
+        // Make it so it implements `Debug`
+        .into_iter()
+        .map(DebugItem)
+        .collect_vec();
+
+    let expect = vec![DebugItem(
+        item.get_key_value(&ATTR_ID.to_string())
+            .into_iter()
+            .map_keys(Clone::clone)
+            .map_values(Clone::clone)
+            .collect::<HashMap<_, _>>(),
+    )];
+
+    assert_eq!(expect, got);
 }
 
 #[tokio::test]

@@ -48,14 +48,38 @@ use crate::{
 /// The safest way to construct a [`Path`] is to [parse] it.
 /// ```
 /// use dynamodb_expression::Path;
+/// # use dynamodb_expression::path::Element;
 /// # use pretty_assertions::assert_eq;
 ///
 /// let path: Path = "foo".parse().unwrap();
+/// assert_eq!(Path::from_iter([Element::new_name("foo")]), path);
+///
 /// let path: Path = "foo[3]".parse().unwrap();
+/// assert_eq!(
+///     Path::from_iter([Element::new_indexed_field("foo", 3)]),
+///     path,
+/// );
+///
 /// let path: Path = "foo[3][7]".parse().unwrap();
+/// assert_eq!(
+///     Path::from_iter([Element::new_indexed_field("foo", [3, 7])]),
+///     path,
+/// );
+///
 /// let path: Path = "foo[3][7].bar".parse().unwrap();
+/// assert_eq!(
+///     Path::from_iter([Element::new_indexed_field("foo", [3, 7]), Element::new_name("bar")]),
+///     path,
+/// );
+///
 /// let path: Path = "bar.baz".parse().unwrap();
+/// assert_eq!(Path::from_iter([Element::new_name("bar"), Element::new_name("baz")]), path);
+///
 /// let path: Path = "baz[0].foo".parse().unwrap();
+/// assert_eq!(
+///     Path::from_iter([Element::new_indexed_field("baz", 0), Element::new_name("foo")]),
+///     path,
+/// );
 /// ```
 ///
 /// This makes the common assumption that each path element is separated by a
@@ -67,7 +91,8 @@ use crate::{
 ///
 /// ## There are many ways to crate a `Path`
 ///
-/// Each of these are ways to create a [`Path`] instance for `foo[3][7].bar[2].baz`.
+/// Each of these are ways to create a [`Path`] instance for `foo[3][7].bar[2].baz`
+/// (where the `.` is treated as a separator for sub-attributes).
 /// ```
 /// use dynamodb_expression::{path::Element, Path};
 /// # use pretty_assertions::assert_eq;
@@ -191,7 +216,26 @@ pub struct Path {
 impl Path {
     /// Constructs a [`Path`] for a single attribute name (with no indexes or
     /// sub-attributes). If you have a attribute name with one or more indexes,
-    /// use [`Path::new_indexed_field`].
+    /// use [`Path::new_indexed_field`], or parse from a string (see examples in
+    /// the [`Path`] documentation).
+    ///
+    /// This treats `.` as a part of the attribute name rather than as a
+    /// separator for sub-attributes. To build a [`Path`] that contains a `.`
+    /// that is treated as a separator, see the examples in the [`Path`]
+    /// documentation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dynamodb_expression::path::{Path, Element};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let path = Path::new_name("foo");
+    /// assert_eq!(Path::from_iter([Element::new_name("foo")]), path);
+    ///
+    /// let path = Path::new_name("foo.bar");
+    /// assert_eq!(Path::from_iter([Element::new_name("foo.bar")]), path);
+    /// ```
     pub fn new_name<T>(name: T) -> Self
     where
         T: Into<Name>,
@@ -203,13 +247,23 @@ impl Path {
 
     /// Constructs a [`Path`] for an indexed field element of a document path.
     /// For example, `foo[3]` or `foo[7][4]`. If you have a attribute name with
-    /// no indexes, you can pass an empty collection, or use [`Path::new_name`].
+    /// no indexes, you can pass an empty collection, use [`Path::new_name`]
+    /// or parse from a string (see examples in the [`Path`] documentation).
     ///
-    /// `indexes` here can be an array, slice, `Vec` of, or single `usize`.
+    /// This treats `.` as a part of an attribute name rather than as a
+    /// separator for sub-attributes. To build a [`Path`] that contains a `.`
+    /// that is treated as a separator, see the examples in the [`Path`]
+    /// documentation.
+    ///
+    /// The `indexes` parameter, here, can be an array, slice, `Vec` of, or
+    /// single `usize`.
+    ///
+    /// # Examples
+    ///
     /// ```
-    /// # use dynamodb_expression::Path;
+    /// use dynamodb_expression::Path;
     /// # use pretty_assertions::assert_eq;
-    /// #
+    ///
     /// assert_eq!("foo[3]", Path::new_indexed_field("foo", 3).to_string());
     /// assert_eq!("foo[3]", Path::new_indexed_field("foo", [3]).to_string());
     /// assert_eq!("foo[3]", Path::new_indexed_field("foo", &[3]).to_string());
