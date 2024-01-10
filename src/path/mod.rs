@@ -89,7 +89,7 @@ use crate::{
 /// [below](#attribute-names-with--in-them) for examples of how to construct a
 /// [`Path`] when an attribute name contains a `.`.
 ///
-/// ## There are many ways to crate a `Path`
+/// ## There are many ways to create a `Path`
 ///
 /// Each of these are ways to create a [`Path`] instance for `foo[3][7].bar[2].baz`
 /// (where the `.` is treated as a separator for sub-attributes).
