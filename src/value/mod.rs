@@ -15,6 +15,7 @@ pub use value_or_ref::{Ref, StringOrRef};
 pub(crate) use value_or_ref::ValueOrRef;
 
 use core::fmt::{self, LowerExp, UpperExp};
+use std::error::Error;
 
 use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue};
 use base64::{engine::general_purpose, Engine as _};
@@ -318,12 +319,12 @@ impl From<List> for Value {
 }
 
 impl TryFrom<AttributeValue> for Value {
-    type Error = AttributeValue;
+    type Error = UnknownAttributeValueError;
 
-    /// On error, the unknown `AttributeValue` is returned. This will only occur
-    /// if a new `AttributeValue` variant is added to the AWS DynamoDB SDK.
+    /// This will only return an error if a new [`AttributeValue`] variant is
+    /// added to the AWS DynamoDB SDK and isn't supported yet.
     ///
-    /// See: [`AttributeValue::Unknown`]
+    /// See: [`UnknownAttributeValueError`], [`AttributeValue::Unknown`]
     fn try_from(value: AttributeValue) -> Result<Self, Self::Error> {
         Ok(match value {
             AttributeValue::B(value) => Scalar::Binary(value.into_inner()).into(),
@@ -345,17 +346,36 @@ impl TryFrom<AttributeValue> for Value {
                     .try_collect::<_, Vec<_>, _>()?,
             )
             .into(),
-            AttributeValue::N(value) => Num { n: value }.into(),
+            AttributeValue::N(n) => Num { n }.into(),
             AttributeValue::Ns(value) => {
                 NumSet::from_iter(value.into_iter().map(|n| Num { n })).into()
             }
             AttributeValue::Null(_value) => Scalar::Null.into(),
             AttributeValue::S(value) => Scalar::String(value).into(),
             AttributeValue::Ss(value) => StringSet::from(value).into(),
-            _ => return Err(value),
+            _ => return Err(UnknownAttributeValueError(value)),
         })
     }
 }
+
+/// An error that may occur when converting an [`AttributeValue`] into a
+/// [`Value`] (via `.try_from()`/`.try_into()`). This will only occur if a new
+/// `AttributeValue` variant is added to the AWS DynamoDB SDK and isn't
+/// supported yet.
+///
+/// The [`AttributeValue`] with the unknown variant is included in this error.
+///
+/// See: [`AttributeValue::Unknown`]
+#[derive(Debug)]
+pub struct UnknownAttributeValueError(pub AttributeValue);
+
+impl fmt::Display for UnknownAttributeValueError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unknown AttributeValue variant: {:?}", self.0)
+    }
+}
+
+impl Error for UnknownAttributeValueError {}
 
 impl From<serde_json::Value> for Value {
     /// Converts a [`serde_json::Value`] into a [`Value`].
