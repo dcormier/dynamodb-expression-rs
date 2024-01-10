@@ -151,10 +151,16 @@ use crate::{
 /// ]);
 /// # assert_eq!(expected, path);
 ///
-/// // You can append one [`Path`] to another.
-/// let mut path = Path::new_indexed_field("foo", [3, 7]);
-/// path.append(Path::new_indexed_field("bar", 2));
-/// path.append(Path::new_name("baz"));
+/// // You can append one `Path` to another.
+/// let mut path: Path = "foo[3][7]".parse().unwrap();
+/// path.append("bar[2].baz".parse().unwrap());
+/// # assert_eq!(expected, path);
+///
+/// // You can start with an empty `Path` and append one attribute at a time.
+/// let mut path = Path::default();
+/// path.append(Element::new_indexed_field("foo", [3, 7]).into());
+/// path.append(Element::new_indexed_field("bar", 2).into());
+/// path.append(Element::new_name("baz").into());
 /// # assert_eq!(expected, path);
 /// ```
 ///
@@ -208,7 +214,7 @@ use crate::{
 /// [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.TopLevelAttributes
 /// [parse]: str::parse
 /// [`Expression`]: crate::expression::Expression
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Path {
     pub(crate) elements: Vec<Element>,
 }
@@ -300,8 +306,34 @@ impl Path {
     /// path.append(sub_path);
     /// assert_eq!("foo[2].bar".parse::<Path>().unwrap(), path);
     /// ```
+    ///
+    /// ```
+    /// use dynamodb_expression::{Path, path::Element};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let mut path: Path = "foo[2]".parse().unwrap();
+    /// path.append("bar.baz".parse().unwrap());
+    /// assert_eq!("foo[2].bar.baz".parse::<Path>().unwrap(), path);
+    /// ```
+    ///
+    /// ```
+    /// use dynamodb_expression::{Path, path::Element};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let mut path = Path::default();
+    /// path.append(Element::new_indexed_field("foo", 2).into());
+    /// path.append(Element::new_name("bar").into());
+    /// assert_eq!("foo[2].bar".parse::<Path>().unwrap(), path);
+    /// ```
     pub fn append(&mut self, mut other: Path) {
-        self.elements.append(&mut other.elements);
+        self.elements.append(&mut other.elements)
+    }
+
+    /// Returns `true` if the [`Path`] contains no attributes.
+    ///
+    /// _Hint: you can use [`Path::append`] to add attributes to a [`Path`]._
+    pub fn is_empty(&self) -> bool {
+        self.elements.is_empty()
     }
 }
 
@@ -902,10 +934,11 @@ impl fmt::Display for PathParseError {
 mod test {
     use pretty_assertions::{assert_eq, assert_str_eq};
 
+    use super::{Element, Name, Path, PathParseError};
+    use crate::Num;
+
     #[test]
     fn parse_path() {
-        use crate::path::{Element, Name, Path, PathParseError};
-
         let path: Path = "foo".parse().unwrap();
         assert_eq!(Path::from(Name::from("foo")), path);
 
@@ -983,16 +1016,12 @@ mod test {
     /// Demonstration/proof of how a [`Path`] can be expressed to prove usability.
     #[test]
     fn express_path() {
-        use crate::path::{Element, Path};
-
         let _: Element = ("foo", 0).into();
         let _: Path = ("foo", 0).into();
     }
 
     #[test]
     fn display_name() {
-        use crate::path::Element;
-
         let path = Element::new_name("foo");
         assert_str_eq!("foo", path.to_string());
     }
@@ -1000,8 +1029,6 @@ mod test {
     #[test]
     fn display_indexed() {
         // Also tests that `Element::new_indexed_field()` can accept a few different types of input.
-
-        use crate::path::Element;
 
         // From a usize
         let path = Element::new_indexed_field("foo", 42);
@@ -1018,8 +1045,6 @@ mod test {
 
     #[test]
     fn display_path() {
-        use crate::path::{Element, Name, Path};
-
         let path: Path = ["foo", "bar"].into_iter().map(Name::from).collect();
         assert_str_eq!("foo.bar", path.to_string());
 
@@ -1041,8 +1066,6 @@ mod test {
 
     #[test]
     fn size() {
-        use crate::{path::Path, Num};
-
         assert_str_eq!(
             "size(a) = 0",
             "a".parse::<Path>()
@@ -1055,8 +1078,6 @@ mod test {
 
     #[test]
     fn begins_with_string() {
-        use crate::path::Path;
-
         let begins_with = Path::new_indexed_field("foo", 3).begins_with("foo");
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
 
@@ -1090,8 +1111,6 @@ mod test {
 
     #[test]
     fn contains() {
-        use crate::{Num, Path};
-
         // String
         let condition = Path::new_name("foo").contains("Quinn");
         assert_eq!(r#"contains(foo, "Quinn")"#, condition.to_string());
@@ -1103,5 +1122,13 @@ mod test {
         // Binary
         let condition = Path::new_name("foo").contains(Vec::<u8>::from("fish"));
         assert_eq!(r#"contains(foo, "ZmlzaA==")"#, condition.to_string());
+    }
+
+    #[test]
+    fn empty() {
+        assert!(Path::default().is_empty());
+        assert!(Path::from_iter(Vec::<Element>::new()).is_empty());
+        // TODO: Uncomment this when `Path::from_iter(Vec<Path>)` works.
+        // assert!(Path::from_iter(Vec::<Path>::new()).is_empty());
     }
 }
