@@ -15,8 +15,10 @@ type MapType<K, V> = std::collections::BTreeMap<K, V>;
 //       Using BTreeMap for stable testing.
 // type MapType<K, V> = std::collections::HashMap<K, V>;
 
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Document.Map>
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+/// Represents a [DynamoDB map][1].
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Document.Map
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct Map {
     map: MapType<Name, Value>,
 }
@@ -56,8 +58,13 @@ impl hash::Hash for Map {
     }
 }
 
+impl fmt::Debug for Map {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_map().entries(self.map.iter()).finish()
+    }
+}
+
 impl fmt::Display for Map {
-    // TODO: Test this
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_char('{')?;
 

@@ -5,9 +5,10 @@ use aws_sdk_dynamodb::types::AttributeValue;
 use super::{Scalar, Value};
 
 /// A collection of DynamoDB values that may not all be of the same type.
+/// Represents a [DynamoDB list][1].
 ///
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Document.List>
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Document.List
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct List {
     list: Vec<Value>,
 }
@@ -31,6 +32,12 @@ impl List {
                 .map(Value::into_attribute_value)
                 .collect(),
         )
+    }
+}
+
+impl fmt::Debug for List {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.list.iter()).finish()
     }
 }
 
