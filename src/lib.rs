@@ -25,7 +25,7 @@ let query_output = Expression::builder()
     )
     .with_projection(["name", "age"])
     .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
-    .build()?
+    .build()
     .query(&client)
     .table_name("people")
     .send()
@@ -63,7 +63,7 @@ let expression = Expression::builder()
     )
     .with_projection(["name", "age"])
     .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
-    .build()?;
+    .build();
 
 let input = QueryInput {
     filter_expression: expression.filter_expression,
@@ -158,7 +158,7 @@ mod examples {
             )
             .with_projection(["name", "age"])
             .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
-            .build()?
+            .build()
             .query(&client)
             .table_name("people")
             .send()
@@ -184,7 +184,7 @@ mod examples {
             )
             .with_projection(["name", "age"])
             .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
-            .build()?;
+            .build();
 
         let input = QueryInput {
             filter_expression: expression.filter_expression,

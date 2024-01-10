@@ -60,7 +60,6 @@ fn put() {
                 .or(Path::new_name("name").size().equal(Scalar::new_num(0))),
         )
         .build()
-        .unwrap()
         .to_put_builder()
         .table_name("people")
         .item("name", AttributeValue::S("Jane".into()))
@@ -123,7 +122,6 @@ fn query() {
         .with_projection(["name", "age"])
         .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
         .build()
-        .unwrap()
         .to_query_input_builder()
         .table_name("the_table")
         .build()
@@ -154,7 +152,7 @@ async fn query_example() -> Result<(), Box<dyn Error + Send + Sync>> {
         )
         .with_projection(["name", "age"])
         .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
-        .build()?
+        .build()
         .query(&client)
         .table_name("your_table")
         .send()
