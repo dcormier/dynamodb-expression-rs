@@ -44,6 +44,7 @@ async fn test_get_item(config: &Config) {
     let got = Expression::builder()
         .with_projection([ATTR_ID, ATTR_NEW_FIELD])
         .build()
+        .unwrap()
         .get_item(config.client().await)
         .table_name(config.table_name.clone())
         .key(ATTR_ID, AttributeValue::S(ITEM_ID.into()))
@@ -82,7 +83,8 @@ async fn test_batch_get_item(config: &Config) {
 
     let expression = Expression::builder()
         .with_projection([ATTR_ID, ATTR_NEW_FIELD])
-        .build();
+        .build()
+        .unwrap();
 
     let got = config
         .client()
@@ -144,6 +146,7 @@ async fn test_scan(config: &Config) {
 
     let [got]: [_; 1] = Expression::builder()
         .build()
+        .unwrap()
         .scan(config.client().await)
         .table_name(&config.table_name)
         .send()
@@ -188,6 +191,7 @@ async fn test_scan_list_contains(config: &Config) {
                 .contains(StringSet::new(["a", "b", "c"])),
         )
         .build()
+        .unwrap()
         .scan(client)
         .table_name(&config.table_name)
         .send()
@@ -232,6 +236,7 @@ async fn test_scan_list_not_contains(config: &Config) {
                 .not(),
         )
         .build()
+        .unwrap()
         .scan(client)
         .table_name(&config.table_name)
         .send()
@@ -290,6 +295,7 @@ async fn test_update_set(config: &Config, client: &Client) {
                 ),
         )
         .build()
+        .unwrap()
         .update_item(client)
         .table_name(&config.table_name)
         .set_key(item_key(&item).into());
@@ -307,6 +313,7 @@ async fn test_update_set(config: &Config, client: &Client) {
                 .list(["A new value at the end"]),
         )
         .build()
+        .unwrap()
         .update_item(client)
         .set_key(item_key(&item).into())
         .table_name(&config.table_name)
@@ -400,6 +407,7 @@ async fn test_update_remove(config: &Config, client: &Client) {
             Path::from_iter([ATTR_MAP, ATTR_NULL].map(Name::from)),
         ]))
         .build()
+        .unwrap()
         .update_item(client)
         .table_name(&config.table_name)
         .set_key(item_key(&item).into());
@@ -481,6 +489,7 @@ async fn test_update_add(config: &Config, client: &Client) {
             Set::new_string_set(["d", "e", "f"]),
         ))
         .build()
+        .unwrap()
         .update_item(client)
         .table_name(&config.table_name)
         .set_key(item_key(&item).into());
@@ -498,6 +507,7 @@ async fn test_update_add(config: &Config, client: &Client) {
             Num::new(-3.5),
         ))
         .build()
+        .unwrap()
         .update_item(client)
         .table_name(&config.table_name)
         .set_key(item_key(&item).into());
@@ -579,6 +589,7 @@ async fn test_update_delete(config: &Config, client: &Client) {
             Set::new_string_set(["a", "c", "d"]),
         ))
         .build()
+        .unwrap()
         .update_item(client)
         .table_name(&config.table_name)
         .set_key(item_key(&item).into());
@@ -691,6 +702,7 @@ async fn query_known_item(
                 .equal(Scalar::new_string(ITEM_ID)),
         )
         .build()
+        .unwrap()
         .query(config.client().await)
         .table_name(config.table_name.clone())
         .send()
@@ -709,6 +721,7 @@ async fn get_known_item(
 ) -> Result<Option<HashMap<String, AttributeValue>>, SdkError<GetItemError>> {
     let output = Expression::builder()
         .build()
+        .unwrap()
         .get_item(config.client().await)
         .table_name(config.table_name.clone())
         .key(ATTR_ID, AttributeValue::S(ITEM_ID.into()))

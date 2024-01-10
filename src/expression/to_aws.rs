@@ -93,7 +93,7 @@ impl Expression {
     ///
     /// let output = Expression::builder()
     ///     .with_condition(Path::new_name("name").attribute_not_exists())
-    ///     .build()
+    ///     .build()?
     ///     .put_item(&client)
     ///     .table_name("people")
     ///     .item("name", AttributeValue::S(String::from("Jill")))
@@ -161,7 +161,7 @@ impl Expression {
     ///
     /// let output = Expression::builder()
     ///     .with_projection(["name", "age"])
-    ///     .build()
+    ///     .build()?
     ///     .get_item(&client)
     ///     .table_name("people")
     ///     .key("id", AttributeValue::N(42.to_string()))
@@ -248,7 +248,7 @@ impl Expression {
     /// let output = Expression::builder()
     ///     .with_condition(age.clone().equal(Num::new(40)))
     ///     .with_update(age.math().add(1))
-    ///     .build()
+    ///     .build()?
     ///     .update_item(&client)
     ///     .table_name("people")
     ///     .key("name", AttributeValue::S(String::from("Jack")))
@@ -326,7 +326,7 @@ impl Expression {
     ///
     /// let output = Expression::builder()
     ///     .with_condition(Path::new_name("age").less_than(Num::new(20)))
-    ///     .build()
+    ///     .build()?
     ///     .delete_item(&client)
     ///     .table_name("people")
     ///     .key("name", AttributeValue::S(String::from("Jack")))
@@ -405,7 +405,7 @@ impl Expression {
     ///     )
     ///     .with_projection(["name", "age"])
     ///     .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
-    ///     .build()
+    ///     .build()?
     ///     .query(&client)
     ///     .table_name("people")
     ///     .send()
@@ -473,7 +473,7 @@ impl Expression {
     /// let output = Expression::builder()
     ///     .with_filter(Path::new_name("age").greater_than_or_equal(Num::new(25)))
     ///     .with_projection(["name", "age"])
-    ///     .build()
+    ///     .build()?
     ///     .scan(&client)
     ///     .table_name("people")
     ///     .send()
@@ -510,7 +510,7 @@ impl Expression {
     ///
     /// let expression = Expression::builder()
     ///     .with_projection(["name", "age"])
-    ///     .build();
+    ///     .build()?;
     ///
     /// let key = HashMap::from([("id".to_string(), AttributeValue::N(42.to_string()))]);
     ///
@@ -578,7 +578,7 @@ mod test {
 
         let output = Expression::builder()
             .with_condition(Path::new_name("name").attribute_not_exists())
-            .build()
+            .build()?
             .put_item(&client)
             .table_name("people")
             .item("name", AttributeValue::S(String::from("Jill")))
@@ -601,7 +601,7 @@ mod test {
 
         let output = Expression::builder()
             .with_projection(["name", "age"])
-            .build()
+            .build()?
             .get_item(&client)
             .table_name("people")
             .key("id", AttributeValue::N(42.to_string()))
@@ -626,7 +626,7 @@ mod test {
 
         let expression = Expression::builder()
             .with_projection(["name", "age"])
-            .build();
+            .build()?;
 
         let key = HashMap::from([("id".to_string(), AttributeValue::N(42.to_string()))]);
 
@@ -668,7 +668,7 @@ mod test {
         let output = Expression::builder()
             .with_filter(Path::new_name("age").greater_than_or_equal(Num::new(25)))
             .with_projection(["name", "age"])
-            .build()
+            .build()?
             .scan(&client)
             .table_name("people")
             .send()
@@ -695,7 +695,7 @@ mod test {
             )
             .with_projection(["name", "age"])
             .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
-            .build()
+            .build()?
             .query(&client)
             .table_name("people")
             .send()
@@ -719,7 +719,7 @@ mod test {
         let output = Expression::builder()
             .with_condition(age.clone().equal(Num::new(40)))
             .with_update(age.math().add(1))
-            .build()
+            .build()?
             .update_item(&client)
             .table_name("people")
             .key("name", AttributeValue::S(String::from("Jack")))
@@ -742,7 +742,7 @@ mod test {
 
         let output = Expression::builder()
             .with_condition(Path::new_name("age").less_than(Num::new(20)))
-            .build()
+            .build()?
             .delete_item(&client)
             .table_name("people")
             .key("name", AttributeValue::S(String::from("Jack")))
@@ -768,7 +768,8 @@ mod test {
                 ),
             )
             .with_projection(["name", "age"])
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(None, expression.condition_expression);
 
         let filter = expression
@@ -806,7 +807,8 @@ mod test {
             )
             .with_projection(["name", "age"])
             .with_key_condition(Key::from(Name::from("id")).equal(Num::new(42)))
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(None, expression.condition_expression);
 
         let filter = expression
@@ -845,7 +847,8 @@ mod test {
                         .greater_than_or_equal(Num::new(25)),
                 ),
             )
-            .build();
+            .build()
+            .unwrap();
 
         let condition = expression
             .condition_expression

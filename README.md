@@ -23,7 +23,7 @@ let query_output = Expression::builder()
     )
     .with_projection(["name", "age"])
     .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
-    .build()
+    .build()?
     .query(&client)
     .table_name("your_table")
     .send()

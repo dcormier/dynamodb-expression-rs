@@ -39,7 +39,8 @@ impl Assign {
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let set = Path::new_name("foo").assign(Num::new(7))
+    /// let set = Path::new_name("foo")
+    ///     .assign(Num::new(7))
     ///     .and(Path::new_name("bar").assign("a value"));
     /// assert_eq!(r#"SET foo = 7, bar = "a value""#, set.to_string());
     /// ```

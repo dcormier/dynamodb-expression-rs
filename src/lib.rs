@@ -10,9 +10,7 @@ many methods for building various expressions.
 An example showing a how to use this crate to perform a query:
 
 ```no_run
-# async fn example_query(
-# ) -> Result<(), aws_sdk_dynamodb::error::SdkError<aws_sdk_dynamodb::operation::query::QueryError>>
-# {
+# async fn example_query() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 use aws_config::BehaviorVersion;
 use aws_sdk_dynamodb::Client;
 use dynamodb_expression::{Expression, Num, Path};
@@ -27,9 +25,9 @@ let query_output = Expression::builder()
     )
     .with_projection(["name", "age"])
     .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
-    .build()
+    .build()?
     .query(&client)
-    .table_name("your_table")
+    .table_name("people")
     .send()
     .await?;
 #
@@ -50,7 +48,7 @@ that are in the `expression_attribute_values` field into [`rusoto_dynamodb::Attr
 The rest of the fields are already what's needed.
 
 ```no_run
-# async fn example_rusoto() -> Result<(), rusoto_core::RusotoError<rusoto_dynamodb::QueryError>> {
+# async fn example_rusoto() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue as AwsAv};
 use dynamodb_expression::{Expression, Num, Path};
 use itermap::IterMap;
@@ -65,7 +63,7 @@ let expression = Expression::builder()
     )
     .with_projection(["name", "age"])
     .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
-    .build();
+    .build()?;
 
 let input = QueryInput {
     filter_expression: expression.filter_expression,
@@ -145,9 +143,7 @@ pub use value::{Map, Num, Scalar, Set, Value};
 #[cfg(test)]
 mod examples {
     #[allow(dead_code)]
-    async fn example_query(
-    ) -> Result<(), aws_sdk_dynamodb::error::SdkError<aws_sdk_dynamodb::operation::query::QueryError>>
-    {
+    async fn example_query() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         use crate::{Expression, Num, Path};
         use aws_config::BehaviorVersion;
         use aws_sdk_dynamodb::Client;
@@ -162,7 +158,7 @@ mod examples {
             )
             .with_projection(["name", "age"])
             .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
-            .build()
+            .build()?
             .query(&client)
             .table_name("people")
             .send()
@@ -173,7 +169,7 @@ mod examples {
     }
 
     #[allow(dead_code)]
-    async fn example_rusoto() -> Result<(), rusoto_core::RusotoError<rusoto_dynamodb::QueryError>> {
+    async fn example_rusoto() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         use crate::{Expression, Num, Path};
         use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue as AwsAv};
         use itermap::IterMap;
@@ -188,7 +184,7 @@ mod examples {
             )
             .with_projection(["name", "age"])
             .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
-            .build();
+            .build()?;
 
         let input = QueryInput {
             filter_expression: expression.filter_expression,

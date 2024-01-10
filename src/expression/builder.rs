@@ -1,3 +1,4 @@
+use core::fmt;
 use std::collections::HashMap;
 
 use itermap::IterMap;
@@ -27,6 +28,7 @@ pub struct Builder {
     projection: Option<Vec<Name>>,
     names: HashMap<Name, String>,
     values: HashMap<Value, Ref>,
+    has_empty_path: bool,
 }
 
 /// Functions and methods for building an `Expression`.
@@ -78,8 +80,9 @@ impl Builder {
     /// Each of these examples produce the same projection expression.
     ///
     /// ```
-    /// # use dynamodb_expression::{path::Name, Expression};
+    /// # fn example_with_projection() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     /// # use pretty_assertions::assert_eq;
+    /// # use dynamodb_expression::{path::Name, Expression};
     /// #
     /// let expected = Expression {
     ///     condition_expression: None,
@@ -98,30 +101,33 @@ impl Builder {
     ///
     /// let expression = Expression::builder()
     ///     .with_projection(["id", "name"])
-    ///     .build();
+    ///     .build()?;
     /// assert_eq!(expected, expression);
     ///
     /// let expression = Expression::builder()
     ///     .with_projection([String::from("id"), String::from("name")])
-    ///     .build();
+    ///     .build()?;
     /// assert_eq!(expected, expression);
     ///
     /// let expression = Expression::builder()
     ///     .with_projection([Name::from("id"), Name::from("name")])
-    ///     .build();
+    ///     .build()?;
     /// assert_eq!(expected, expression);
     ///
     /// // Anything that's `IntoIterator` will work. A `Vec`, for example.
     /// let expression = Expression::builder()
     ///     .with_projection(vec!["id", "name"])
-    ///     .build();
+    ///     .build()?;
     /// assert_eq!(expected, expression);
     ///
     /// // Or an `Iterator`.
     /// let expression = Expression::builder()
     ///     .with_projection(["id", "name"].into_iter().map(Name::from))
-    ///     .build();
+    ///     .build()?;
     /// assert_eq!(expected, expression);
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn with_projection<I, T>(mut self, names: I) -> Self
     where
@@ -143,7 +149,7 @@ impl Builder {
     }
 
     /// Builds the [`Expression`].
-    pub fn build(self) -> Expression {
+    pub fn build(self) -> Result<Expression, Error> {
         let Self {
             condition,
             key_condition,
@@ -152,9 +158,14 @@ impl Builder {
             projection,
             names,
             values,
+            has_empty_path,
         } = self;
 
-        Expression {
+        if has_empty_path {
+            return Err(Error::EmptyPath);
+        }
+
+        Ok(Expression {
             condition_expression: condition.map(Into::into),
             key_condition_expression: key_condition.map(Into::into),
             update_expression: {
@@ -187,7 +198,7 @@ impl Builder {
                     .collect(),
             )
             .empty_into_none(),
-        }
+        })
     }
 
     fn process_condition(&mut self, condition: Condition) -> Condition {
@@ -337,6 +348,12 @@ impl Builder {
     }
 
     fn process_path(&mut self, mut path: Path) -> Path {
+        if path.elements.is_empty() {
+            self.has_empty_path = true;
+
+            return path;
+        }
+
         path.elements = path
             .elements
             .into_iter()
@@ -380,6 +397,21 @@ impl Builder {
     }
 }
 
+#[derive(Debug)]
+pub enum Error {
+    EmptyPath,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::EmptyPath => f.write_str("empty path included in expression"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
+
 #[cfg(test)]
 mod test {
     use aws_sdk_dynamodb::operation::query::builders::QueryInputBuilder;
@@ -393,7 +425,8 @@ mod test {
     fn empty_projection() {
         let expression = Expression::builder()
             .with_projection(Vec::<Name>::default())
-            .build();
+            .build()
+            .unwrap();
         assert_eq!(
             Expression {
                 condition_expression: None,
@@ -416,7 +449,7 @@ mod test {
 #[cfg(test)]
 mod doc_examples {
     #[test]
-    fn example_projection_expression() {
+    fn example_with_projection() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         use crate::{path::Name, Expression};
         use pretty_assertions::assert_eq;
 
@@ -437,29 +470,31 @@ mod doc_examples {
 
         let expression = Expression::builder()
             .with_projection(["id", "name"])
-            .build();
+            .build()?;
         assert_eq!(expected, expression);
 
         let expression = Expression::builder()
             .with_projection([String::from("id"), String::from("name")])
-            .build();
+            .build()?;
         assert_eq!(expected, expression);
 
         let expression = Expression::builder()
             .with_projection([Name::from("id"), Name::from("name")])
-            .build();
+            .build()?;
         assert_eq!(expected, expression);
 
         // Anything that's `IntoIterator` will work. A `Vec`, for example.
         let expression = Expression::builder()
             .with_projection(vec!["id", "name"])
-            .build();
+            .build()?;
         assert_eq!(expected, expression);
 
         // Or an `Iterator`.
         let expression = Expression::builder()
             .with_projection(["id", "name"].into_iter().map(Name::from))
-            .build();
+            .build()?;
         assert_eq!(expected, expression);
+
+        Ok(())
     }
 }
