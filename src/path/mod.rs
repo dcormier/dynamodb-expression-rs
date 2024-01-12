@@ -48,39 +48,42 @@ use crate::{
 ///
 /// The safest way to construct a [`Path`] is to [parse] it.
 /// ```
-/// use dynamodb_expression::Path;
-/// # use dynamodb_expression::path::Element;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use dynamodb_expression::{path::Element, Path};
 /// # use pretty_assertions::assert_eq;
 ///
-/// let path: Path = "foo".parse().unwrap();
+/// let path: Path = "foo".parse()?;
 /// assert_eq!(Path::from_iter([Element::new_name("foo")]), path);
 ///
-/// let path: Path = "foo[3]".parse().unwrap();
+/// let path: Path = "foo[3]".parse()?;
 /// assert_eq!(
 ///     Path::from_iter([Element::new_indexed_field("foo", 3)]),
 ///     path,
 /// );
 ///
-/// let path: Path = "foo[3][7]".parse().unwrap();
+/// let path: Path = "foo[3][7]".parse()?;
 /// assert_eq!(
 ///     Path::from_iter([Element::new_indexed_field("foo", [3, 7])]),
 ///     path,
 /// );
 ///
-/// let path: Path = "foo[3][7].bar".parse().unwrap();
+/// let path: Path = "foo[3][7].bar".parse()?;
 /// assert_eq!(
 ///     Path::from_iter([Element::new_indexed_field("foo", [3, 7]), Element::new_name("bar")]),
 ///     path,
 /// );
 ///
-/// let path: Path = "bar.baz".parse().unwrap();
+/// let path: Path = "bar.baz".parse()?;
 /// assert_eq!(Path::from_iter([Element::new_name("bar"), Element::new_name("baz")]), path);
 ///
-/// let path: Path = "baz[0].foo".parse().unwrap();
+/// let path: Path = "baz[0].foo".parse()?;
 /// assert_eq!(
 ///     Path::from_iter([Element::new_indexed_field("baz", 0), Element::new_name("foo")]),
 ///     path,
 /// );
+/// #
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// This makes the common assumption that each path element is separated by a
@@ -95,6 +98,7 @@ use crate::{
 /// Each of these are ways to create a [`Path`] instance for `foo[3][7].bar[2].baz`
 /// (where the `.` is treated as a separator for sub-attributes).
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use dynamodb_expression::{path::Element, Path};
 /// # use pretty_assertions::assert_eq;
 /// #
@@ -105,7 +109,7 @@ use crate::{
 /// # ]);
 ///
 /// // A `Path` can be parsed from a string
-/// let path: Path = "foo[3][7].bar[2].baz".parse().unwrap();
+/// let path: Path = "foo[3][7].bar[2].baz".parse()?;
 /// # assert_eq!(expected, path);
 ///
 /// // `Path` implements `FromIterator` for items that are `Element`s.
@@ -153,8 +157,8 @@ use crate::{
 /// # assert_eq!(expected, path);
 ///
 /// // You can append one `Path` to another.
-/// let mut path: Path = "foo[3][7]".parse().unwrap();
-/// path.append("bar[2].baz".parse().unwrap());
+/// let mut path: Path = "foo[3][7]".parse()?;
+/// path.append("bar[2].baz".parse()?);
 /// # assert_eq!(expected, path);
 ///
 /// // You can start with an empty `Path` and append one attribute at a time.
@@ -163,6 +167,9 @@ use crate::{
 /// path.append(Element::new_indexed_field("bar", 2).into());
 /// path.append(Element::new_name("baz").into());
 /// # assert_eq!(expected, path);
+/// #
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// A [`Name`] can be converted into a [`Path`].
