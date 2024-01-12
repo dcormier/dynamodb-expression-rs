@@ -1,3 +1,7 @@
+//! Types related to [DynamoDB document paths][1]. For more, see [`Path`].
+//!
+//! [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
+
 mod element;
 mod name;
 
@@ -21,12 +25,9 @@ use crate::{
     key::Key,
     operand::{Operand, Size},
     update::{
-        add::AddValue,
-        set::{
-            if_not_exists::Builder as IfNotExistsBuilder,
-            list_append::Builder as ListAppendBuilder, math::Builder as MathBuilder,
-        },
-        Add, Assign, Delete, IfNotExists, ListAppend, Math, Remove,
+        if_not_exists::Builder as IfNotExistsBuilder, list_append::Builder as ListAppendBuilder,
+        math::Builder as MathBuilder, Add, AddValue, Assign, Delete, IfNotExists, ListAppend, Math,
+        Remove,
     },
     value::{self, StringOrRef, Value},
 };

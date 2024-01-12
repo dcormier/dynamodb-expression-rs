@@ -130,14 +130,14 @@ pub use ::num;
 pub use ::serde_json;
 
 pub mod condition;
-pub mod expression;
+mod expression;
 pub mod key;
 pub mod operand;
 pub mod path;
 pub mod update;
 pub mod value;
 
-pub use expression::Expression;
+pub use expression::{Builder, Expression};
 pub use path::Path;
 pub use value::{Map, Num, Scalar, Set, Value};
 

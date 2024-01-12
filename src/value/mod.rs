@@ -1,3 +1,8 @@
+//! Types related to values used in [DynamoDB update expressions][1]. For more, see [`Update`].
+//!
+//! [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
+//! [`Update`]: crate::update::Update
+
 mod list;
 mod map;
 mod num;

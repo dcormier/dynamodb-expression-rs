@@ -1,3 +1,7 @@
+//! Types related to operands for [DynamoDB condition and filter expressions][1].
+//!
+//! [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
+
 mod operand_type;
 mod size;
 

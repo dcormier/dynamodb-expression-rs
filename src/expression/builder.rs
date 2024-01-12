@@ -13,10 +13,15 @@ use crate::{
     key::KeyCondition,
     operand::{Operand, OperandType, Size},
     path::{Element, Name, Path},
-    update::{set::SetAction, Set, Update},
+    update::{Set, SetAction, Update},
     value::{Ref, Value, ValueOrRef},
 };
 
+/// For building an [`Expression`]. Finish with [`.build()`].
+///
+/// See: [`Expression::builder`]
+///
+/// [`.build()`]: Self::build
 #[must_use = "Call `.build()` to create the `Expression`"]
 #[derive(Debug, Default, Clone)]
 pub struct Builder {

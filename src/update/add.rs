@@ -49,9 +49,11 @@ impl fmt::Display for Add {
     }
 }
 
-/// A value that can be used for the `ADD` operation in a DynamoDB update request.
+/// A value that can be used for the [`ADD` operation][1] in a DynamoDB update expression.
 ///
 /// See also: [`Path::add`], [`Add`]
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.ADD
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddValue {
     Set(Set),

@@ -2,19 +2,21 @@
 //!
 //! [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
 
-pub mod add;
-pub mod delete;
-pub mod remove;
-pub mod set;
+mod add;
+mod delete;
+mod remove;
+mod set;
 mod set_remove;
 
 use core::fmt;
 
 pub use self::{
-    add::Add,
+    add::{Add, AddValue},
     delete::Delete,
     remove::Remove,
-    set::{Assign, IfNotExists, ListAppend, Math, Set, SetAction},
+    set::{
+        if_not_exists, list_append, math, Assign, IfNotExists, ListAppend, Math, Set, SetAction,
+    },
     set_remove::SetRemove,
 };
 

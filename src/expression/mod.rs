@@ -1,3 +1,7 @@
+//! Types related to [DynamoDB expressions][1].
+//!
+//! [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.html
+
 mod builder;
 mod to_aws;
 
@@ -10,7 +14,7 @@ use aws_sdk_dynamodb::types::AttributeValue;
 /// The data needed for various [`aws_sdk_dynamodb`] input types.
 ///
 /// Use [`Builder`] (via [`Expression::builder`]) to create a DynamoDB
-/// condition, filter, key condition, or update expression.
+/// condition, filter, projection, key condition, or update expression.
 ///
 /// You can use these methods (see their docs for examples) to consume this
 /// and set up a DynamoDB operation:

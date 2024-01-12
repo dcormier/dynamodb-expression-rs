@@ -1,3 +1,7 @@
+//! Types related to conditions for [DynamoDB condition and filter expressions][1].
+//!
+//! [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
+
 mod and;
 mod attribute_exists;
 mod attribute_not_exists;

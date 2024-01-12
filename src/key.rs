@@ -1,3 +1,7 @@
+//! Types related to [DynamoDB key condition expressions][1].
+//!
+//! [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
+
 use core::fmt;
 
 use crate::{
