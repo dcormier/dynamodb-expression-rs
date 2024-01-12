@@ -57,17 +57,23 @@ pub enum Condition {
 impl Condition {
     /// A [DynamoDB logical `AND`][1] condition.
     ///
+    /// See also: [`And`]
+    ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use dynamodb_expression::Path;
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let a = Path::new_name("a");
-    /// let b = Path::new_name("b");
-    /// let c = Path::new_name("c");
-    /// let d = Path::new_name("d");
+    /// let a = "a".parse::<Path>()?;
+    /// let b = "b".parse::<Path>()?;
+    /// let c = "c".parse::<Path>()?;
+    /// let d = "d".parse::<Path>()?;
     ///
     /// let condition = a.greater_than(b).and(c.less_than(d));
     /// assert_eq!("a > b AND c < d", condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
@@ -83,17 +89,23 @@ impl Condition {
 
     /// A [DynamoDB logical `OR`][1] condition.
     ///
+    /// See also: [`Or`]
+    ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use dynamodb_expression::Path;
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let a = Path::new_name("a");
-    /// let b = Path::new_name("b");
-    /// let c = Path::new_name("c");
-    /// let d = Path::new_name("d");
+    /// let a = "a".parse::<Path>()?;
+    /// let b = "b".parse::<Path>()?;
+    /// let c = "c".parse::<Path>()?;
+    /// let d = "d".parse::<Path>()?;
     ///
     /// let condition = a.greater_than(b).or(c.less_than(d));
     /// assert_eq!("a > b OR c < d", condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
@@ -109,15 +121,21 @@ impl Condition {
 
     /// A [DynamoDB logical `NOT`][1] condition.
     ///
+    /// See also: [`Not`]
+    ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use dynamodb_expression::Path;
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let a = Path::new_name("a");
-    /// let b = Path::new_name("b");
+    /// let a = "a".parse::<Path>()?;
+    /// let b = "b".parse::<Path>()?;
     ///
     /// let condition = a.greater_than(b).not();
     /// assert_eq!("NOT a > b", condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
@@ -128,22 +146,28 @@ impl Condition {
 
     /// Wraps a condition in [parentheses][1].
     ///
+    /// See also: [`Parenthetical`]
+    ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use dynamodb_expression::Path;
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let a = Path::new_name("a");
-    /// let b = Path::new_name("b");
-    /// let c = Path::new_name("c");
-    /// let d = Path::new_name("d");
+    /// let a = "a".parse::<Path>()?;
+    /// let b = "b".parse::<Path>()?;
+    /// let c = "c".parse::<Path>()?;
+    /// let d = "d".parse::<Path>()?;
     ///
     /// let condition = a.greater_than(b).parenthesize().and(c.less_than(d).parenthesize());
     /// assert_eq!("(a > b) AND (c < d)", condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Parentheses
     pub fn parenthesize(self) -> Self {
-        Self::Parenthetical(self.into())
+        Self::Parenthetical(Parenthetical::from(self))
     }
 }
 
@@ -152,15 +176,21 @@ impl ops::Not for Condition {
 
     /// A [DynamoDB logical `NOT`][1] condition.
     ///
+    /// See also: [`Condition::not`], [`Not`]
+    ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use dynamodb_expression::Path;
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let a = Path::new_name("a");
-    /// let b = Path::new_name("b");
+    /// let a = "a".parse::<Path>()?;
+    /// let b = "b".parse::<Path>()?;
     ///
     /// let condition = !a.greater_than(b);
     /// assert_eq!("NOT a > b", condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
@@ -308,10 +338,10 @@ pub(crate) mod test {
         use crate::Path;
         use pretty_assertions::assert_eq;
 
-        let a = Path::new_name("a");
-        let b = Path::new_name("b");
-        let c = Path::new_name("c");
-        let d = Path::new_name("d");
+        let a = "a".parse::<Path>().unwrap();
+        let b = "b".parse::<Path>().unwrap();
+        let c = "c".parse::<Path>().unwrap();
+        let d = "d".parse::<Path>().unwrap();
 
         let condition = a.greater_than(b).and(c.less_than(d));
         assert_eq!("a > b AND c < d", condition.to_string());
@@ -322,10 +352,10 @@ pub(crate) mod test {
         use crate::Path;
         use pretty_assertions::assert_eq;
 
-        let a = Path::new_name("a");
-        let b = Path::new_name("b");
-        let c = Path::new_name("c");
-        let d = Path::new_name("d");
+        let a = "a".parse::<Path>().unwrap();
+        let b = "b".parse::<Path>().unwrap();
+        let c = "c".parse::<Path>().unwrap();
+        let d = "d".parse::<Path>().unwrap();
 
         let condition = a.greater_than(b).or(c.less_than(d));
         assert_eq!("a > b OR c < d", condition.to_string());
@@ -336,8 +366,8 @@ pub(crate) mod test {
         use crate::Path;
         use pretty_assertions::assert_eq;
 
-        let a = Path::new_name("a");
-        let b = Path::new_name("b");
+        let a = "a".parse::<Path>().unwrap();
+        let b = "b".parse::<Path>().unwrap();
 
         let condition = a.greater_than(b).not();
         assert_eq!("NOT a > b", condition.to_string());
@@ -348,8 +378,8 @@ pub(crate) mod test {
         use crate::Path;
         use pretty_assertions::assert_eq;
 
-        let a = Path::new_name("a");
-        let b = Path::new_name("b");
+        let a = "a".parse::<Path>().unwrap();
+        let b = "b".parse::<Path>().unwrap();
 
         let condition = !a.greater_than(b);
         assert_eq!("NOT a > b", condition.to_string());

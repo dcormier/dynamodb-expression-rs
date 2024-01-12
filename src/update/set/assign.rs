@@ -11,7 +11,7 @@ use super::Set;
 /// Represents assigning a value of an [attribute][1], [list][2], or [map][3]
 /// for a DynamoDB update expression.
 ///
-/// See also: [`Path::assign`]
+/// See also: [`Path::set`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.ModifyingAttributes
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingListElements
@@ -24,6 +24,9 @@ pub struct Assign {
 }
 
 impl Assign {
+    /// Allows for manual creation of an [`Assign`] statement.
+    ///
+    /// See also: [`Path::set`]
     pub fn new<P, V>(path: P, value: V) -> Self
     where
         P: Into<Path>,
@@ -38,22 +41,27 @@ impl Assign {
     /// Add an additional [`Set`] or [`Remove`] to this expression.
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let set = Path::new_name("foo")
+    /// let set = "foo"
+    ///     .parse::<Path>()?
     ///     .set(Num::new(7))
-    ///     .and(Path::new_name("bar").set("a value"))
-    ///     .and(Path::new_name("baz").remove());
+    ///     .and("bar".parse::<Path>()?.set("a value"))
+    ///     .and("baz".parse::<Path>()?.remove());
     /// assert_eq!(r#"SET foo = 7, bar = "a value" REMOVE baz"#, set.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [`Remove`]: crate::update::Remove
-    pub fn and<T>(self, action: T) -> SetRemove
+    pub fn and<T>(self, other: T) -> SetRemove
     where
         T: Into<SetRemove>,
     {
-        Set::from(self).and(action)
+        Set::from(self).and(other)
     }
 }
 
@@ -77,9 +85,9 @@ mod test {
     use super::Assign;
 
     #[test]
-    fn and() {
-        let assign: Assign = Path::new_name("foo").set("a value");
-        let if_not_exists: IfNotExists = Path::new_name("bar").if_not_exists().set(Num::new(8));
+    fn and() -> Result<(), Box<dyn std::error::Error>> {
+        let assign: Assign = "foo".parse::<Path>()?.set("a value");
+        let if_not_exists: IfNotExists = "bar".parse::<Path>()?.if_not_exists().set(Num::new(8));
 
         // Should be able to concatenate anything that can be turned into a SetAction.
 
@@ -101,7 +109,7 @@ mod test {
 
         let set: Set = [
             SetAction::from(if_not_exists),
-            SetAction::from(Path::new_name("baz").math().add(1)),
+            SetAction::from("baz".parse::<Path>()?.math().add(1)),
         ]
         .into_iter()
         .collect();
@@ -113,12 +121,14 @@ mod test {
 
         // Should be able to concatenate a Remove instance
 
-        let combined = assign.clone().and(Path::new_name("quux").remove());
+        let combined = assign.clone().and("quux".parse::<Path>()?.remove());
         assert_eq!(r#"SET foo = "a value" REMOVE quux"#, combined.to_string());
 
         // Should be able to concatenate a SetRemove instance
 
-        let combined = assign.and(SetRemove::from(Path::new_name("quux").remove()));
+        let combined = assign.and(SetRemove::from("quux".parse::<Path>()?.remove()));
         assert_eq!(r#"SET foo = "a value" REMOVE quux"#, combined.to_string());
+
+        Ok(())
     }
 }

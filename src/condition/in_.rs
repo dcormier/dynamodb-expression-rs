@@ -2,9 +2,25 @@ use core::fmt::{self, Write};
 
 use crate::operand::Operand;
 
-/// A [DynamoDB `IN` condition][1].
+/// Represents a [DynamoDB `IN` condition][1]. True if the value from the
+/// [`Operand`] (the `op` parameter) is equal to any value in the list (the
+/// `items` parameter).
+///
+/// The DynamoDB allows the list to contain up to 100 values. It must have at least 1.
 ///
 /// See also: [`Path::in_`]
+///
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use dynamodb_expression::{condition::In, operand::Operand, Path};
+/// # use pretty_assertions::assert_eq;
+///
+/// let condition = "name".parse::<Path>()?.in_(["Jack", "Jill"]);
+/// assert_eq!(r#"name IN ("Jack","Jill")"#, condition.to_string());
+/// #
+/// # Ok(())
+/// # }
+/// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
 /// [`Path::in_`]: crate::path::Path::in_
@@ -15,21 +31,21 @@ pub struct In {
 }
 
 impl In {
-    /// Creates a new [DynamoDB `IN` condition][1]. True if the value from the
-    /// [`Operand`] (the `op` parameter) is equal to any value in the list (the
-    /// `items` parameter).
+    /// Allows for manually creating an `In` instance.
     ///
-    /// The list can contain up to 100 values. It must have at least 1.
+    /// See also: [`Path::in_`]
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use dynamodb_expression::{condition::In, operand::Operand, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let condition = In::new(Path::new_name("name"), ["Jack", "Jill"]);
+    /// let condition = In::new("name".parse::<Path>()?, ["Jack", "Jill"]);
     /// assert_eq!(r#"name IN ("Jack","Jill")"#, condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
-    ///
-    /// See also: [`Path::in_`]
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
     /// [`Path::in_`]: crate::path::Path::in_

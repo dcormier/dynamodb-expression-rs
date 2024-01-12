@@ -17,11 +17,15 @@ use crate::{
 /// See also: [`Path::key`]
 ///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use dynamodb_expression::{key::Key, Path};
 /// # use pretty_assertions::assert_eq;
 ///
-/// let key: Key = Path::new_name("foo").key();
-/// let key: Key = Path::new_name("foo").into();
+/// let key: Key = "foo".parse::<Path>()?.key();
+/// let key: Key = "foo".parse::<Path>()?.into();
+/// #
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
@@ -46,14 +50,18 @@ impl Key {
     /// See also: [`Ref`]
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let begins_with = Path::new_name("foo").key().begins_with("T");
+    /// let begins_with = "foo".parse::<Path>()?.key().begins_with("T");
     /// assert_eq!(r#"begins_with(foo, "T")"#, begins_with.to_string());
     ///
-    /// let begins_with = Path::new_name("foo").key().begins_with(Ref::new("prefix"));
+    /// let begins_with = "foo".parse::<Path>()?.key().begins_with(Ref::new("prefix"));
     /// assert_eq!(r#"begins_with(foo, :prefix)"#, begins_with.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
@@ -73,13 +81,18 @@ impl Key {
     /// See also: [`Path::between`]
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let key_condition = Path::new_name("age")
+    /// let key_condition = "age"
+    ///     .parse::<Path>()?
     ///     .key()
     ///     .between(Num::new(10), Num::new(90));
     /// assert_eq!(r#"age BETWEEN 10 AND 90"#, key_condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
@@ -200,24 +213,30 @@ mod test {
 
     #[test]
     fn begins_with_string() {
-        let begins_with = Key::from(Path::new_name("foo")).begins_with("foo");
+        // Begins with &str
+        let begins_with = Key::from("foo".parse::<Path>().unwrap()).begins_with("foo");
         assert_eq!(r#"begins_with(foo, "foo")"#, begins_with.to_string());
 
-        let begins_with = Key::from(Path::new_name("foo")).begins_with(String::from("foo"));
+        // Begins with String
+        let begins_with =
+            Key::from("foo".parse::<Path>().unwrap()).begins_with(String::from("foo"));
         assert_eq!(r#"begins_with(foo, "foo")"#, begins_with.to_string());
 
+        // Begins with &String
         #[allow(clippy::needless_borrows_for_generic_args)]
-        let begins_with = Key::from(Path::new_name("foo")).begins_with(&String::from("foo"));
+        let begins_with =
+            Key::from("foo".parse::<Path>().unwrap()).begins_with(&String::from("foo"));
         assert_eq!(r#"begins_with(foo, "foo")"#, begins_with.to_string());
 
+        // Begins with &&str
         #[allow(clippy::needless_borrows_for_generic_args)]
-        let begins_with = Key::from(Path::new_name("foo")).begins_with(&"foo");
+        let begins_with = Key::from("foo".parse::<Path>().unwrap()).begins_with(&"foo");
         assert_eq!(r#"begins_with(foo, "foo")"#, begins_with.to_string());
     }
 
     #[test]
     fn begins_with_value_ref() {
-        let begins_with = Key::from(Path::new_name("foo")).begins_with(Ref::new("prefix"));
+        let begins_with = Key::from("foo".parse::<Path>().unwrap()).begins_with(Ref::new("prefix"));
         assert_eq!("begins_with(foo, :prefix)", begins_with.to_string());
     }
 }

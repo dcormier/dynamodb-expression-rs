@@ -92,7 +92,7 @@ impl Expression {
     /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
     ///
     /// let output = Expression::builder()
-    ///     .with_condition(Path::new_name("name").attribute_not_exists())
+    ///     .with_condition("name".parse::<Path>()?.attribute_not_exists())
     ///     .build()
     ///     .put_item(&client)
     ///     .table_name("people")
@@ -244,7 +244,7 @@ impl Expression {
     ///
     /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
     ///
-    /// let age = Path::new_name("age");
+    /// let age: Path = "age".parse()?;
     /// let output = Expression::builder()
     ///     .with_condition(age.clone().equal(Num::new(40)))
     ///     .with_update(age.math().add(1))
@@ -325,7 +325,7 @@ impl Expression {
     /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
     ///
     /// let output = Expression::builder()
-    ///     .with_condition(Path::new_name("age").less_than(Num::new(20)))
+    ///     .with_condition("age".parse::<Path>()?.less_than(Num::new(20)))
     ///     .build()
     ///     .delete_item(&client)
     ///     .table_name("people")
@@ -399,12 +399,13 @@ impl Expression {
     ///
     /// let output = Expression::builder()
     ///     .with_filter(
-    ///         Path::new_name("name")
+    ///         "name"
+    ///             .parse::<Path>()?
     ///             .attribute_exists()
-    ///             .and(Path::new_name("age").greater_than_or_equal(Num::new(25))),
+    ///             .and("age".parse::<Path>()?.greater_than_or_equal(Num::new(25))),
     ///     )
     ///     .with_projection(["name", "age"])
-    ///     .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
+    ///     .with_key_condition("id".parse::<Path>()?.key().equal(Num::new(42)))
     ///     .build()
     ///     .query(&client)
     ///     .table_name("people")
@@ -471,7 +472,7 @@ impl Expression {
     /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
     ///
     /// let output = Expression::builder()
-    ///     .with_filter(Path::new_name("age").greater_than_or_equal(Num::new(25)))
+    ///     .with_filter("age".parse::<Path>()?.greater_than_or_equal(Num::new(25)))
     ///     .with_projection(["name", "age"])
     ///     .build()
     ///     .scan(&client)
@@ -577,7 +578,7 @@ mod test {
         let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
         let output = Expression::builder()
-            .with_condition(Path::new_name("name").attribute_not_exists())
+            .with_condition("name".parse::<Path>()?.attribute_not_exists())
             .build()
             .put_item(&client)
             .table_name("people")
@@ -666,7 +667,7 @@ mod test {
         let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
         let output = Expression::builder()
-            .with_filter(Path::new_name("age").greater_than_or_equal(Num::new(25)))
+            .with_filter("age".parse::<Path>()?.greater_than_or_equal(Num::new(25)))
             .with_projection(["name", "age"])
             .build()
             .scan(&client)
@@ -689,12 +690,13 @@ mod test {
 
         let output = Expression::builder()
             .with_filter(
-                Path::new_name("name")
+                "name"
+                    .parse::<Path>()?
                     .attribute_exists()
-                    .and(Path::new_name("age").greater_than_or_equal(Num::new(25))),
+                    .and("age".parse::<Path>()?.greater_than_or_equal(Num::new(25))),
             )
             .with_projection(["name", "age"])
-            .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
+            .with_key_condition("id".parse::<Path>()?.key().equal(Num::new(42)))
             .build()
             .query(&client)
             .table_name("people")
@@ -715,7 +717,7 @@ mod test {
 
         let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
-        let age = Path::new_name("age");
+        let age: Path = "age".parse()?;
         let output = Expression::builder()
             .with_condition(age.clone().equal(Num::new(40)))
             .with_update(age.math().add(1))
@@ -741,7 +743,7 @@ mod test {
         let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
         let output = Expression::builder()
-            .with_condition(Path::new_name("age").less_than(Num::new(20)))
+            .with_condition("age".parse::<Path>()?.less_than(Num::new(20)))
             .build()
             .delete_item(&client)
             .table_name("people")

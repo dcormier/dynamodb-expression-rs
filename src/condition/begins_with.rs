@@ -8,21 +8,22 @@ use crate::{
 /// The [DynamoDB `begins_with` function][1]. True if the attribute specified by
 ///  the [`Path`] begins with a particular substring.
 ///
-/// [`BeginsWith`] can take a string or a reference to an extended attribute
-/// value. Here's an example.
+/// See also: [`Path::begins_with`], [`Key::begins_with`]
 ///
 /// ```
-/// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use dynamodb_expression::{condition::BeginsWith, Path};
 /// # use pretty_assertions::assert_eq;
 ///
-/// let begins_with = BeginsWith::new(Path::new_name("foo"), "T");
+/// let begins_with = "foo".parse::<Path>()?.begins_with("T");
 /// assert_eq!(r#"begins_with(foo, "T")"#, begins_with.to_string());
 ///
-/// let begins_with = BeginsWith::new(Path::new_name("foo"), Ref::new("prefix"));
-/// assert_eq!(r#"begins_with(foo, :prefix)"#, begins_with.to_string());
+/// let begins_with = "foo".parse::<Path>()?.key().begins_with("T");
+/// assert_eq!(r#"begins_with(foo, "T")"#, begins_with.to_string());
+/// #
+/// # Ok(())
+/// # }
 /// ```
-///
-/// See also: [`Path::begins_with`], [`Key::begins_with`], [`Ref`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
 /// [`Key::begins_with`]: crate::key::Key::begins_with
@@ -36,6 +37,30 @@ pub struct BeginsWith {
 }
 
 impl BeginsWith {
+    /// Allows for manually constructing a `BeginsWith` instance.
+    ///
+    /// The `substr` argument can be a string or a reference to an expression
+    /// attribute value. Here's an example.
+    ///
+    /// See also: [`Path::begins_with`], [`Key::begins_with`], [`Ref`]
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let begins_with = BeginsWith::new("foo".parse::<Path>()?, "T");
+    /// assert_eq!(r#"begins_with(foo, "T")"#, begins_with.to_string());
+    ///
+    /// let begins_with = BeginsWith::new("foo".parse::<Path>()?, Ref::new("prefix"));
+    /// assert_eq!(r#"begins_with(foo, :prefix)"#, begins_with.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`Key::begins_with`]: crate::key::Key::begins_with
+    /// [`Ref`]: crate::value::Ref
     pub fn new<P, S>(path: P, substr: S) -> Self
     where
         P: Into<Path>,
@@ -50,6 +75,7 @@ impl BeginsWith {
         // > The expression attribute value :v_sub is a placeholder for http://.
         //
         // Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
+        // TODO: Change this to only accept `Into<String>`
         S: Into<StringOrRef>,
     {
         Self {
@@ -71,6 +97,8 @@ impl fmt::Display for BeginsWith {
 
 #[cfg(test)]
 mod test {
+    use std::error::Error;
+
     use pretty_assertions::assert_eq;
 
     use crate::{value::Ref, Path};
@@ -78,25 +106,27 @@ mod test {
     use super::BeginsWith;
 
     #[test]
-    fn string() {
-        let begins_with = BeginsWith::new(Path::new_indexed_field("foo", 3), "foo");
+    fn string() -> Result<(), Box<dyn Error>> {
+        let begins_with = BeginsWith::new("foo[3]".parse::<Path>()?, "foo");
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
 
-        let begins_with = BeginsWith::new(Path::new_indexed_field("foo", 3), String::from("foo"));
-        assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
-
-        #[allow(clippy::needless_borrows_for_generic_args)]
-        let begins_with = BeginsWith::new(Path::new_indexed_field("foo", 3), &String::from("foo"));
+        let begins_with = BeginsWith::new("foo[3]".parse::<Path>()?, String::from("foo"));
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
 
         #[allow(clippy::needless_borrows_for_generic_args)]
-        let begins_with = BeginsWith::new(Path::new_indexed_field("foo", 3), &"foo");
+        let begins_with = BeginsWith::new("foo[3]".parse::<Path>()?, &String::from("foo"));
         assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
+
+        #[allow(clippy::needless_borrows_for_generic_args)]
+        let begins_with = BeginsWith::new("foo[3]".parse::<Path>()?, &"foo");
+        assert_eq!(r#"begins_with(foo[3], "foo")"#, begins_with.to_string());
+
+        Ok(())
     }
 
     #[test]
     fn value_ref() {
-        let begins_with = BeginsWith::new(Path::new_indexed_field("foo", 3), Ref::from("prefix"));
+        let begins_with = BeginsWith::new("foo[3]".parse::<Path>().unwrap(), Ref::from("prefix"));
         assert_eq!("begins_with(foo[3], :prefix)", begins_with.to_string());
     }
 }

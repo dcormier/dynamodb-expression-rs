@@ -174,9 +174,9 @@ use crate::{
 /// assert_eq!(Path::from(Element::new_name("foo")), path);
 /// ```
 ///
-/// ## Attribute names with `.` in them
+/// ## A special case: attribute names with `.` in them
 ///
-/// If you have an attribute name with a `.` in it, and need it to not be
+/// If you have an attribute name with a `.` in it, and need it to _not_ be
 /// treated as a separator, you can construct the [`Path`] a few different ways.
 /// Here are some ways you can correctly construct a [`Path`] using `attr.name`
 /// as the problematic attribute name.
@@ -241,6 +241,19 @@ impl Path {
     ///
     /// let path = Path::new_name("foo.bar");
     /// assert_eq!(Path::from_iter([Element::new_name("foo.bar")]), path);
+    /// ```
+    ///
+    /// Contrast the above result of `Path::new_name("foo.bar")` with parsing,
+    /// which treats `.` as a separator for sub-attributes:
+    /// ```
+    /// # use dynamodb_expression::path::{Path, Element};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// let path = "foo.bar".parse().unwrap();
+    /// assert_eq!(
+    ///     Path::from_iter([Element::new_name("foo"), Element::new_name("bar")]),
+    ///     path,
+    /// );
     /// ```
     pub fn new_name<T>(name: T) -> Self
     where
@@ -402,6 +415,8 @@ impl Path {
     /// The [DynamoDB `BETWEEN` operator][1]. True if `self` is greater than or
     /// equal to `lower`, and less than or equal to `upper`.
     ///
+    /// See also: [`Between`], [`Key::between`]
+    ///
     /// ```
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
@@ -409,8 +424,6 @@ impl Path {
     /// let condition = Path::new_name("age").between(Num::new(10), Num::new(90));
     /// assert_eq!(r#"age BETWEEN 10 AND 90"#, condition.to_string());
     /// ```
-    ///
-    /// See also: [`Key::between`]
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
     /// [`Key::between`]: crate::key::Key::between
@@ -426,17 +439,24 @@ impl Path {
         })
     }
 
-    /// A [DynamoDB `IN` operation][1]. True if the value at this [`Path`] is equal
-    /// to any value in the list.
+    /// A [DynamoDB `IN` operation][1]. True if the value from the
+    /// [`Operand`] (the `op` parameter) is equal to any value in the list (the
+    /// `items` parameter).
     ///
-    /// The list can contain up to 100 values. It must have at least 1.
+    /// The DynamoDB allows the list to contain up to 100 values. It must have at least 1.
+    ///
+    /// See also: [`In`]
     ///
     /// ```
-    /// use dynamodb_expression::Path;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use dynamodb_expression::{condition::In, operand::Operand, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let condition = Path::new_name("name").in_(["Jack", "Jill"]);
+    /// let condition = "name".parse::<Path>()?.in_(["Jack", "Jill"]);
     /// assert_eq!(r#"name IN ("Jack","Jill")"#, condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
@@ -502,6 +522,8 @@ impl Path {
     /// `begins_with` can take a string or a reference to an extended attribute
     /// value. Here's an example.
     ///
+    /// See also: [`Ref`]
+    ///
     /// ```
     /// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
     /// # use pretty_assertions::assert_eq;
@@ -512,8 +534,6 @@ impl Path {
     /// let begins_with = Path::new_name("foo").begins_with(Ref::new("prefix"));
     /// assert_eq!(r#"begins_with(foo, :prefix)"#, begins_with.to_string());
     /// ```
-    ///
-    /// See also: [`Ref`]
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
     /// [`Ref`]: crate::value::Ref
@@ -534,24 +554,27 @@ impl Path {
     /// `String`. If the attribute specified by path is a `Set`, the operand
     /// must be the sets element type.
     ///
+    /// See also: [`Contains`]
+    ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use dynamodb_expression::{Num, Path};
-    /// # use pretty_assertions::assert_eq;
     ///
     /// // String
-    /// let condition = Path::new_name("foo").contains("Quinn");
+    /// let condition = "foo".parse::<Path>()?.contains("Quinn");
     /// assert_eq!(r#"contains(foo, "Quinn")"#, condition.to_string());
     ///
     /// // Number
-    /// let condition = Path::new_name("foo").contains(Num::new(42));
+    /// let condition = "foo".parse::<Path>()?.contains(Num::new(42));
     /// assert_eq!(r#"contains(foo, 42)"#, condition.to_string());
     ///
     /// // Binary
-    /// let condition = Path::new_name("foo").contains(Vec::<u8>::from("fish"));
+    /// let condition = "foo".parse::<Path>()?.contains(Vec::<u8>::from("fish"));
     /// assert_eq!(r#"contains(foo, "ZmlzaA==")"#, condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
-    ///
-    /// See also: [`Contains`]
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
     pub fn contains<V>(self, operand: V) -> Condition

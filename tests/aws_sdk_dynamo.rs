@@ -269,23 +269,29 @@ async fn test_update_set(config: &Config, client: &Client) {
 
     let update = Expression::builder()
         .with_update(
-            Path::new_name(ATTR_STRING)
+            ATTR_STRING
+                .parse::<Path>()
+                .unwrap()
                 .set("abcdef")
-                .and(Path::new_name(ATTR_NUM).math().sub(3.5))
+                .and(ATTR_NUM.parse::<Path>().unwrap().math().sub(3.5))
                 .and(
-                    Path::new_name(ATTR_LIST)
+                    ATTR_LIST
+                        .parse::<Path>()
+                        .unwrap()
                         .list_append()
                         .before()
                         .list(["A new value at the beginning"]),
                 )
                 // DynamoDB won't let you append to the same list twice in the same update expression.
                 // .and(
-                //     Path::new_name(ATTR_LIST)
+                //     ATTR_LIST.parse::<Path>().unwrap()
                 //         .list_append()
                 //         .list(["A new value at the end"]),
                 // )
                 .and(
-                    Path::new_name(ATTR_NEW_FIELD)
+                    ATTR_NEW_FIELD
+                        .parse::<Path>()
+                        .unwrap()
                         .if_not_exists()
                         .set("A new field"),
                 ),
@@ -303,7 +309,9 @@ async fn test_update_set(config: &Config, client: &Client) {
     // DynamoDB won't allow both in a single update expression.
     let updated_item = Expression::builder()
         .with_update(
-            Path::new_name(ATTR_LIST)
+            ATTR_LIST
+                .parse::<Path>()
+                .unwrap()
                 .list_append()
                 .list(["A new value at the end"]),
         )
@@ -393,7 +401,7 @@ async fn test_update_remove(config: &Config, client: &Client) {
 
     let update = Expression::builder()
         .with_update(Remove::from_iter([
-            Path::new_name(ATTR_NULL),
+            ATTR_NULL.parse::<Path>().unwrap(),
             Path::from_iter([
                 Element::new_name(ATTR_MAP),
                 Element::new_indexed_field(ATTR_LIST, 0),
@@ -496,9 +504,11 @@ async fn test_update_set_remove(config: &Config, client: &Client) {
 
     let update = Expression::builder()
         .with_update(
-            Path::new_name(ATTR_STRING)
+            ATTR_STRING
+                .parse::<Path>()
+                .unwrap()
                 .set("abcdef")
-                .and(Path::new_name(ATTR_NUM).remove()),
+                .and(ATTR_NUM.parse::<Path>().unwrap().remove()),
         )
         .build()
         .update_item(client)
@@ -756,7 +766,9 @@ async fn query_known_item(
 ) -> Result<Option<HashMap<String, AttributeValue>>, SdkError<QueryError>> {
     let output = Expression::builder()
         .with_key_condition(
-            Path::new_name(ATTR_ID)
+            ATTR_ID
+                .parse::<Path>()
+                .unwrap()
                 .key()
                 .equal(Scalar::new_string(ITEM_ID)),
         )

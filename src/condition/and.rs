@@ -2,9 +2,26 @@ use core::fmt;
 
 use crate::condition::Condition;
 
-/// A [DynamoDB logical `AND`][1] condition.
+/// Represents a [DynamoDB logical `AND`][1] condition.
 ///
 /// See also: [`Condition::and`]
+///
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use dynamodb_expression::Path;
+/// # use pretty_assertions::assert_eq;
+///
+/// let a = "a".parse::<Path>()?;
+/// let b = "b".parse::<Path>()?;
+/// let c = "c".parse::<Path>()?;
+/// let d = "d".parse::<Path>()?;
+///
+/// let condition = a.greater_than(b).and(c.less_than(d));
+/// assert_eq!("a > b AND c < d", condition.to_string());
+/// #
+/// # Ok(())
+/// # }
+/// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,15 +40,15 @@ impl fmt::Display for And {
 
 #[cfg(test)]
 mod test {
+    use crate::{condition::And, Path};
+    use pretty_assertions::assert_eq;
+
     #[test]
     fn and() {
-        use crate::{condition::And, Path};
-        use pretty_assertions::assert_eq;
-
-        let a = Path::new_name("a");
-        let b = Path::new_name("b");
-        let c = Path::new_name("c");
-        let d = Path::new_name("d");
+        let a = "a".parse::<Path>().unwrap();
+        let b = "b".parse::<Path>().unwrap();
+        let c = "c".parse::<Path>().unwrap();
+        let d = "d".parse::<Path>().unwrap();
 
         let condition = And {
             left: a.greater_than(b).into(),

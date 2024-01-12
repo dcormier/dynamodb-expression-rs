@@ -8,17 +8,21 @@ use super::{Assign, IfNotExists, ListAppend, Math, Remove, Set, SetAction};
 /// See: [`Set::and`], [`Remove::and`]
 ///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 /// use dynamodb_expression::{Num, Path};
 /// # use pretty_assertions::assert_eq;
 ///
-/// let set = Path::new_name("foo").set(Num::new(7)).and(Path::new_name("bar").set("a value"));
+/// let set = "foo".parse::<Path>()?.set(Num::new(7)).and("bar".parse::<Path>()?.set("a value"));
 /// assert_eq!(r#"SET foo = 7, bar = "a value""#, set.to_string());
 ///
-/// let remove = Path::new_name("baz").remove().and(Path::new_name("quux").remove());
+/// let remove = "baz".parse::<Path>()?.remove().and("quux".parse::<Path>()?.remove());
 /// assert_eq!("REMOVE baz, quux", remove.to_string());
 ///
 /// let set_remove = set.and(remove);
 /// assert_eq!(r#"SET foo = 7, bar = "a value" REMOVE baz, quux"#, set_remove.to_string());
+/// #
+/// # Ok(())
+/// # }
 /// ```
 #[must_use = "Use in an update expression with `Update::from(set_remove)`"]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,14 +35,19 @@ impl SetRemove {
     /// Add an additional [`Set`] or [`Remove`] statement to this expression.
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     /// use dynamodb_expression::{Num, Path, update::SetRemove};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let set = Path::new_name("foo")
+    /// let set = "foo"
+    ///     .parse::<Path>()?
     ///     .set(Num::new(7))
-    ///     .and(Path::new_name("bar").set("a value"))
-    ///     .and(Path::new_name("baz").remove());
+    ///     .and("bar".parse::<Path>()?.set("a value"))
+    ///     .and("baz".parse::<Path>()?.remove());
     /// assert_eq!(r#"SET foo = 7, bar = "a value" REMOVE baz"#, set.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn and<T>(mut self, other: T) -> Self
     where
@@ -139,6 +148,8 @@ impl From<Remove> for SetRemove {
 
 #[cfg(test)]
 mod test {
+    use std::error::Error;
+
     use pretty_assertions::assert_eq;
 
     use crate::{Num, Path};
@@ -146,15 +157,15 @@ mod test {
     use super::*;
 
     #[test]
-    fn display() {
-        let set = SetRemove::from(Path::new_name("foo").set("a value"));
+    fn display() -> Result<(), Box<dyn Error>> {
+        let set = SetRemove::from("foo".parse::<Path>()?.set("a value"));
         assert_eq!(
             r#"SET foo = "a value""#,
             set.to_string(),
             "Should display only SET"
         );
 
-        let remove = SetRemove::from(Path::new_name("bar").remove());
+        let remove = SetRemove::from("bar".parse::<Path>()?.remove());
         assert_eq!(
             "REMOVE bar",
             remove.to_string(),
@@ -174,36 +185,42 @@ mod test {
             remove_set.to_string(),
             "Should display SET then REMOVE"
         );
+
+        Ok(())
     }
 
     #[test]
     fn test_from_set() {
-        let set_remove = SetRemove::from(Set::from(Path::new_name("foo").set("a value")));
+        let set_remove = SetRemove::from(Set::from("foo".parse::<Path>().unwrap().set("a value")));
         assert_eq!(r#"SET foo = "a value""#, set_remove.to_string());
     }
 
     #[test]
     fn test_from_set_action() {
-        let set_remove = SetRemove::from(SetAction::from(Path::new_name("foo").set("a value")));
+        let set_remove = SetRemove::from(SetAction::from(
+            "foo".parse::<Path>().unwrap().set("a value"),
+        ));
         assert_eq!(r#"SET foo = "a value""#, set_remove.to_string());
     }
 
     #[test]
     fn test_from_assign() {
-        let set_remove = SetRemove::from(Assign::new(Path::new_name("foo"), "a value"));
+        let set_remove = SetRemove::from(Assign::new("foo".parse::<Path>().unwrap(), "a value"));
         assert_eq!(r#"SET foo = "a value""#, set_remove.to_string());
     }
 
     #[test]
     fn test_from_math() {
-        let set_remove = SetRemove::from(Math::builder(Path::new_name("foo")).add(Num::from(1)));
+        let set_remove =
+            SetRemove::from(Math::builder("foo".parse::<Path>().unwrap()).add(Num::from(1)));
         assert_eq!(r#"SET foo = foo + 1"#, set_remove.to_string());
     }
 
     #[test]
     fn test_from_list_append() {
-        let set_remove =
-            SetRemove::from(ListAppend::builder(Path::new_name("foo")).list(["a", "b", "c"]));
+        let set_remove = SetRemove::from(
+            ListAppend::builder("foo".parse::<Path>().unwrap()).list(["a", "b", "c"]),
+        );
         assert_eq!(
             r#"SET foo = list_append(foo, ["a", "b", "c"])"#,
             set_remove.to_string()
@@ -213,7 +230,7 @@ mod test {
     #[test]
     fn test_from_if_not_exists() {
         let set_remove =
-            SetRemove::from(IfNotExists::builder(Path::new_name("foo")).set("a value"));
+            SetRemove::from(IfNotExists::builder("foo".parse::<Path>().unwrap()).set("a value"));
         assert_eq!(
             r#"SET foo = if_not_exists(foo, "a value")"#,
             set_remove.to_string()
@@ -222,7 +239,7 @@ mod test {
 
     #[test]
     fn test_from_remove() {
-        let set_remove = SetRemove::from(Path::new_name("foo").remove());
+        let set_remove = SetRemove::from("foo".parse::<Path>().unwrap().remove());
         assert_eq!("REMOVE foo", set_remove.to_string());
     }
 }

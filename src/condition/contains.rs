@@ -15,23 +15,27 @@ use crate::{
 /// `String`. If the attribute specified by path is a `Set`, the operand
 /// must be the sets element type.
 ///
+/// See also: [`Path::contains`]
+///
 /// ```
-/// use dynamodb_expression::{condition::Contains, Num, Path};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use dynamodb_expression::{Num, Path};
 ///
 /// // String
-/// let condition = Contains::new(Path::new_name("foo"), "Quinn");
+/// let condition = "foo".parse::<Path>()?.contains("Quinn");
 /// assert_eq!(r#"contains(foo, "Quinn")"#, condition.to_string());
 ///
 /// // Number
-/// let condition = Contains::new(Path::new_name("foo"), Num::new(42));
+/// let condition = "foo".parse::<Path>()?.contains(Num::new(42));
 /// assert_eq!(r#"contains(foo, 42)"#, condition.to_string());
 ///
 /// // Binary
-/// let condition = Contains::new(Path::new_name("foo"), Vec::<u8>::from("fish"));
+/// let condition = "foo".parse::<Path>()?.contains(Vec::<u8>::from("fish"));
 /// assert_eq!(r#"contains(foo, "ZmlzaA==")"#, condition.to_string());
+/// #
+/// # Ok(())
+/// # }
 /// ```
-///
-/// See also: [`Path::contains`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,6 +47,29 @@ pub struct Contains {
 }
 
 impl Contains {
+    /// Allows for manually creating a `Contains` instance.
+    ///
+    /// See also: [`Path::contains`]
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use dynamodb_expression::{condition::Contains, Num, Path};
+    ///
+    /// // String
+    /// let condition =  Contains::new("foo".parse::<Path>()?, "Quinn");
+    /// assert_eq!(r#"contains(foo, "Quinn")"#, condition.to_string());
+    ///
+    /// // Number
+    /// let condition = Contains::new("foo".parse::<Path>()?, Num::new(42));
+    /// assert_eq!(r#"contains(foo, 42)"#, condition.to_string());
+    ///
+    /// // Binary
+    /// let condition = Contains::new("foo".parse::<Path>()?, Vec::<u8>::from("fish"));
+    /// assert_eq!(r#"contains(foo, "ZmlzaA==")"#, condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn new<P, S>(path: P, operand: S) -> Self
     where
         P: Into<Path>,

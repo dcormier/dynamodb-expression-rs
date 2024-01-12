@@ -25,25 +25,26 @@ pub use self::{
 /// # Examples
 ///
 /// ```
-/// use dynamodb_expression::{
-///     update::{Remove, Update},
-///     Path,
-/// };
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use dynamodb_expression::{update::Update, Path};
 /// # use pretty_assertions::assert_eq;
 ///
-/// let update = Update::from(Path::new_name("foo").math().add(7));
+/// let update = Update::from("foo".parse::<Path>()?.math().add(7));
 /// assert_eq!("SET foo = foo + 7", update.to_string());
 ///
-/// let update = Update::from(Path::new_name("foo").if_not_exists().set("a value"));
+/// let update = Update::from("foo".parse::<Path>()?.if_not_exists().set("a value"));
 /// assert_eq!(
 ///     r#"SET foo = if_not_exists(foo, "a value")"#,
 ///     update.to_string()
 /// );
 ///
-/// let update = Update::from(Path::new_name("foo").remove());
+/// let update = Update::from("foo".parse::<Path>()?.remove());
 /// assert_eq!(r#"REMOVE foo"#, update.to_string());
-///
+/// #
 /// # // TODO: Examples for `Add` and `Delete`.
+/// #
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
@@ -168,32 +169,26 @@ impl From<Delete> for Update {
 }
 
 #[cfg(test)]
-mod test {
+mod examples {
     #[test]
-    #[ignore = "This is just to help with formatting the example for `Update`"]
-    fn example() {
-        use crate::{
-            update::{Remove, Update},
-            Path,
-        };
+    fn example() -> Result<(), Box<dyn std::error::Error>> {
+        use crate::{update::Update, Path};
         use pretty_assertions::assert_eq;
 
-        let update = Update::from(Path::new_name("foo").math().add(7));
+        let update = Update::from("foo".parse::<Path>()?.math().add(7));
         assert_eq!("SET foo = foo + 7", update.to_string());
 
-        let update = Update::from(Path::new_name("foo").if_not_exists().set("a value"));
+        let update = Update::from("foo".parse::<Path>()?.if_not_exists().set("a value"));
         assert_eq!(
             r#"SET foo = if_not_exists(foo, "a value")"#,
             update.to_string()
         );
 
-        let update = Update::from(Remove::from(Path::new_name("foo")));
+        let update = Update::from("foo".parse::<Path>()?.remove());
         assert_eq!(r#"REMOVE foo"#, update.to_string());
 
-        let update = Update::from("foo[3].bar[0]".parse::<Path>().unwrap().remove());
-        assert_eq!(r#"REMOVE foo[3].bar[0]"#, update.to_string());
+        // TODO: Examples for `Add` and `Delete`.
 
-        let update = Update::from(Remove::from_iter(["foo", "bar", "baz"].map(Path::new_name)));
-        assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
+        Ok(())
     }
 }

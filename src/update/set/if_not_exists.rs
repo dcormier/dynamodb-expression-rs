@@ -32,14 +32,19 @@ impl IfNotExists {
     /// Add an additional [`Set`] or [`Remove`] statement to this expression.
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     /// use dynamodb_expression::{Num, Path, update::Set};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let set = Path::new_name("foo")
+    /// let set = "foo"
+    ///     .parse::<Path>()?
     ///     .if_not_exists()
     ///     .set(Num::new(7))
-    ///     .and(Path::new_name("bar").set("a value"));
+    ///     .and("bar".parse::<Path>()?.set("a value"));
     /// assert_eq!(r#"SET foo = if_not_exists(foo, 7), bar = "a value""#, set.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [`Remove`]: crate::update::Remove
@@ -79,26 +84,36 @@ impl Builder {
     /// Defaults to the destination [`Path`].
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let if_not_exists = Path::new_name("foo")
+    /// let if_not_exists = "foo"
+    ///     .parse::<Path>()?
     ///     .if_not_exists()
-    ///     .src(Path::new_name("bar"))
+    ///     .src("bar".parse::<Path>()?)
     ///     .set(Num::new(42));
     /// assert_eq!("foo = if_not_exists(bar, 42)", if_not_exists.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// Compare with the default, where the destination [`Path`] is used:
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let if_not_exists = Path::new_name("foo")
+    /// let if_not_exists = "foo"
+    ///     .parse::<Path>()?
     ///     .if_not_exists()
     ///     .set(Num::new(42));
     /// assert_eq!("foo = if_not_exists(foo, 42)", if_not_exists.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn src<T>(mut self, src: T) -> Self
     where
@@ -143,6 +158,8 @@ impl Builder {
 
 #[cfg(test)]
 mod test {
+    use std::error::Error;
+
     use pretty_assertions::assert_eq;
 
     use crate::{
@@ -153,9 +170,9 @@ mod test {
     use super::IfNotExists;
 
     #[test]
-    fn and() {
-        let if_not_exists: IfNotExists = Path::new_name("foo").if_not_exists().set("a value");
-        let assign: Assign = Path::new_name("bar").set(Num::new(8));
+    fn and() -> Result<(), Box<dyn Error>> {
+        let if_not_exists: IfNotExists = "foo".parse::<Path>()?.if_not_exists().set("a value");
+        let assign: Assign = "bar".parse::<Path>()?.set(Num::new(8));
 
         // Should be able to concatenate anything that can be turned into a SetAction.
 
@@ -177,7 +194,7 @@ mod test {
 
         let set: Set = [
             SetAction::from(assign),
-            SetAction::from(Path::new_name("baz").math().add(1)),
+            SetAction::from("baz".parse::<Path>()?.math().add(1)),
         ]
         .into_iter()
         .collect();
@@ -189,7 +206,7 @@ mod test {
 
         // Should be able to concatenate a Remove instance
 
-        let combined = if_not_exists.clone().and(Path::new_name("quux").remove());
+        let combined = if_not_exists.clone().and("quux".parse::<Path>()?.remove());
         assert_eq!(
             r#"SET foo = if_not_exists(foo, "a value") REMOVE quux"#,
             combined.to_string()
@@ -197,10 +214,12 @@ mod test {
 
         // Should be able to concatenate a SetRemove instance
 
-        let combined = if_not_exists.and(SetRemove::from(Path::new_name("quux").remove()));
+        let combined = if_not_exists.and(SetRemove::from("quux".parse::<Path>()?.remove()));
         assert_eq!(
             r#"SET foo = if_not_exists(foo, "a value") REMOVE quux"#,
             combined.to_string()
         );
+
+        Ok(())
     }
 }

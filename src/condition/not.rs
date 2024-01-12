@@ -2,20 +2,24 @@ use core::fmt;
 
 use crate::condition::Condition;
 
-/// A [DynamoDB logical `NOT`][1] condition.
-///
-/// ```
-/// use dynamodb_expression::{condition::Not, Path};
-/// # use pretty_assertions::assert_eq;
-///
-/// let a = Path::new_name("a");
-/// let b = Path::new_name("b");
-///
-/// let condition = Not::from(a.greater_than(b));
-/// assert_eq!("NOT a > b", condition.to_string());
-/// ```
+/// Represents a [DynamoDB logical `NOT`][1] condition.
 ///
 /// See also: [`Condition::not`]
+///
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use dynamodb_expression::Path;
+/// # use pretty_assertions::assert_eq;
+///
+/// let a = "a".parse::<Path>()?;
+/// let b = "b".parse::<Path>()?;
+///
+/// let condition = a.greater_than(b).not();
+/// assert_eq!("NOT a > b", condition.to_string());
+/// #
+/// # Ok(())
+/// # }
+/// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -250,17 +254,22 @@ mod test {
         //     "`NOT NOT NOT` should be normalized to `NOT`"
         // );
     }
+}
 
+#[cfg(test)]
+mod examples {
     // This is really for formatting of the doc tests
     #[test]
-    fn not() {
-        use crate::{condition::Not, Path};
+    fn not() -> Result<(), Box<dyn std::error::Error>> {
+        use crate::Path;
         use pretty_assertions::assert_eq;
 
-        let a = Path::new_name("a");
-        let b = Path::new_name("b");
+        let a = "a".parse::<Path>()?;
+        let b = "b".parse::<Path>()?;
 
-        let condition = Not::from(a.greater_than(b));
+        let condition = a.greater_than(b).not();
         assert_eq!("NOT a > b", condition.to_string());
+
+        Ok(())
     }
 }

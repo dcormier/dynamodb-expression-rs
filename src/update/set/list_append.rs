@@ -41,22 +41,27 @@ impl ListAppend {
     /// Add an additional [`Set`] or [`Remove`] statement to this expression.
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let set = Path::new_name("foo")
+    /// let set = "foo"
+    ///     .parse::<Path>()?
     ///     .list_append()
     ///     .list([7, 8, 9].map(Num::new))
-    ///     .and(Path::new_name("bar").set("a value"));
+    ///     .and("bar".parse::<Path>()?.set("a value"));
     /// assert_eq!(r#"SET foo = list_append(foo, [7, 8, 9]), bar = "a value""#, set.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [`Remove`]: crate::update::Remove
-    pub fn and<T>(self, action: T) -> SetRemove
+    pub fn and<T>(self, other: T) -> SetRemove
     where
         T: Into<SetRemove>,
     {
-        Set::from(self).and(action)
+        Set::from(self).and(other)
     }
 }
 
@@ -98,26 +103,36 @@ impl Builder {
     /// Defaults to the [`Path`] the combined list is being assigned to.
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = Path::new_name("foo")
+    /// let list_append = "foo"
+    ///     .parse::<Path>()?
     ///     .list_append()
-    ///     .src(Path::new_name("bar"))
+    ///     .src("bar".parse::<Path>()?)
     ///     .list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append(bar, [1, 2, 3])", list_append.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// Compare with what happens without specifying a source [`Path`]:
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = Path::new_name("foo")
+    /// let list_append = "foo"
+    ///     .parse::<Path>()?
     ///     .list_append()
     ///     .list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn src<T>(mut self, src: T) -> Self
     where
@@ -133,31 +148,43 @@ impl Builder {
     /// This is the default.
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = Path::new_name("foo").list_append().after().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo".parse::<Path>()?.list_append().after().list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// Compare with when [`before`] is used:
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = Path::new_name("foo").list_append().before().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo".parse::<Path>()?.list_append().before().list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append([1, 2, 3], foo)", list_append.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// The default, with the same behavior as `after`:
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = Path::new_name("foo").list_append().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo".parse::<Path>()?.list_append().list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [`before`]: crate::update::set::list_append::Builder::before
@@ -172,31 +199,43 @@ impl Builder {
     /// Defaults to appending new values [`after`] existing values.
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = Path::new_name("foo").list_append().before().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo".parse::<Path>()?.list_append().before().list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append([1, 2, 3], foo)", list_append.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// Compare with when [`after`] is used:
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = Path::new_name("foo").list_append().after().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo".parse::<Path>()?.list_append().after().list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// The default, with the same behavior as [`after`]:
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = Path::new_name("foo").list_append().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo".parse::<Path>()?.list_append().list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [`after`]: crate::update::set::list_append::Builder::after
@@ -229,7 +268,6 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use crate::{
-        path::Name,
         update::{set_remove::SetRemove, Assign, Set, SetAction},
         Num, Path,
     };
@@ -237,42 +275,44 @@ mod test {
     use super::ListAppend;
 
     #[test]
-    fn display() {
-        let append = ListAppend::builder(Name::from("foo"))
-            .src(Name::from("bar"))
+    fn display() -> Result<(), Box<dyn std::error::Error>> {
+        let append = ListAppend::builder("foo".parse::<Path>()?)
+            .src("bar".parse::<Path>()?)
             .after()
             .list(["a", "b"]);
         assert_eq!(r#"foo = list_append(bar, ["a", "b"])"#, append.to_string());
 
-        let append = ListAppend::builder(Name::from("foo"))
-            .src(Name::from("bar"))
+        let append = ListAppend::builder("foo".parse::<Path>()?)
+            .src("bar".parse::<Path>()?)
             .list(["a", "b"]);
         assert_eq!(r#"foo = list_append(bar, ["a", "b"])"#, append.to_string());
 
-        let append = ListAppend::builder(Name::from("foo"))
-            .src(Name::from("bar"))
+        let append = ListAppend::builder("foo".parse::<Path>()?)
+            .src("bar".parse::<Path>()?)
             .before()
             .list(["a", "b"]);
         assert_eq!(r#"foo = list_append(["a", "b"], bar)"#, append.to_string());
 
-        let append = ListAppend::builder(Name::from("foo"))
+        let append = ListAppend::builder("foo".parse::<Path>()?)
             .after()
             .list(["a", "b"]);
         assert_eq!(r#"foo = list_append(foo, ["a", "b"])"#, append.to_string());
 
-        let append = ListAppend::builder(Name::from("foo")).list(["a", "b"]);
+        let append = ListAppend::builder("foo".parse::<Path>()?).list(["a", "b"]);
         assert_eq!(r#"foo = list_append(foo, ["a", "b"])"#, append.to_string());
 
-        let append = ListAppend::builder(Name::from("foo"))
+        let append = ListAppend::builder("foo".parse::<Path>()?)
             .before()
             .list(["a", "b"]);
         assert_eq!(r#"foo = list_append(["a", "b"], foo)"#, append.to_string());
+
+        Ok(())
     }
 
     #[test]
-    fn and() {
-        let list_append = Path::new_name("foo").list_append().list(["d", "e", "f"]);
-        let assign: Assign = Path::new_name("bar").set(Num::new(8));
+    fn and() -> Result<(), Box<dyn std::error::Error>> {
+        let list_append = "foo".parse::<Path>()?.list_append().list(["d", "e", "f"]);
+        let assign: Assign = "bar".parse::<Path>()?.set(Num::new(8));
 
         // Should be able to concatenate anything that can be turned into a SetAction.
 
@@ -294,7 +334,7 @@ mod test {
 
         let set: Set = [
             SetAction::from(assign),
-            SetAction::from(Path::new_name("baz").math().add(1)),
+            SetAction::from("baz".parse::<Path>()?.math().add(1)),
         ]
         .into_iter()
         .collect();
@@ -306,7 +346,7 @@ mod test {
 
         // Should be able to concatenate a Remove instance
 
-        let combined = list_append.clone().and(Path::new_name("quux").remove());
+        let combined = list_append.clone().and("quux".parse::<Path>()?.remove());
         assert_eq!(
             r#"SET foo = list_append(foo, ["d", "e", "f"]) REMOVE quux"#,
             combined.to_string()
@@ -314,10 +354,12 @@ mod test {
 
         // Should be able to concatenate a SetRemove instance
 
-        let combined = list_append.and(SetRemove::from(Path::new_name("quux").remove()));
+        let combined = list_append.and(SetRemove::from("quux".parse::<Path>()?.remove()));
         assert_eq!(
             r#"SET foo = list_append(foo, ["d", "e", "f"]) REMOVE quux"#,
             combined.to_string()
         );
+
+        Ok(())
     }
 }

@@ -12,27 +12,32 @@ use super::set_remove::SetRemove;
 /// # Examples
 ///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 /// use dynamodb_expression::{Expression, Path, update::{Remove, Update}};
 /// # use pretty_assertions::assert_eq;
 ///
-/// let remove = "foo".parse::<Path>().unwrap().remove();
+/// let remove = "foo".parse::<Path>()?.remove();
 /// assert_eq!("REMOVE foo", remove.to_string());
 ///
-/// let remove = Remove::from("foo[8]".parse::<Path>().unwrap());
+/// let remove = Remove::from("foo[8]".parse::<Path>()?);
 /// assert_eq!("REMOVE foo[8]", remove.to_string());
 ///
 /// let remove: Remove = ["foo", "bar", "baz"].into_iter().map(Path::new_name).collect();
 /// assert_eq!("REMOVE foo, bar, baz", remove.to_string());
 ///
-/// let remove = remove.and(Path::new_name("quux").remove());
+/// let remove = remove.and("quux".parse::<Path>()?.remove());
 /// assert_eq!("REMOVE foo, bar, baz, quux", remove.to_string());
 ///
 /// // Use in an update expression
 /// let update = Update::from(remove.clone());
+/// # _ = update;
 ///
 /// // Use an expression builder
 /// let expression = Expression::builder().with_update(remove).build();
 /// # _ = expression;
+/// #
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE
@@ -49,14 +54,18 @@ impl Remove {
     /// Add an additional [`Remove`] or [`Set`] statement to this expression.
     ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     /// use dynamodb_expression::Path;
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let remove = Path::new_name("foo").remove().and(Path::new_name("bar").remove());
+    /// let remove = "foo".parse::<Path>()?.remove().and("bar".parse::<Path>()?.remove());
     /// assert_eq!("REMOVE foo, bar", remove.to_string());
     ///
-    /// let set_remove = remove.and(Path::new_name("baz").set("a value"));
+    /// let set_remove = remove.and("baz".parse::<Path>()?.set("a value"));
     /// assert_eq!(r#"SET baz = "a value" REMOVE foo, bar"#, set_remove.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [`Set`]: crate::update::Set
@@ -134,9 +143,11 @@ mod test {
 
     #[test]
     fn and() {
-        let remove = Path::new_name("foo")
+        let remove = "foo"
+            .parse::<Path>()
+            .unwrap()
             .remove()
-            .and(Path::new_name("bar").remove());
+            .and("bar".parse::<Path>().unwrap().remove());
         assert_eq!("REMOVE foo, bar", remove.to_string());
     }
 }

@@ -2,7 +2,26 @@ use core::fmt::{self, Write};
 
 use super::Condition;
 
+/// Wraps a condition in parentheses.
+///
 /// See also: [`Condition::parenthesize`]
+///
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use dynamodb_expression::Path;
+/// # use pretty_assertions::assert_eq;
+///
+/// let a = "a".parse::<Path>()?;
+/// let b = "b".parse::<Path>()?;
+/// let c = "c".parse::<Path>()?;
+/// let d = "d".parse::<Path>()?;
+///
+/// let condition = a.greater_than(b).parenthesize().and(c.less_than(d).parenthesize());
+/// assert_eq!("(a > b) AND (c < d)", condition.to_string());
+/// #
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parenthetical {
     pub(crate) condition: Box<Condition>,

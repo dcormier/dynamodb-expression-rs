@@ -85,15 +85,19 @@ impl Size {
     /// The [DynamoDB `BETWEEN` operator][1]. True if `self` is greater than or
     /// equal to `lower`, and less than or equal to `upper`.
     ///
+    /// See also: [`Path::size`], [`Key::between`]
+    ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let condition = Path::new_name("foo").size().between(Num::new(512), Num::new(1024));
+    /// let condition = "foo".parse::<Path>()?.size().between(Num::new(512), Num::new(1024));
     /// assert_eq!(r#"size(foo) BETWEEN 512 AND 1024"#, condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
-    ///
-    /// See also: [`Key::between`]
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators
     /// [`Key::between`]: crate::key::Key::between
@@ -114,12 +118,18 @@ impl Size {
     ///
     /// The list can contain up to 100 values. It must have at least 1.
     ///
+    /// See also: [`Path::size`]
+    ///
     /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let condition = Path::new_name("foo").size().in_([10, 20, 30, 40, 50].map(Num::new));
+    /// let condition = "foo".parse::<Path>()?.size().in_([10, 20, 30, 40, 50].map(Num::new));
     /// assert_eq!(r#"size(foo) IN (10,20,30,40,50)"#, condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators

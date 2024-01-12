@@ -108,14 +108,18 @@ impl From<Ref> for String {
 /// an extended attribute value. Here's how [`StringOrRef`] works with that.
 ///
 /// ```
+/// # fn string_or_ref() -> Result<(), Box<dyn std::error::Error>> {
 /// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
 /// # use pretty_assertions::assert_eq;
 ///
-/// let begins_with = BeginsWith::new(Path::new_name("foo"), "T");
+/// let begins_with = BeginsWith::new("foo".parse::<Path>()?, "T");
 /// assert_eq!(r#"begins_with(foo, "T")"#, begins_with.to_string());
 ///
-/// let begins_with = BeginsWith::new(Path::new_name("foo"), Ref::new("prefix"));
+/// let begins_with = BeginsWith::new("foo".parse::<Path>()?, Ref::new("prefix"));
 /// assert_eq!(r#"begins_with(foo, :prefix)"#, begins_with.to_string());
+/// #
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// See also: [`Ref`]
@@ -183,5 +187,23 @@ mod test {
     fn display_ref() {
         let vr = ValueOrRef::Ref(Ref("foo".into()));
         assert_str_eq!(":foo", vr.to_string());
+    }
+}
+
+#[cfg(test)]
+mod examples {
+    #[ignore = "This is just here for formatting."]
+    #[test]
+    fn string_or_ref() -> Result<(), Box<dyn std::error::Error>> {
+        use crate::{condition::BeginsWith, value::Ref, Path};
+        use pretty_assertions::assert_eq;
+
+        let begins_with = BeginsWith::new("foo".parse::<Path>()?, "T");
+        assert_eq!(r#"begins_with(foo, "T")"#, begins_with.to_string());
+
+        let begins_with = BeginsWith::new("foo".parse::<Path>()?, Ref::new("prefix"));
+        assert_eq!(r#"begins_with(foo, :prefix)"#, begins_with.to_string());
+
+        Ok(())
     }
 }
