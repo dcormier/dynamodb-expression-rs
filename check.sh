@@ -1,4 +1,5 @@
 #! /bin/sh
+set -x
 cargo fmt --check &&
 cargo clippy -- -Dwarnings &&
 cargo clippy --tests -- -Dwarnings &&

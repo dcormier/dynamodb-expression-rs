@@ -6,6 +6,7 @@ pub mod add;
 pub mod delete;
 pub mod remove;
 pub mod set;
+mod set_remove;
 
 use core::fmt;
 
@@ -14,9 +15,12 @@ pub use self::{
     delete::Delete,
     remove::Remove,
     set::{Assign, IfNotExists, ListAppend, Math, Set, SetAction},
+    set_remove::SetRemove,
 };
 
 /// Represents a [DynamoDB update expression][1].
+///
+/// See also: [`Set`], [`Remove`], [`SetRemove`], [`Add`], [`Delete`]
 ///
 /// # Examples
 ///
@@ -30,29 +34,23 @@ pub use self::{
 /// let update = Update::from(Path::new_name("foo").math().add(7));
 /// assert_eq!("SET foo = foo + 7", update.to_string());
 ///
-/// let update = Update::from(Path::new_name("foo").if_not_exists().assign("a value"));
+/// let update = Update::from(Path::new_name("foo").if_not_exists().set("a value"));
 /// assert_eq!(
 ///     r#"SET foo = if_not_exists(foo, "a value")"#,
 ///     update.to_string()
 /// );
 ///
-/// let update = Update::from(Remove::new_name("foo"));
+/// let update = Update::from(Path::new_name("foo").remove());
 /// assert_eq!(r#"REMOVE foo"#, update.to_string());
 ///
-/// let update = Update::from("foo[3].bar[0]".parse::<Path>().unwrap().remove());
-/// assert_eq!(r#"REMOVE foo[3].bar[0]"#, update.to_string());
-///
-/// let update = Update::from(Remove::from_iter(
-///     ["foo", "bar", "baz"].into_iter().map(Path::new_name),
-/// ));
-/// assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
+/// # // TODO: Examples for `Add` and `Delete`.
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
+#[must_use = "Use in a DynamoDB expression with `Expression::builder().with_update(update)`"]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Update {
-    Set(Set),
-    Remove(Remove),
+    SetRemove(SetRemove),
     Add(Add),
     Delete(Delete),
 }
@@ -72,6 +70,14 @@ impl Update {
         T: Into<Remove>,
     {
         remove.into().into()
+    }
+
+    /// A new update expression for a [`SetRemove`] statement.
+    pub fn new_set_remove<T>(set_remove: T) -> Self
+    where
+        T: Into<SetRemove>,
+    {
+        set_remove.into().into()
     }
 
     /// A new update expression for an [`Add`] statement.
@@ -94,8 +100,7 @@ impl Update {
 impl fmt::Display for Update {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Update::Set(update) => update.fmt(f),
-            Update::Remove(update) => update.fmt(f),
+            Update::SetRemove(update) => update.fmt(f),
             Update::Add(update) => update.fmt(f),
             Update::Delete(update) => update.fmt(f),
         }
@@ -104,43 +109,49 @@ impl fmt::Display for Update {
 
 impl From<Set> for Update {
     fn from(value: Set) -> Self {
-        Self::Set(value)
+        Self::SetRemove(value.into())
     }
 }
 
 impl From<SetAction> for Update {
     fn from(value: SetAction) -> Self {
-        Self::Set(value.into())
+        Self::SetRemove(value.into())
     }
 }
 
 impl From<Assign> for Update {
     fn from(value: Assign) -> Self {
-        Self::Set(value.into())
+        Self::SetRemove(value.into())
     }
 }
 
 impl From<Math> for Update {
     fn from(value: Math) -> Self {
-        Self::Set(value.into())
+        Self::SetRemove(value.into())
     }
 }
 
 impl From<ListAppend> for Update {
     fn from(value: ListAppend) -> Self {
-        Self::Set(value.into())
+        Self::SetRemove(value.into())
     }
 }
 
 impl From<IfNotExists> for Update {
     fn from(value: IfNotExists) -> Self {
-        Self::Set(value.into())
+        Self::SetRemove(value.into())
     }
 }
 
 impl From<Remove> for Update {
     fn from(value: Remove) -> Self {
-        Self::Remove(value)
+        Self::SetRemove(value.into())
+    }
+}
+
+impl From<SetRemove> for Update {
+    fn from(value: SetRemove) -> Self {
+        Self::SetRemove(value)
     }
 }
 
@@ -170,21 +181,19 @@ mod test {
         let update = Update::from(Path::new_name("foo").math().add(7));
         assert_eq!("SET foo = foo + 7", update.to_string());
 
-        let update = Update::from(Path::new_name("foo").if_not_exists().assign("a value"));
+        let update = Update::from(Path::new_name("foo").if_not_exists().set("a value"));
         assert_eq!(
             r#"SET foo = if_not_exists(foo, "a value")"#,
             update.to_string()
         );
 
-        let update = Update::from(Remove::new_name("foo"));
+        let update = Update::from(Remove::from(Path::new_name("foo")));
         assert_eq!(r#"REMOVE foo"#, update.to_string());
 
         let update = Update::from("foo[3].bar[0]".parse::<Path>().unwrap().remove());
         assert_eq!(r#"REMOVE foo[3].bar[0]"#, update.to_string());
 
-        let update = Update::from(Remove::from_iter(
-            ["foo", "bar", "baz"].into_iter().map(Path::new_name),
-        ));
+        let update = Update::from(Remove::from_iter(["foo", "bar", "baz"].map(Path::new_name)));
         assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
     }
 }

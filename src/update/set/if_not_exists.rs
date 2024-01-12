@@ -2,7 +2,7 @@ use core::fmt::{self, Write};
 
 use crate::{
     path::Path,
-    update::Set,
+    update::{set_remove::SetRemove, Set},
     value::{Value, ValueOrRef},
 };
 
@@ -29,19 +29,23 @@ impl IfNotExists {
         }
     }
 
-    /// Add an additional action to this `SET` statement.
+    /// Add an additional [`Set`] or [`Remove`] statement to this expression.
     ///
     /// ```
     /// use dynamodb_expression::{Num, Path, update::Set};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let set = Path::new_name("foo").if_not_exists().assign(Num::new(7))
-    ///     .and(Path::new_name("bar").assign("a value"));
+    /// let set = Path::new_name("foo")
+    ///     .if_not_exists()
+    ///     .set(Num::new(7))
+    ///     .and(Path::new_name("bar").set("a value"));
     /// assert_eq!(r#"SET foo = if_not_exists(foo, 7), bar = "a value""#, set.to_string());
     /// ```
-    pub fn and<T>(self, action: T) -> Set
+    ///
+    /// [`Remove`]: crate::update::Remove
+    pub fn and<T>(self, action: T) -> SetRemove
     where
-        T: Into<Set>,
+        T: Into<SetRemove>,
     {
         Set::from(self).and(action)
     }
@@ -81,7 +85,7 @@ impl Builder {
     /// let if_not_exists = Path::new_name("foo")
     ///     .if_not_exists()
     ///     .src(Path::new_name("bar"))
-    ///     .assign(Num::new(42));
+    ///     .set(Num::new(42));
     /// assert_eq!("foo = if_not_exists(bar, 42)", if_not_exists.to_string());
     /// ```
     ///
@@ -93,7 +97,7 @@ impl Builder {
     /// #
     /// let if_not_exists = Path::new_name("foo")
     ///     .if_not_exists()
-    ///     .assign(Num::new(42));
+    ///     .set(Num::new(42));
     /// assert_eq!("foo = if_not_exists(foo, 42)", if_not_exists.to_string());
     /// ```
     pub fn src<T>(mut self, src: T) -> Self
@@ -110,7 +114,20 @@ impl Builder {
     /// Consumes this [`Builder`] and creates an [`IfNotExists`] instance.
     ///
     /// See also: [`Path::if_not_exists`]
+    #[deprecated(since = "0.2.0-beta.6", note = "Use `.set(value)` instead")]
     pub fn assign<T>(self, value: T) -> IfNotExists
+    where
+        T: Into<Value>,
+    {
+        self.set(value)
+    }
+
+    /// The value to conditionally set.
+    ///
+    /// Consumes this [`Builder`] and creates an [`IfNotExists`] instance.
+    ///
+    /// See also: [`Path::if_not_exists`]
+    pub fn set<T>(self, value: T) -> IfNotExists
     where
         T: Into<Value>,
     {
@@ -129,7 +146,7 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use crate::{
-        update::{Assign, Set, SetAction},
+        update::{set_remove::SetRemove, Assign, Set, SetAction},
         Num, Path,
     };
 
@@ -137,8 +154,8 @@ mod test {
 
     #[test]
     fn and() {
-        let if_not_exists: IfNotExists = Path::new_name("foo").if_not_exists().assign("a value");
-        let assign: Assign = Path::new_name("bar").assign(Num::new(8));
+        let if_not_exists: IfNotExists = Path::new_name("foo").if_not_exists().set("a value");
+        let assign: Assign = Path::new_name("bar").set(Num::new(8));
 
         // Should be able to concatenate anything that can be turned into a SetAction.
 
@@ -158,10 +175,31 @@ mod test {
 
         // Should be able to concatenate a Set instance
 
-        let set: Set = assign.and(Path::new_name("baz").math().add(1));
-        let combined = if_not_exists.and(set);
+        let set: Set = [
+            SetAction::from(assign),
+            SetAction::from(Path::new_name("baz").math().add(1)),
+        ]
+        .into_iter()
+        .collect();
+        let combined = if_not_exists.clone().and(set);
         assert_eq!(
             r#"SET foo = if_not_exists(foo, "a value"), bar = 8, baz = baz + 1"#,
+            combined.to_string()
+        );
+
+        // Should be able to concatenate a Remove instance
+
+        let combined = if_not_exists.clone().and(Path::new_name("quux").remove());
+        assert_eq!(
+            r#"SET foo = if_not_exists(foo, "a value") REMOVE quux"#,
+            combined.to_string()
+        );
+
+        // Should be able to concatenate a SetRemove instance
+
+        let combined = if_not_exists.and(SetRemove::from(Path::new_name("quux").remove()));
+        assert_eq!(
+            r#"SET foo = if_not_exists(foo, "a value") REMOVE quux"#,
             combined.to_string()
         );
     }

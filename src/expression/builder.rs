@@ -13,7 +13,7 @@ use crate::{
     key::KeyCondition,
     operand::{Operand, OperandType, Size},
     path::{Element, Name, Path},
-    update::{set::SetAction, Update},
+    update::{set::SetAction, Set, Update},
     value::{Ref, Value, ValueOrRef},
 };
 
@@ -279,49 +279,20 @@ impl Builder {
 
     fn process_update(&mut self, update: Update) -> Update {
         match update {
-            Update::Set(mut update) => {
-                update.actions = update
-                    .actions
-                    .into_iter()
-                    .map(|action| match action {
-                        SetAction::Assign(mut action) => {
-                            action.path = self.process_path(action.path);
-                            action.value = self.process_value(action.value).into();
+            Update::SetRemove(mut update) => {
+                if let Some(set) = update.set {
+                    update.set = Some(self.process_set(set));
+                }
 
-                            action.into()
-                        }
-                        SetAction::Math(mut action) => {
-                            action.dst = self.process_path(action.dst);
-                            action.src = action.src.map(|src| self.process_path(src));
-                            action.num = self.process_value(action.num).into();
+                if let Some(mut remove) = update.remove {
+                    remove.paths = remove
+                        .paths
+                        .into_iter()
+                        .map(|path| self.process_path(path))
+                        .collect();
 
-                            action.into()
-                        }
-                        SetAction::ListAppend(mut action) => {
-                            action.dst = self.process_path(action.dst);
-                            action.src = action.src.map(|src| self.process_path(src));
-                            action.list = self.process_value(action.list).into();
-
-                            action.into()
-                        }
-                        SetAction::IfNotExists(mut action) => {
-                            action.dst = self.process_path(action.dst);
-                            action.src = action.src.map(|src| self.process_path(src));
-                            action.value = self.process_value(action.value).into();
-
-                            action.into()
-                        }
-                    })
-                    .collect();
-
-                update.into()
-            }
-            Update::Remove(mut update) => {
-                update.paths = update
-                    .paths
-                    .into_iter()
-                    .map(|path| self.process_path(path))
-                    .collect();
+                    update.remove = Some(remove);
+                }
 
                 update.into()
             }
@@ -338,6 +309,44 @@ impl Builder {
                 update.into()
             }
         }
+    }
+
+    fn process_set(&mut self, mut set: Set) -> Set {
+        set.actions = set
+            .actions
+            .into_iter()
+            .map(|action| match action {
+                SetAction::Assign(mut action) => {
+                    action.path = self.process_path(action.path);
+                    action.value = self.process_value(action.value).into();
+
+                    action.into()
+                }
+                SetAction::Math(mut action) => {
+                    action.dst = self.process_path(action.dst);
+                    action.src = action.src.map(|src| self.process_path(src));
+                    action.num = self.process_value(action.num).into();
+
+                    action.into()
+                }
+                SetAction::ListAppend(mut action) => {
+                    action.dst = self.process_path(action.dst);
+                    action.src = action.src.map(|src| self.process_path(src));
+                    action.list = self.process_value(action.list).into();
+
+                    action.into()
+                }
+                SetAction::IfNotExists(mut action) => {
+                    action.dst = self.process_path(action.dst);
+                    action.src = action.src.map(|src| self.process_path(src));
+                    action.value = self.process_value(action.value).into();
+
+                    action.into()
+                }
+            })
+            .collect();
+
+        set
     }
 
     fn process_path(&mut self, mut path: Path) -> Path {

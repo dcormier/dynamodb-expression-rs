@@ -17,15 +17,16 @@ let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).a
 
 let query_output = Expression::builder()
     .with_filter(
-        Path::new_name("name")
+        "name"
+            .parse::<Path>()?
             .attribute_exists()
-            .and(Path::new_name("age").greater_than_or_equal(Num::new(2.5))),
+            .and("age".parse::<Path>()?.greater_than_or_equal(Num::new(2.5))),
     )
     .with_projection(["name", "age"])
-    .with_key_condition(Path::new_name("id").key().equal(Num::new(42)))
+    .with_key_condition("id".parse::<Path>()?.key().equal(Num::new(42)))
     .build()
     .query(&client)
-    .table_name("your_table")
+    .table_name("people")
     .send()
     .await?;
 ```

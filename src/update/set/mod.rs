@@ -12,56 +12,70 @@ pub use self::set_action::SetAction;
 
 use core::fmt;
 
-/// Represents a [`SET` statement for an update expression][1].
+use super::set_remove::SetRemove;
+
+/// Represents a [`SET` statement for an update expression][1]. Most of the time
+/// you won't use this directly.
 ///
-/// See also: [`Update`]
+/// See also: [`Update`], [`Path::set`], [`Path::if_not_exists`], [`Path::math`]
+/// [`Path::list_append`], [`Set::and`]
 ///
 /// # Examples
 ///
 /// ```
-/// use dynamodb_expression::{update::Set, Path};
+/// use dynamodb_expression::{Path, update::Set};
 /// # use pretty_assertions::assert_eq;
 ///
-/// let set_foo = Set::from(Path::new_name("foo").math().add(7));
-/// assert_eq!("SET foo = foo + 7", set_foo.to_string());
+/// let set = Set::from("foo".parse::<Path>().unwrap().math().add(1));
+/// assert_eq!("SET foo = foo + 1", set.to_string());
 ///
-/// let set_bar = Set::from(Path::new_name("bar").if_not_exists().assign("a value"));
+/// let set_foo = Set::from("foo".parse::<Path>().unwrap().math().add(1));
+/// assert_eq!("SET foo = foo + 1", set_foo.to_string());
+///
+/// let set_bar = Set::from("bar".parse::<Path>().unwrap().if_not_exists().set("a value"));
 /// assert_eq!(r#"SET bar = if_not_exists(bar, "a value")"#, set_bar.to_string());
 ///
-/// let set_foo_and_bar = set_foo.and(set_bar);
+/// let set = set_foo.and(set_bar);
 /// assert_eq!(
-///     r#"SET foo = foo + 7, bar = if_not_exists(bar, "a value")"#,
-///     set_foo_and_bar.to_string(),
+///     r#"SET foo = foo + 1, bar = if_not_exists(bar, "a value")"#,
+///     set.to_string(),
 /// );
+///
+/// let set = Set::from("foo".parse::<Path>().unwrap().list_append().list(["a", "b", "c"]));
+/// assert_eq!(r#"SET foo = list_append(foo, ["a", "b", "c"])"#, set.to_string());
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET
 /// [`Update`]: crate::update::Update
+/// [`Path::set`]: crate::path::Path::set
+/// [`Path::if_not_exists`]: crate::path::Path::if_not_exists
+/// [`Path::math`]: crate::path::Path::math
+/// [`Path::list_append`]: crate::path::Path::list_append
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Set {
     pub(crate) actions: Vec<SetAction>,
 }
 
 impl Set {
-    /// Add an additional action to this `SET` statement.
+    /// Add an additional [`Set`] or [`Remove`] statement to this expression.
     ///
     /// ```
     /// use dynamodb_expression::{Num, Path, update::Set};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let set = Set::from(Path::new_name("foo").assign(Num::new(7)))
-    ///     .and(Path::new_name("bar").assign("a value"));
-    /// assert_eq!(r#"SET foo = 7, bar = "a value""#, set.to_string());
+    /// let set = Path::new_name("foo")
+    ///     .set(Num::new(7))
+    ///     .and(Path::new_name("bar").set("a value"))
+    ///     .and(Path::new_name("baz").remove());
+    /// assert_eq!(r#"SET foo = 7, bar = "a value" REMOVE baz"#, set.to_string());
     /// ```
-    pub fn and<T>(mut self, action: T) -> Self
+    ///
+    /// [`Remove`]: crate::update::Remove
+    pub fn and<T>(self, other: T) -> SetRemove
     where
-        T: Into<Set>,
+        T: Into<SetRemove>,
     {
-        let mut set = action.into();
-
-        self.actions.append(&mut set.actions);
-
-        self
+        SetRemove::from(self).and(other)
     }
 }
 
@@ -111,14 +125,14 @@ where
 mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::{Num, Path};
+    use crate::{update::set_remove::SetRemove, Num, Path};
 
     use super::{Assign, IfNotExists, ListAppend, Math, Set, SetAction};
 
     #[test]
     fn from() {
-        let assign: Assign = Path::new_name("foo").assign(Num::new(8));
-        let if_not_exists: IfNotExists = Path::new_name("bar").if_not_exists().assign(Num::new(7));
+        let assign: Assign = Path::new_name("foo").set(Num::new(8));
+        let if_not_exists: IfNotExists = Path::new_name("bar").if_not_exists().set(Num::new(7));
         let math: Math = Path::new_name("baz").math().add(1);
         let list_append: ListAppend = Path::new_name("quux").list_append().list(["d", "e", "f"]);
 
@@ -134,8 +148,8 @@ mod test {
 
     #[test]
     fn and() {
-        let assign: Assign = Path::new_name("bar").assign(Num::new(8));
-        let set: Set = Set::from(Path::new_name("foo").assign("a value"));
+        let assign: Assign = Path::new_name("bar").set(Num::new(8));
+        let set: Set = Set::from(Path::new_name("foo").set("a value"));
 
         // Should be able to concatenate anything that can be turned into a SetAction.
 
@@ -149,11 +163,26 @@ mod test {
 
         // Should be able to concatenate a Set instance
 
-        let set_2: Set = assign.and(Path::new_name("baz").if_not_exists().assign(Num::new(7)));
-        let combined = set.and(set_2);
+        let set_2: Set = [
+            SetAction::from(assign),
+            SetAction::from(Path::new_name("baz").if_not_exists().set(Num::new(7))),
+        ]
+        .into_iter()
+        .collect();
+        let combined = set.clone().and(set_2);
         assert_eq!(
             r#"SET foo = "a value", bar = 8, baz = if_not_exists(baz, 7)"#,
             combined.to_string()
         );
+
+        // Should be able to concatenate a Remove instance
+
+        let combined = set.clone().and(Path::new_name("quux").remove());
+        assert_eq!(r#"SET foo = "a value" REMOVE quux"#, combined.to_string());
+
+        // Should be able to concatenate a SetRemove instance
+
+        let combined = set.and(SetRemove::from(Path::new_name("quux").remove()));
+        assert_eq!(r#"SET foo = "a value" REMOVE quux"#, combined.to_string());
     }
 }

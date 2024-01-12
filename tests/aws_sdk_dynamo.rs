@@ -258,6 +258,7 @@ async fn test_update(config: &Config) {
 
     test_update_set(config, client).await;
     test_update_remove(config, client).await;
+    test_update_set_remove(config, client).await;
     test_update_add(config, client).await;
     test_update_delete(config, client).await;
 }
@@ -269,7 +270,7 @@ async fn test_update_set(config: &Config, client: &Client) {
     let update = Expression::builder()
         .with_update(
             Path::new_name(ATTR_STRING)
-                .assign("abcdef")
+                .set("abcdef")
                 .and(Path::new_name(ATTR_NUM).math().sub(3.5))
                 .and(
                     Path::new_name(ATTR_LIST)
@@ -286,7 +287,7 @@ async fn test_update_set(config: &Config, client: &Client) {
                 .and(
                     Path::new_name(ATTR_NEW_FIELD)
                         .if_not_exists()
-                        .assign("A new field"),
+                        .set("A new field"),
                 ),
         )
         .build()
@@ -398,6 +399,11 @@ async fn test_update_remove(config: &Config, client: &Client) {
                 Element::new_indexed_field(ATTR_LIST, 0),
             ]),
             Path::from_iter([ATTR_MAP, ATTR_NULL].map(Name::from)),
+            Path::from_iter([
+                // The index is to the map in the list.
+                Element::new_indexed_field(ATTR_LIST, 9),
+                Element::new_name(ATTR_NUM),
+            ]),
         ]))
         .build()
         .update_item(client)
@@ -465,6 +471,70 @@ async fn test_update_remove(config: &Config, client: &Client) {
         None,
         map_list_updated.iter().find(|elem| *elem == map_list_first),
         "The first item should have been removed"
+    );
+
+    let list_map_updated = updated_item
+        .get(ATTR_LIST)
+        .expect("List is missing")
+        .as_l()
+        .expect("List is not a list")
+        .get(9)
+        .expect("Map is missing from the list")
+        .as_m()
+        .expect("Item is not a map");
+
+    assert_eq!(
+        None,
+        list_map_updated.get(ATTR_NUM),
+        "Sub-attribute should have been removed"
+    );
+}
+
+async fn test_update_set_remove(config: &Config, client: &Client) {
+    let item = fresh_item(config).await;
+    assert_eq!(None, item.get(ATTR_NEW_FIELD));
+
+    let update = Expression::builder()
+        .with_update(
+            Path::new_name(ATTR_STRING)
+                .set("abcdef")
+                .and(Path::new_name(ATTR_NUM).remove()),
+        )
+        .build()
+        .update_item(client)
+        .table_name(&config.table_name)
+        .set_key(item_key(&item).into());
+
+    // println!("\n{:?}\n", update.as_input());
+
+    let updated_item = update
+        .return_values(ReturnValue::AllNew)
+        .send()
+        .await
+        .expect("Failed to update item")
+        .attributes
+        .expect("Where is the item?");
+
+    // println!("Got item: {:#?}", DebugItem(&updated_item));
+
+    assert_ne!(
+        item.get(ATTR_STRING),
+        updated_item.get(ATTR_STRING),
+        "Updated string should be different."
+    );
+    assert_eq!(
+        "abcdef",
+        updated_item
+            .get(ATTR_STRING)
+            .map(AttributeValue::as_s)
+            .expect("Field is missing")
+            .expect("That field should be a String"),
+        "Assigning a new value to the field didn't work"
+    );
+    assert_eq!(
+        None,
+        updated_item.get(ATTR_NUM),
+        "Updated number should be removed"
     );
 }
 

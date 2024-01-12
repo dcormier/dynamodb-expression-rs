@@ -16,6 +16,7 @@ use crate::{
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.ADD
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
 /// [`Update`]: crate::update::Update
+#[must_use = "Use in an update expression with `Update::from(add)`"]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Add {
     pub(crate) path: Path,

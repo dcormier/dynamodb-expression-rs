@@ -13,6 +13,7 @@ use crate::{
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.DELETE
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
 /// [`Update`]: crate::update::Update
+#[must_use = "Use in an update expression with `Update::from(delete)`"]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Delete {
     pub(crate) path: Path,

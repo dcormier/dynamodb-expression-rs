@@ -22,7 +22,6 @@ pub const ATTR_BLOBS: &str = "blobs";
 pub const ATTR_BOOL: &str = "bool";
 pub const ATTR_NULL: &str = "null";
 
-#[allow(dead_code)]
 pub fn new_item<T>(id: T) -> HashMap<String, AttributeValue>
 where
     T: Into<String>,
@@ -46,11 +45,14 @@ where
         (ATTR_BLOBS, Bs(into_blobs(["foo", "bar", "baz"]))),
     ];
 
-    let mut list = values.iter().map(|(_k, v)| v.clone()).collect_vec();
+    let mut list = values.iter().map(|(_k, v)| v).cloned().collect_vec();
     // Nested list.
     list.push(L(list.clone()));
 
     let mut item = into_map(values);
+    let map = M(item.clone());
+    list.push(map.clone());
+
     item.insert(ATTR_LIST.into(), L(list));
 
     // Nested map.
@@ -112,5 +114,5 @@ where
 #[test]
 fn item() {
     let item = new_item("ITEM ID");
-    println!("{:?}", DebugItem(item));
+    println!("{:#?}", DebugItem(item));
 }

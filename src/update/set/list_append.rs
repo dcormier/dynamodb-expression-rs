@@ -2,7 +2,7 @@ use core::fmt::{self, Write};
 
 use crate::{
     path::Path,
-    update::Set,
+    update::{set_remove::SetRemove, Set},
     value::{List, ValueOrRef},
 };
 
@@ -38,19 +38,23 @@ impl ListAppend {
         }
     }
 
-    /// Add an additional action to this `SET` statement.
+    /// Add an additional [`Set`] or [`Remove`] statement to this expression.
     ///
     /// ```
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let set = Path::new_name("foo").list_append().list([7, 8, 9].map(Num::new))
-    ///     .and(Path::new_name("bar").assign("a value"));
+    /// let set = Path::new_name("foo")
+    ///     .list_append()
+    ///     .list([7, 8, 9].map(Num::new))
+    ///     .and(Path::new_name("bar").set("a value"));
     /// assert_eq!(r#"SET foo = list_append(foo, [7, 8, 9]), bar = "a value""#, set.to_string());
     /// ```
-    pub fn and<T>(self, action: T) -> Set
+    ///
+    /// [`Remove`]: crate::update::Remove
+    pub fn and<T>(self, action: T) -> SetRemove
     where
-        T: Into<Set>,
+        T: Into<SetRemove>,
     {
         Set::from(self).and(action)
     }
@@ -226,7 +230,7 @@ mod test {
 
     use crate::{
         path::Name,
-        update::{Assign, Set, SetAction},
+        update::{set_remove::SetRemove, Assign, Set, SetAction},
         Num, Path,
     };
 
@@ -268,7 +272,7 @@ mod test {
     #[test]
     fn and() {
         let list_append = Path::new_name("foo").list_append().list(["d", "e", "f"]);
-        let assign: Assign = Path::new_name("bar").assign(Num::new(8));
+        let assign: Assign = Path::new_name("bar").set(Num::new(8));
 
         // Should be able to concatenate anything that can be turned into a SetAction.
 
@@ -288,10 +292,31 @@ mod test {
 
         // Should be able to concatenate a Set instance
 
-        let set: Set = assign.and(Path::new_name("baz").math().add(1));
-        let combined = list_append.and(set);
+        let set: Set = [
+            SetAction::from(assign),
+            SetAction::from(Path::new_name("baz").math().add(1)),
+        ]
+        .into_iter()
+        .collect();
+        let combined = list_append.clone().and(set);
         assert_eq!(
             r#"SET foo = list_append(foo, ["d", "e", "f"]), bar = 8, baz = baz + 1"#,
+            combined.to_string()
+        );
+
+        // Should be able to concatenate a Remove instance
+
+        let combined = list_append.clone().and(Path::new_name("quux").remove());
+        assert_eq!(
+            r#"SET foo = list_append(foo, ["d", "e", "f"]) REMOVE quux"#,
+            combined.to_string()
+        );
+
+        // Should be able to concatenate a SetRemove instance
+
+        let combined = list_append.and(SetRemove::from(Path::new_name("quux").remove()));
+        assert_eq!(
+            r#"SET foo = list_append(foo, ["d", "e", "f"]) REMOVE quux"#,
             combined.to_string()
         );
     }

@@ -165,6 +165,8 @@ where
 /// See also: [`Key`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
+#[must_use = "Use in a DynamoDB expression with \
+    `Expression::builder().with_key_condition(key_condition)`"]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyCondition {
     pub(crate) condition: Condition,

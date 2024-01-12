@@ -35,6 +35,9 @@ use core::{fmt, ops};
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Syntax
 /// [`Path`]: crate::path::Path
+#[must_use = "Use in a DynamoDB expression with \
+    `Expression::builder().with_condition(condition)` or \
+    `Expression::builder().with_filter(condition)`"]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Condition {
     AttributeExists(AttributeExists),

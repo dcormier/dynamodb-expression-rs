@@ -1,70 +1,87 @@
 use core::fmt;
 
-use crate::path::{Indexes, Name, Path};
+use crate::path::Path;
+
+use super::set_remove::SetRemove;
 
 /// For use an in an update expression to [remove attributes from an
 /// item][1], or [elements from a list][2].
 ///
-/// See also: [`Path::remove`], [`Update`]
+/// See also: [`Path::remove`], [`SetRemove`], [`Update`]
 ///
 /// # Examples
 ///
 /// ```
-/// use dynamodb_expression::{Path, update::{Remove, Update}};
+/// use dynamodb_expression::{Expression, Path, update::{Remove, Update}};
 /// # use pretty_assertions::assert_eq;
 ///
-/// let update = Remove::new_name("foo");
-/// assert_eq!(r#"REMOVE foo"#, update.to_string());
+/// let remove = "foo".parse::<Path>().unwrap().remove();
+/// assert_eq!("REMOVE foo", remove.to_string());
 ///
-/// let update = Remove::new_indexed_field("foo", [8]);
-/// assert_eq!(r#"REMOVE foo[8]"#, update.to_string());
+/// let remove = Remove::from("foo[8]".parse::<Path>().unwrap());
+/// assert_eq!("REMOVE foo[8]", remove.to_string());
 ///
-/// let update = Remove::from("foo[8]".parse::<Path>().unwrap());
-/// assert_eq!(r#"REMOVE foo[8]"#, update.to_string());
+/// let remove: Remove = ["foo", "bar", "baz"].into_iter().map(Path::new_name).collect();
+/// assert_eq!("REMOVE foo, bar, baz", remove.to_string());
 ///
-/// let update = Remove::from_iter(["foo", "bar", "baz"].map(Path::new_name));
-/// assert_eq!(r#"REMOVE foo, bar, baz"#, update.to_string());
+/// let remove = remove.and(Path::new_name("quux").remove());
+/// assert_eq!("REMOVE foo, bar, baz, quux", remove.to_string());
+///
+/// // Use in an update expression
+/// let update = Update::from(remove.clone());
+///
+/// // Use an expression builder
+/// let expression = Expression::builder().with_update(remove).build();
+/// # _ = expression;
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE.RemovingListElements
+/// [`SetRemove`]: crate::update::SetRemove
 /// [`Update`]: crate::update::Update
+#[must_use = "Use in an update expression with `Update::from(remove)`"]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Remove {
     pub(crate) paths: Vec<Path>,
 }
 
 impl Remove {
-    /// Remove the specified top-level element.
+    /// Add an additional [`Remove`] or [`Set`] statement to this expression.
     ///
-    /// See also: [`Name`]
-    pub fn new_name<T>(name: T) -> Self
+    /// ```
+    /// use dynamodb_expression::Path;
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let remove = Path::new_name("foo").remove().and(Path::new_name("bar").remove());
+    /// assert_eq!("REMOVE foo, bar", remove.to_string());
+    ///
+    /// let set_remove = remove.and(Path::new_name("baz").set("a value"));
+    /// assert_eq!(r#"SET baz = "a value" REMOVE foo, bar"#, set_remove.to_string());
+    /// ```
+    ///
+    /// [`Set`]: crate::update::Set
+    pub fn and<T>(self, other: T) -> SetRemove
     where
-        T: Into<Name>,
+        T: Into<SetRemove>,
     {
-        Self {
-            paths: vec![name.into().into()],
-        }
+        SetRemove::from(self).and(other)
     }
+}
 
-    /// Constructs a [`Remove`] for an indexed field element of a document path.
-    /// For example, `foo[3]` or `foo[7][4]`. If you have a attribute name with
-    /// no indexes, you can pass an empty collection, or use [`Remove::new_name`].
-    ///
-    /// `indexes` here can be an array, slice, `Vec` of, or single `usize`.
-    ///
-    /// See also: [`IndexedField`], [`Path::new_indexed_field`]
-    ///
-    /// [`Remove::new_name`]: Self::new_name
-    /// [`IndexedField`]: crate::path::IndexedField
-    pub fn new_indexed_field<N, I>(name: N, indexes: I) -> Self
-    where
-        N: Into<Name>,
-        I: Indexes,
-    {
-        Self {
-            paths: vec![Path::new_indexed_field(name, indexes)],
-        }
+impl fmt::Display for Remove {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("REMOVE ")?;
+
+        let mut first = true;
+        self.paths.iter().try_for_each(|name| {
+            if first {
+                first = false;
+            } else {
+                f.write_str(", ")?;
+            }
+
+            name.fmt(f)
+        })
     }
 }
 
@@ -93,25 +110,33 @@ where
     }
 }
 
-impl fmt::Display for Remove {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("REMOVE ")?;
+#[cfg(test)]
+mod test {
+    use pretty_assertions::assert_eq;
 
-        let mut first = true;
-        self.paths.iter().try_for_each(|name| {
-            if first {
-                first = false;
-            } else {
-                f.write_str(", ")?;
-            }
+    use crate::Path;
 
-            name.fmt(f)
-        })
+    #[test]
+    fn sub_attributes() {
+        assert_eq!(
+            "REMOVE foo.bar",
+            "foo.bar".parse::<Path>().unwrap().remove().to_string()
+        );
+        assert_eq!(
+            "REMOVE foo[3].bar",
+            "foo[3].bar".parse::<Path>().unwrap().remove().to_string()
+        );
+        assert_eq!(
+            "REMOVE foo[3][7]",
+            "foo[3][7]".parse::<Path>().unwrap().remove().to_string()
+        );
     }
-}
 
-impl From<Remove> for Vec<Path> {
-    fn from(remove: Remove) -> Self {
-        remove.paths
+    #[test]
+    fn and() {
+        let remove = Path::new_name("foo")
+            .remove()
+            .and(Path::new_name("bar").remove());
+        assert_eq!("REMOVE foo, bar", remove.to_string());
     }
 }

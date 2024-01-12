@@ -2,6 +2,7 @@ use core::fmt;
 
 use crate::{
     path::Path,
+    update::set_remove::SetRemove,
     value::{Value, ValueOrRef},
 };
 
@@ -16,6 +17,7 @@ use super::Set;
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingListElements
 /// [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingNestedMapAttributes
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[must_use] // TODO: More detail
 pub struct Assign {
     pub(crate) path: Path,
     pub(crate) value: ValueOrRef,
@@ -33,20 +35,23 @@ impl Assign {
         }
     }
 
-    /// Add an additional action to this `SET` statement.
+    /// Add an additional [`Set`] or [`Remove`] to this expression.
     ///
     /// ```
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let set = Path::new_name("foo")
-    ///     .assign(Num::new(7))
-    ///     .and(Path::new_name("bar").assign("a value"));
-    /// assert_eq!(r#"SET foo = 7, bar = "a value""#, set.to_string());
+    ///     .set(Num::new(7))
+    ///     .and(Path::new_name("bar").set("a value"))
+    ///     .and(Path::new_name("baz").remove());
+    /// assert_eq!(r#"SET foo = 7, bar = "a value" REMOVE baz"#, set.to_string());
     /// ```
-    pub fn and<T>(self, action: T) -> Set
+    ///
+    /// [`Remove`]: crate::update::Remove
+    pub fn and<T>(self, action: T) -> SetRemove
     where
-        T: Into<Set>,
+        T: Into<SetRemove>,
     {
         Set::from(self).and(action)
     }
@@ -65,7 +70,7 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use crate::{
-        update::{IfNotExists, Set, SetAction},
+        update::{set_remove::SetRemove, IfNotExists, Set, SetAction},
         Num, Path,
     };
 
@@ -73,8 +78,8 @@ mod test {
 
     #[test]
     fn and() {
-        let assign: Assign = Path::new_name("foo").assign("a value");
-        let if_not_exists: IfNotExists = Path::new_name("bar").if_not_exists().assign(Num::new(8));
+        let assign: Assign = Path::new_name("foo").set("a value");
+        let if_not_exists: IfNotExists = Path::new_name("bar").if_not_exists().set(Num::new(8));
 
         // Should be able to concatenate anything that can be turned into a SetAction.
 
@@ -94,11 +99,26 @@ mod test {
 
         // Should be able to concatenate a Set instance
 
-        let set: Set = if_not_exists.and(Path::new_name("baz").math().add(1));
-        let combined = assign.and(set);
+        let set: Set = [
+            SetAction::from(if_not_exists),
+            SetAction::from(Path::new_name("baz").math().add(1)),
+        ]
+        .into_iter()
+        .collect();
+        let combined = assign.clone().and(set);
         assert_eq!(
             r#"SET foo = "a value", bar = if_not_exists(bar, 8), baz = baz + 1"#,
             combined.to_string()
         );
+
+        // Should be able to concatenate a Remove instance
+
+        let combined = assign.clone().and(Path::new_name("quux").remove());
+        assert_eq!(r#"SET foo = "a value" REMOVE quux"#, combined.to_string());
+
+        // Should be able to concatenate a SetRemove instance
+
+        let combined = assign.and(SetRemove::from(Path::new_name("quux").remove()));
+        assert_eq!(r#"SET foo = "a value" REMOVE quux"#, combined.to_string());
     }
 }

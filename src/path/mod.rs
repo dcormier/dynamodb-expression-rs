@@ -337,7 +337,7 @@ impl Path {
     }
 }
 
-/// Methods relating to building condition and filter expressions.
+/// Methods related to building condition and filter expressions.
 impl Path {
     /// Check if the value at this [`Path`] is equal to the given value.
     ///
@@ -577,7 +577,7 @@ impl Path {
     }
 }
 
-/// Methods relating to building update expressions.
+/// Methods related to building update expressions.
 ///
 /// See also: [`Update`]
 ///
@@ -591,7 +591,7 @@ impl Path {
     /// use dynamodb_expression::{Num, Path, update::Update};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let assign = Path::new_name("name").assign("Jill");
+    /// let assign = Path::new_name("name").set("Jill");
     /// assert_eq!(r#"name = "Jill""#, assign.to_string());
     ///
     /// let update = Update::from(assign);
@@ -602,7 +602,34 @@ impl Path {
     /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingListElements
     /// [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingNestedMapAttributes
     /// [`Update`]: crate::update::Update
+    #[deprecated(since = "0.2.0-beta.6", note = "Use `.set(value)` instead")]
     pub fn assign<T>(self, value: T) -> Assign
+    where
+        T: Into<Value>,
+    {
+        self.set(value)
+    }
+
+    /// Represents assigning a value of a [attribute][1], [list][2], or [map][3].
+    ///
+    /// See also: [`Update`]
+    ///
+    /// ```
+    /// use dynamodb_expression::{Num, Path, update::Update};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let assign = Path::new_name("name").set("Jill");
+    /// assert_eq!(r#"name = "Jill""#, assign.to_string());
+    ///
+    /// let update = Update::from(assign);
+    /// assert_eq!(r#"SET name = "Jill""#, update.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.ModifyingAttributes
+    /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingListElements
+    /// [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingNestedMapAttributes
+    /// [`Update`]: crate::update::Update
+    pub fn set<T>(self, value: T) -> Assign
     where
         T: Into<Value>,
     {
@@ -647,7 +674,7 @@ impl Path {
     /// use dynamodb_expression::{Num, Path, update::Update};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let list_append = Path::new_name("foo").list_append().list([7, 8, 9].map(Num::new));
+    /// let list_append = "foo".parse::<Path>().unwrap().list_append().list([7, 8, 9].map(Num::new));
     /// assert_eq!("foo = list_append(foo, [7, 8, 9])", list_append.to_string());
     ///
     /// let update = Update::from(list_append);
@@ -660,7 +687,7 @@ impl Path {
     /// use dynamodb_expression::{Num, Path, update::Update};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let list_append = Path::new_name("foo").list_append().before().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo".parse::<Path>().unwrap().list_append().before().list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append([1, 2, 3], foo)", list_append.to_string());
     ///
     /// let update = Update::from(list_append);
@@ -684,7 +711,7 @@ impl Path {
     /// use dynamodb_expression::{Num, Path, update::Update};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let if_not_exists = Path::new_name("foo").if_not_exists().assign(Num::new(7));
+    /// let if_not_exists = "foo".parse::<Path>().unwrap().if_not_exists().set(Num::new(7));
     /// assert_eq!("foo = if_not_exists(foo, 7)", if_not_exists.to_string());
     ///
     /// let update = Update::from(if_not_exists);
