@@ -906,14 +906,18 @@ where
 
 impl<T> FromIterator<T> for Path
 where
-    T: Into<Element>,
+    T: Into<Path>,
 {
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = T>,
     {
         Self {
-            elements: iter.into_iter().map(Into::into).collect(),
+            elements: iter
+                .into_iter()
+                .map(Into::into)
+                .flat_map(|path| path.elements)
+                .collect(),
         }
     }
 }
@@ -990,7 +994,7 @@ impl fmt::Display for PathParseError {
 
 #[cfg(test)]
 mod test {
-    use pretty_assertions::{assert_eq, assert_str_eq};
+    use pretty_assertions::assert_eq;
 
     use super::{Element, Name, Path, PathParseError};
     use crate::Num;
@@ -1081,7 +1085,7 @@ mod test {
     #[test]
     fn display_name() {
         let path = Element::new_name("foo");
-        assert_str_eq!("foo", path.to_string());
+        assert_eq!("foo", path.to_string());
     }
 
     #[test]
@@ -1090,27 +1094,27 @@ mod test {
 
         // From a usize
         let path = Element::new_indexed_field("foo", 42);
-        assert_str_eq!("foo[42]", path.to_string());
+        assert_eq!("foo[42]", path.to_string());
 
         // From an array of usize
         let path = Element::new_indexed_field("foo", [42]);
-        assert_str_eq!("foo[42]", path.to_string());
+        assert_eq!("foo[42]", path.to_string());
 
         // From a slice of usize
         let path = Element::new_indexed_field("foo", &([42, 37, 9])[..]);
-        assert_str_eq!("foo[42][37][9]", path.to_string());
+        assert_eq!("foo[42][37][9]", path.to_string());
     }
 
     #[test]
     fn display_path() {
         let path: Path = ["foo", "bar"].into_iter().map(Name::from).collect();
-        assert_str_eq!("foo.bar", path.to_string());
+        assert_eq!("foo.bar", path.to_string());
 
         let path = Path::from_iter([
             Element::new_name("foo"),
             Element::new_indexed_field("bar", 42),
         ]);
-        assert_str_eq!("foo.bar[42]", path.to_string());
+        assert_eq!("foo.bar[42]", path.to_string());
 
         // TODO: I'm not sure this is a legal path based on these examples:
         //       https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
@@ -1119,12 +1123,12 @@ mod test {
             Element::new_indexed_field("foo", 42),
             Element::new_name("bar"),
         ]);
-        assert_str_eq!("foo[42].bar", path.to_string());
+        assert_eq!("foo[42].bar", path.to_string());
     }
 
     #[test]
     fn size() {
-        assert_str_eq!(
+        assert_eq!(
             "size(a) = 0",
             "a".parse::<Path>()
                 .unwrap()
@@ -1178,7 +1182,7 @@ mod test {
         assert_eq!(r#"contains(foo, 42)"#, condition.to_string());
 
         // Binary
-        let condition = Path::new_name("foo").contains(Vec::<u8>::from("fish"));
+        let condition = Path::new_name("foo").contains(b"fish".to_vec());
         assert_eq!(r#"contains(foo, "ZmlzaA==")"#, condition.to_string());
     }
 
@@ -1188,5 +1192,73 @@ mod test {
         assert!(Path::from_iter(Vec::<Element>::new()).is_empty());
         // TODO: Uncomment this when `Path::from_iter(Vec<Path>)` works.
         // assert!(Path::from_iter(Vec::<Path>::new()).is_empty());
+    }
+
+    #[test]
+    fn from_iter() {
+        let path = Path::from_iter(["foo", "bar"].map(Name::from));
+        assert_eq!("foo.bar", path.to_string());
+        assert_eq!(
+            vec![Element::new_name("foo"), Element::new_name("bar")],
+            path.elements
+        );
+
+        let path = Path::from_iter([("foo", 42), ("bar", 37)]);
+        assert_eq!("foo[42].bar[37]", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_indexed_field("foo", 42),
+                Element::new_indexed_field("bar", 37),
+            ],
+            path.elements
+        );
+
+        let path = Path::from_iter([("foo", vec![42, 7]), ("bar", vec![37])]);
+        assert_eq!("foo[42][7].bar[37]", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_indexed_field("foo", [42, 7]),
+                Element::new_indexed_field("bar", 37),
+            ],
+            path.elements
+        );
+
+        let path = Path::from_iter([("foo", [42, 7]), ("bar", [37, 9])]);
+        assert_eq!("foo[42][7].bar[37][9]", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_indexed_field("foo", [42, 7]),
+                Element::new_indexed_field("bar", [37, 9]),
+            ],
+            path.elements
+        );
+
+        let path = Path::from_iter([
+            Element::new_name("foo"),
+            Element::new_indexed_field("bar", 42),
+        ]);
+        assert_eq!("foo.bar[42]", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_name("foo"),
+                Element::new_indexed_field("bar", 42),
+            ],
+            path.elements
+        );
+
+        let path = Path::from_iter([
+            "foo.bar[42]".parse::<Path>().unwrap(),
+            "baz.quux".parse::<Path>().unwrap(),
+        ]);
+        assert_eq!("foo.bar[42].baz.quux", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_name("foo"),
+                Element::new_indexed_field("bar", 42),
+                Element::new_name("baz"),
+                Element::new_name("quux"),
+            ],
+            path.elements
+        );
     }
 }
