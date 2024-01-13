@@ -233,6 +233,18 @@ impl<const N: usize> From<[u8; N]> for Scalar {
     }
 }
 
+impl<const N: usize> From<&[u8; N]> for Scalar {
+    fn from(value: &[u8; N]) -> Self {
+        Self::Binary(value.into())
+    }
+}
+
+impl From<&[u8]> for Scalar {
+    fn from(value: &[u8]) -> Self {
+        Self::Binary(value.into())
+    }
+}
+
 impl From<()> for Scalar {
     fn from(_: ()) -> Self {
         Self::Null
@@ -250,52 +262,104 @@ impl FromIterator<u8> for Scalar {
 
 #[cfg(test)]
 mod test {
-    use pretty_assertions::assert_str_eq;
+    use pretty_assertions::assert_eq;
+
+    use crate::Num;
 
     use super::Scalar;
 
     #[test]
     fn string() {
-        let actual = Scalar::new_string("fish");
-        assert_str_eq!("\"fish\"", actual.to_string());
+        let fish: &str = "fish";
+
+        let actual = Scalar::new_string(fish);
+        assert_eq!("\"fish\"", actual.to_string());
+
+        // &str
+        let actual = Scalar::from(fish);
+        assert_eq!("\"fish\"", actual.to_string());
+
+        // &&str
+        let phish: &&str = &fish;
+        let actual = Scalar::from(phish);
+        assert_eq!("\"fish\"", actual.to_string());
+
+        // &String
+        let phish: String = fish.into();
+        let actual = Scalar::from(&phish);
+        assert_eq!("\"fish\"", actual.to_string());
+
+        // String
+        let actual = Scalar::from(phish);
+        assert_eq!("\"fish\"", actual.to_string());
     }
 
     #[test]
     fn numeric() {
         let actual = Scalar::new_num(42);
-        assert_str_eq!("42", actual.to_string());
+        assert_eq!("42", actual.to_string());
+
+        let actual = Scalar::from(Num::new(42));
+        assert_eq!("42", actual.to_string());
     }
 
     #[test]
     fn boolean() {
-        assert_str_eq!("true", Scalar::new_bool(true).to_string());
-        assert_str_eq!("false", Scalar::new_bool(false).to_string());
+        assert_eq!("true", Scalar::new_bool(true).to_string());
+        assert_eq!("false", Scalar::new_bool(false).to_string());
+
+        assert_eq!("true", Scalar::from(true).to_string());
+        assert_eq!("false", Scalar::from(false).to_string());
     }
 
     #[test]
     fn binary_vec() {
-        let bytes: Vec<u8> = b"fish".to_vec();
-        let actual = Scalar::new_binary(bytes);
-        assert_str_eq!(r#""ZmlzaA==""#, actual.to_string());
+        let bytes: Vec<u8> = b"fish".into();
+
+        let actual = Scalar::new_binary(bytes.clone());
+        assert_eq!(r#""ZmlzaA==""#, actual.to_string());
+
+        let actual = Scalar::from(bytes);
+        assert_eq!(r#""ZmlzaA==""#, actual.to_string());
     }
 
     #[test]
     fn binary_array() {
-        let bytes: [u8; 4] = [b'f', b'i', b's', b'h'];
+        let bytes: [u8; 4] = b"fish".to_owned();
+
         let actual = Scalar::new_binary(bytes);
-        assert_str_eq!(r#""ZmlzaA==""#, actual.to_string());
+        assert_eq!(r#""ZmlzaA==""#, actual.to_string());
+
+        let actual = Scalar::from(bytes);
+        assert_eq!(r#""ZmlzaA==""#, actual.to_string());
+    }
+
+    #[test]
+    fn binary_array_ref() {
+        let bytes: &[u8; 4] = b"fish";
+
+        #[allow(clippy::needless_borrows_for_generic_args)]
+        let actual = Scalar::new_binary(bytes);
+        assert_eq!(r#""ZmlzaA==""#, actual.to_string());
+
+        let actual = Scalar::from(bytes);
+        assert_eq!(r#""ZmlzaA==""#, actual.to_string());
     }
 
     #[test]
     fn binary_slice() {
         let bytes: &[u8] = &b"fish"[..];
+
         let actual = Scalar::new_binary(bytes);
-        assert_str_eq!(r#""ZmlzaA==""#, actual.to_string());
+        assert_eq!(r#""ZmlzaA==""#, actual.to_string());
+
+        let actual = Scalar::from(bytes);
+        assert_eq!(r#""ZmlzaA==""#, actual.to_string());
     }
 
     #[test]
     fn null() {
-        let actual = Scalar::new_null();
-        assert_str_eq!("NULL", actual.to_string());
+        assert_eq!("NULL", Scalar::new_null().to_string());
+        assert_eq!("NULL", Scalar::from(()).to_string());
     }
 }
