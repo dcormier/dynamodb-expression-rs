@@ -22,7 +22,8 @@ pub enum Element {
 }
 
 impl Element {
-    /// An attribute name element of a document path.
+    /// Creates an element that represents a single attribute name in a document
+    /// path.
     ///
     /// See also: [`Name`], [`Element`], [`Path`]
     ///
@@ -34,10 +35,13 @@ impl Element {
         Self::Name(name.into())
     }
 
-    /// An indexed field element of a document path. For example, `foo[3]` or
+    /// Creates an element that represents a single attribute name with indexed
+    /// field(s) element of a document path. For example, `foo[3]` or
     /// `foo[7][4]`
     ///
-    /// `indexes` here can be an array, slice, `Vec` of, or single `usize`.
+    /// The `indexes` parameter, here, can be an array, slice, `Vec` of, or
+    /// single `usize`.
+    ///
     /// ```
     /// # use dynamodb_expression::path::Element;
     /// # use pretty_assertions::assert_eq;

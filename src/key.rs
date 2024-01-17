@@ -58,11 +58,11 @@ impl Key {
     /// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let begins_with = "foo".parse::<Path>()?.key().begins_with("T");
-    /// assert_eq!(r#"begins_with(foo, "T")"#, begins_with.to_string());
+    /// let key_condition = "foo".parse::<Path>()?.key().begins_with("T");
+    /// assert_eq!(r#"begins_with(foo, "T")"#, key_condition.to_string());
     ///
-    /// let begins_with = "foo".parse::<Path>()?.key().begins_with(Ref::new("prefix"));
-    /// assert_eq!(r#"begins_with(foo, :prefix)"#, begins_with.to_string());
+    /// let key_condition = "foo".parse::<Path>()?.key().begins_with(Ref::new("prefix"));
+    /// assert_eq!(r#"begins_with(foo, :prefix)"#, key_condition.to_string());
     /// #
     /// # Ok(())
     /// # }
@@ -177,11 +177,30 @@ where
     }
 }
 
-/// Represents a DynamoDB [key condition expression].
+/// Represents a DynamoDB [key condition expression][1]. Build an instance from
+/// the methods on [`Key`].
 ///
-/// See also: [`Key`]
+/// See also: [`Path::key`], [`expression::Builder::with_key_condition`]
+///
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use dynamodb_expression::{Expression, Num, Path};
+///
+/// let key_condition = "id"
+///     .parse::<Path>()?
+///     .key()
+///     .equal(Num::new(42))
+///     .and("category".parse::<Path>()?.key().begins_with("hardware."));
+///
+/// let expression = Expression::builder().with_key_condition(key_condition).build();
+/// # _ = expression;
+/// #
+/// # Ok(())
+/// # }
+/// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
+/// [`expression::Builder::with_key_condition`]: crate::expression::Builder::with_key_condition
 #[must_use = "Use in a DynamoDB expression with \
     `Expression::builder().with_key_condition(key_condition)`"]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -190,6 +209,23 @@ pub struct KeyCondition {
 }
 
 impl KeyCondition {
+    /// Combine two [`KeyCondition`]s with the `AND` operator.
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use dynamodb_expression::{Num, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let key_condition = "id"
+    ///     .parse::<Path>()?
+    ///     .key()
+    ///     .equal(Num::new(42))
+    ///     .and("category".parse::<Path>()?.key().begins_with("hardware."));
+    /// assert_eq!(r#"id = 42 AND begins_with(category, "hardware.")"#, key_condition.to_string());
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn and(self, right: Self) -> Self {
         Self {
             condition: self.condition.and(right.condition),

@@ -1,11 +1,11 @@
 /*!
 A crate to help build DynamoDB condition, filter, key condition, and update
-expressions in a type-safe way, including handling [expression attribute names][1]
+expressions in a type-safe way, including using [expression attribute names][1]
 and [expression attribute values][2].
 
-[`Expression`] is the type to use for a [DynamoDB expression][2].
-[`Path`] represents a [DynamoDB item attribute or document path][3], and has
-many methods for building various expressions.
+[`Path`] represents a [DynamoDB document path][3], and has many methods for
+building various expressions. [`Expression`] is the type to use for a [DynamoDB
+expression][4].
 
 An example showing a how to use this crate to perform a query:
 
@@ -37,7 +37,8 @@ let query_output = Expression::builder()
 # }
 ```
 
-From here, see [`Expression`] and [`Path`] for more docs and examples.
+From here, see [`Path`] for building updates, filters, or conditions, and then
+[`Expression`] to turn those into DynamoDB expressions.
 
 # What about Rusoto?
 
@@ -118,8 +119,8 @@ fn convert_av(av: AwsAv) -> RusotoAv {
 
 [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
 [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeValues.html
-[3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.html
-[4]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html
+[3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
+[4]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.html
 [5]: https://docs.rs/rusoto_dynamodb/
 [`rusoto_dynamodb::AttributeValue`]: https://docs.rs/rusoto_dynamodb/latest/rusoto_dynamodb/struct.AttributeValue.html
 */

@@ -22,13 +22,14 @@ pub use self::{
 
 /// Represents a [DynamoDB update expression][1].
 ///
-/// See also: [`Set`], [`Remove`], [`SetRemove`], [`Add`], [`Delete`]
+/// See also: [`Expression`], [`Set`], [`Remove`], [`SetRemove`], [`Add`],
+/// [`Delete`],
 ///
 /// # Examples
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use dynamodb_expression::{update::Update, Path};
+/// use dynamodb_expression::{update::Update, Expression, Path};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let update = Update::from("foo".parse::<Path>()?.math().add(7));
@@ -44,12 +45,17 @@ pub use self::{
 /// assert_eq!(r#"REMOVE foo"#, update.to_string());
 /// #
 /// # // TODO: Examples for `Add` and `Delete`.
+///
+/// // To use an `Update`, build an `Expression`.
+/// let expression = Expression::builder().with_update(update).build();
+/// # _ = expression;
 /// #
 /// # Ok(())
 /// # }
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
+/// [`Expression`]: crate::Expression
 #[must_use = "Use in a DynamoDB expression with `Expression::builder().with_update(update)`"]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Update {

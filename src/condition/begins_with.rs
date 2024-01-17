@@ -75,7 +75,6 @@ impl BeginsWith {
         // > The expression attribute value :v_sub is a placeholder for http://.
         //
         // Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Functions
-        // TODO: Change this to only accept `Into<String>`
         S: Into<StringOrRef>,
     {
         Self {

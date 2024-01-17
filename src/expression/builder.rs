@@ -47,6 +47,25 @@ impl Builder {
     }
 
     /// Sets the key condition for this [`Expression`], overwriting any previously set.
+    ///
+    /// See also: [`Path::key`]
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use dynamodb_expression::{Expression, Num, Path};
+    ///
+    /// let key_condition = "id"
+    ///     .parse::<Path>()?
+    ///     .key()
+    ///     .equal(Num::new(42))
+    ///     .and("category".parse::<Path>()?.key().begins_with("hardware."));
+    ///
+    /// let expression = Expression::builder().with_key_condition(key_condition).build();
+    /// # _ = expression;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn with_key_condition<T>(mut self, key_condition: T) -> Self
     where
         T: Into<KeyCondition>,

@@ -12,6 +12,7 @@ pub use self::{
 
 use core::{
     fmt::{self, Write},
+    ops,
     str::FromStr,
 };
 
@@ -34,6 +35,15 @@ use crate::{
 
 /// Represents a DynamoDB [document path][1]. For example, `foo[3][7].bar[2].baz`.
 ///
+/// You can use the many methods on [`Path`] for building [DynamoDB
+/// expressions][4].
+/// For example, [`.set()`], [`.if_not_exists()`], or [`.remove()`] are some
+/// methods for creating [update expressions][5]. [`.attribute_not_exists()`],
+/// [`.less_than()`], and [`.contains()`] are some methods for creating
+/// condition and filter expressions.
+///
+/// When you're ready to build an [`Expression`], use [`Expression::builder`].
+///
 /// When used in an [`Expression`], attribute names in a [`Path`] are
 /// automatically handled as [expression attribute names][2], allowing for names
 /// that would not otherwise be permitted by DynamoDB. For example,
@@ -42,186 +52,149 @@ use crate::{
 ///
 /// See also: [`Element`], [`Name`], [`IndexedField`]
 ///
-/// # Examples
+/// # There are many ways to create a `Path`
+///
+/// For creating a new [`Path`]:
+/// * Parse from a string, as seen [below](#parsing). This is the preferred way. The only
+/// time when other constructors are needed is when you have an attribute name
+/// with a `.` in it that must not be treated as a separator for sub-attributes.
+/// * [`Path::new_name`] and [`Path::new_indexed_field`] constructors
+/// * [`Path::from`] for converting anything that's `Into<Element>` into a [`Path`]
+/// (see also: [`Element`])
+///
+/// For building a [`Path`] one step at a time:
+/// * Use the [`+=`] operator
+/// * Use the [`+`] operator
+/// * [`Path::append`]
+/// * [`Path::from_iter`]
 ///
 /// ## Parsing
 ///
-/// The safest way to construct a [`Path`] is to [parse] it.
+/// The safest way to construct a [`Path`] is to [parse] it. This treats `.` as a separator for
+/// sub-attributes, and `[n]` as indexes into fields.
+///
+/// Since `.` [is a valid character in an attribute name][3], see
+/// [below](#a-special-case-attribute-names-with--in-them) for examples of how
+/// to construct a [`Path`] when an attribute name contains a `.`.
+///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use dynamodb_expression::{path::Element, Path};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let path: Path = "foo".parse()?;
-/// assert_eq!(Path::from_iter([Element::new_name("foo")]), path);
+/// assert_eq!(
+///     Path::from_iter([
+///         Element::new_name("foo"),
+///     ]),
+///     path,
+/// );
 ///
 /// let path: Path = "foo[3]".parse()?;
 /// assert_eq!(
-///     Path::from_iter([Element::new_indexed_field("foo", 3)]),
+///     Path::from_iter([
+///         Element::new_indexed_field("foo", 3),
+///     ]),
 ///     path,
 /// );
 ///
 /// let path: Path = "foo[3][7]".parse()?;
 /// assert_eq!(
-///     Path::from_iter([Element::new_indexed_field("foo", [3, 7])]),
+///     Path::from_iter([
+///         Element::new_indexed_field("foo", [3, 7]),
+///     ]),
 ///     path,
 /// );
 ///
 /// let path: Path = "foo[3][7].bar".parse()?;
 /// assert_eq!(
-///     Path::from_iter([Element::new_indexed_field("foo", [3, 7]), Element::new_name("bar")]),
+///     Path::from_iter([
+///         Element::new_indexed_field("foo", [3, 7]),
+///         Element::new_name("bar"),
+///     ]),
 ///     path,
 /// );
 ///
 /// let path: Path = "bar.baz".parse()?;
-/// assert_eq!(Path::from_iter([Element::new_name("bar"), Element::new_name("baz")]), path);
+/// assert_eq!(Path::from_iter([
+///         Element::new_name("bar"),
+///         Element::new_name("baz"),
+///     ]),
+///     path,
+/// );
 ///
 /// let path: Path = "baz[0].foo".parse()?;
 /// assert_eq!(
-///     Path::from_iter([Element::new_indexed_field("baz", 0), Element::new_name("foo")]),
+///     Path::from_iter([
+///         Element::new_indexed_field("baz", 0),
+///         Element::new_name("foo"),
+///     ]),
 ///     path,
 /// );
 /// #
 /// # Ok(())
 /// # }
-/// ```
-///
-/// This makes the common assumption that each path element is separated by a
-/// period (`.`). For example, the path `foo.bar` gets treated as if `foo` is a
-/// top-level attribute, and `bar` is a sub-attribute of `foo`. However, `.` [is
-/// also a valid character in an attribute name][3]. See
-/// [below](#attribute-names-with--in-them) for examples of how to construct a
-/// [`Path`] when an attribute name contains a `.`.
-///
-/// ## There are many ways to create a `Path`
-///
-/// Each of these are ways to create a [`Path`] instance for `foo[3][7].bar[2].baz`
-/// (where the `.` is treated as a separator for sub-attributes).
-/// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use dynamodb_expression::{path::Element, Path};
-/// # use pretty_assertions::assert_eq;
-/// #
-/// # let expected = Path::from_iter([
-/// #     Element::new_indexed_field("foo", [3, 7]),
-/// #     Element::new_indexed_field("bar", 2),
-/// #     Element::new_name("baz"),
-/// # ]);
-///
-/// // A `Path` can be parsed from a string
-/// let path: Path = "foo[3][7].bar[2].baz".parse()?;
-/// # assert_eq!(expected, path);
-///
-/// // `Path` implements `FromIterator` for items that are `Element`s.
-/// let path = Path::from_iter([
-///     Element::new_indexed_field("foo", [3, 7]),
-///     Element::new_indexed_field("bar", 2),
-///     Element::new_name("baz"),
-/// ]);
-/// # assert_eq!(expected, path);
-///
-/// // Of course, that means you can `.collect()` into a `Path`.
-/// let path: Path = [
-///     Element::new_indexed_field("foo", [3, 7]),
-///     Element::new_indexed_field("bar", 2),
-///     Element::new_name("baz"),
-/// ]
-/// .into_iter()
-/// .collect();
-/// # assert_eq!(expected, path);
-///
-/// // `Element` can be converted into from string/index tuples. Where the
-/// // string is the attribute name. In this case, an "index" is an array,
-/// // slice, `Vec` of, or a single `usize`.
-/// //
-/// // It's smart about it, though. If if there's one or zero indexes it'll do
-/// // the right thing. This helps when you're chaining iterator adapters and
-/// // the results are values with inconsistent numbers of indexes.
-/// let path = Path::from_iter(
-///     [
-///         ("foo", vec![3, 7]),
-///         ("bar", vec![2]),
-///         ("baz", vec![]),
-///     ]
-///     .map(Element::from),
-/// );
-/// # assert_eq!(expected, path);
-///
-/// // `Path` implements `FromIterator` for items that are `Into<Element>`.
-/// // So, the above example can be simplified.
-/// let path = Path::from_iter([
-///     ("foo", vec![3, 7]),
-///     ("bar", vec![2]),
-///     ("baz", vec![]),
-/// ]);
-/// # assert_eq!(expected, path);
-///
-/// // You can append one `Path` to another.
-/// let mut path: Path = "foo[3][7]".parse()?;
-/// path.append("bar[2].baz".parse()?);
-/// # assert_eq!(expected, path);
-///
-/// // You can start with an empty `Path` and append one attribute at a time.
-/// let mut path = Path::default();
-/// path.append(Element::new_indexed_field("foo", [3, 7]).into());
-/// path.append(Element::new_indexed_field("bar", 2).into());
-/// path.append(Element::new_name("baz").into());
-/// # assert_eq!(expected, path);
-/// #
-/// # Ok(())
-/// # }
-/// ```
-///
-/// A [`Name`] can be converted into a [`Path`].
-/// ```
-/// use dynamodb_expression::{path::{Element, Name}, Path};
-/// # use pretty_assertions::assert_eq;
-///
-/// let name = Name::from("foo");
-/// let path = Path::from(name);
-/// assert_eq!(Path::from(Element::new_name("foo")), path);
 /// ```
 ///
 /// ## A special case: attribute names with `.` in them
 ///
 /// If you have an attribute name with a `.` in it, and need it to _not_ be
-/// treated as a separator, you can construct the [`Path`] a few different ways.
-/// Here are some ways you can correctly construct a [`Path`] using `attr.name`
-/// as the problematic attribute name.
+/// treated as a separator for sub-attributes (such as a domain name), you can
+/// construct the [`Path`] a using [`Path::new_name`] that element of the path
+/// using [`Element::new_name`].
+///
 /// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use dynamodb_expression::{path::Element, Path};
 /// # use pretty_assertions::assert_eq;
 ///
-/// // As a top-level attribute name:
-/// let path = Path::new_name("attr.name");
-/// # assert_eq!(Path::from_iter([Element::new_name("attr.name")]), path);
+/// let path = Path::new_name("example.com");
+/// assert_eq!(
+///     Path::from_iter([
+///         Element::new_name("example.com"),
+///     ]),
+///     path,
+/// );
 ///
-/// // If the top-level attribute, `foo`, has a sub-attribute named `attr.name`:
-/// let path = Path::from_iter([
-///     Element::new_name("foo"),
-///     Element::new_name("attr.name"),
-/// ]);
+/// let path = "foo".parse::<Path>()? + Path::new_name("example.com");
+/// assert_eq!(
+///     Path::from_iter([
+///         Element::new_name("foo"),
+///         Element::new_name("example.com"),
+///     ]),
+///     path,
+/// );
 ///
-/// // If top-level attribute `foo`, item 3 (i.e., `foo[3]`) has a sub-attribute
-/// // named `attr.name`:
-/// let path = Path::from_iter([
-///     Element::new_indexed_field("foo", 3),
-///     Element::new_name("attr.name"),
-/// ]);
-///
-/// // If top-level attribute `foo`, item 3, sub-item 7 (i.e., `foo[3][7]`) has
-/// // an attribute named `attr.name`:
-/// let path = Path::from_iter([
-///     Element::new_indexed_field("foo", [3, 7]),
-///     Element::new_name("attr.name"),
-/// ]);
+/// let mut path: Path = "foo[3]".parse()?;
+/// path += Element::new_name("example.com");
+/// assert_eq!(
+///     Path::from_iter([
+///         Element::new_indexed_field("foo", 3),
+///         Element::new_name("example.com"),
+///     ]),
+///     path,
+/// );
+/// #
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
 /// [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.TopLevelAttributes
-/// [parse]: str::parse
+/// [4]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.html
+/// [5]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
+/// [`.set()`]: Self::set
+/// [`.if_not_exists()`]: Self::if_not_exists
+/// [`.remove()`]: Self::remove
+/// [`.attribute_not_exists()`]: Self::attribute_not_exists
+/// [`.less_than()`]: Self::less_than
+/// [`.contains()`]: Self::contains
 /// [`Expression`]: crate::expression::Expression
+/// [`Expression::builder`]: crate::expression::Expression::builder
+/// [parse]: str::parse
+/// [`+=`]: #method.add_assign
+/// [`+`]: #method.add-1
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Path {
     pub(crate) elements: Vec<Element>,
@@ -230,13 +203,13 @@ pub struct Path {
 impl Path {
     /// Constructs a [`Path`] for a single attribute name (with no indexes or
     /// sub-attributes). If you have a attribute name with one or more indexes,
-    /// use [`Path::new_indexed_field`], or parse from a string (see examples in
-    /// the [`Path`] documentation).
+    /// parse it from a string, or use [`Path::new_indexed_field`]. See the
+    /// [`Path`] type documentation for more examples.
     ///
     /// This treats `.` as a part of the attribute name rather than as a
     /// separator for sub-attributes. To build a [`Path`] that contains a `.`
-    /// that is treated as a separator, see the examples in the [`Path`]
-    /// documentation.
+    /// that is treated as a separator, see the examples in the documentation on
+    /// the [`Path`] type.
     ///
     /// # Examples
     ///
@@ -245,10 +218,20 @@ impl Path {
     /// # use pretty_assertions::assert_eq;
     ///
     /// let path = Path::new_name("foo");
-    /// assert_eq!(Path::from_iter([Element::new_name("foo")]), path);
+    /// assert_eq!(
+    ///     Path::from_iter([
+    ///         Element::new_name("foo"),
+    ///     ]),
+    ///     path,
+    /// );
     ///
     /// let path = Path::new_name("foo.bar");
-    /// assert_eq!(Path::from_iter([Element::new_name("foo.bar")]), path);
+    /// assert_eq!(
+    ///     Path::from_iter([
+    ///         Element::new_name("foo.bar"),
+    ///     ]),
+    ///     path,
+    /// );
     /// ```
     ///
     /// Contrast the above result of `Path::new_name("foo.bar")` with parsing,
@@ -259,7 +242,10 @@ impl Path {
     /// #
     /// let path = "foo.bar".parse().unwrap();
     /// assert_eq!(
-    ///     Path::from_iter([Element::new_name("foo"), Element::new_name("bar")]),
+    ///     Path::from_iter([
+    ///         Element::new_name("foo"),
+    ///         Element::new_name("bar"),
+    ///     ]),
     ///     path,
     /// );
     /// ```
@@ -274,13 +260,14 @@ impl Path {
 
     /// Constructs a [`Path`] for an indexed field element of a document path.
     /// For example, `foo[3]` or `foo[7][4]`. If you have a attribute name with
-    /// no indexes, you can pass an empty collection, use [`Path::new_name`]
-    /// or parse from a string (see examples in the [`Path`] documentation).
+    /// no indexes, you can pass an empty collection, parse from a string, or
+    /// use [`Path::new_name`]. See the [`Path`] type documentation for more
+    /// examples.
     ///
     /// This treats `.` as a part of an attribute name rather than as a
     /// separator for sub-attributes. To build a [`Path`] that contains a `.`
-    /// that is treated as a separator, see the examples in the [`Path`]
-    /// documentation.
+    /// that is treated as a separator, see the examples in the documentation on
+    /// the [`Path`] type.
     ///
     /// The `indexes` parameter, here, can be an array, slice, `Vec` of, or
     /// single `usize`.
@@ -316,35 +303,45 @@ impl Path {
         }
     }
 
-    /// Appends another [`Path`] to the end of this one.
+    /// Appends another [`Path`] to the end of this one, separated with a `.`.
+    ///
+    /// Notice that each of these examples produces the same [`Path`]: `foo[3][7].bar[2].baz`
+    ///
+    /// See also: [`Element`], [`Name`]
     ///
     /// ```
-    /// use dynamodb_expression::Path;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use dynamodb_expression::{path::{Element, Name}, Path};
     /// # use pretty_assertions::assert_eq;
+    /// #
+    /// # let expected = Path::from_iter([
+    /// #     Element::new_indexed_field("foo", [3, 7]),
+    /// #     Element::new_indexed_field("bar", 2),
+    /// #     Element::new_name("baz"),
+    /// # ]);
     ///
-    /// let mut path: Path = "foo[2]".parse().unwrap();
-    /// let sub_path: Path = "bar".parse().unwrap();
-    /// path.append(sub_path);
-    /// assert_eq!("foo[2].bar".parse::<Path>().unwrap(), path);
-    /// ```
+    /// let mut path: Path = "foo[3][7]".parse()?;
+    /// path.append("bar[2].baz".parse()?);
+    /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
+    /// # assert_eq!(expected, path);
     ///
-    /// ```
-    /// use dynamodb_expression::{Path, path::Element};
-    /// # use pretty_assertions::assert_eq;
-    ///
-    /// let mut path: Path = "foo[2]".parse().unwrap();
-    /// path.append("bar.baz".parse().unwrap());
-    /// assert_eq!("foo[2].bar.baz".parse::<Path>().unwrap(), path);
-    /// ```
-    ///
-    /// ```
-    /// use dynamodb_expression::{Path, path::Element};
-    /// # use pretty_assertions::assert_eq;
+    /// // You can start with an empty `Path` and append one element at a time.
+    /// let mut path = Path::default();
+    /// path.append(Element::new_indexed_field("foo", [3, 7]).into());
+    /// path.append(Element::new_indexed_field("bar", 2).into());
+    /// path.append(Element::new_name("baz").into());
+    /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
+    /// # assert_eq!(expected, path);
     ///
     /// let mut path = Path::default();
-    /// path.append(Element::new_indexed_field("foo", 2).into());
-    /// path.append(Element::new_name("bar").into());
-    /// assert_eq!("foo[2].bar".parse::<Path>().unwrap(), path);
+    /// path.append(("foo", [3, 7]).into());
+    /// path.append(("bar", 2).into());
+    /// path.append(Name::from("baz").into());
+    /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
+    /// # assert_eq!(expected, path);
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn append(&mut self, mut other: Path) {
         self.elements.append(&mut other.elements)
@@ -614,25 +611,6 @@ impl Path {
 ///
 /// [`Update`]: crate::update::Update
 impl Path {
-    /// Represents assigning a value of a [attribute][1], [list][2], or [map][3].
-    ///
-    /// See also: [`Update`]
-    ///
-    /// ```
-    /// use dynamodb_expression::{Num, Path, update::Update};
-    /// # use pretty_assertions::assert_eq;
-    ///
-    /// let assign = Path::new_name("name").set("Jill");
-    /// assert_eq!(r#"name = "Jill""#, assign.to_string());
-    ///
-    /// let update = Update::from(assign);
-    /// assert_eq!(r#"SET name = "Jill""#, update.to_string());
-    /// ```
-    ///
-    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.ModifyingAttributes
-    /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingListElements
-    /// [3]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingNestedMapAttributes
-    /// [`Update`]: crate::update::Update
     #[deprecated(since = "0.2.0-beta.6", note = "Use `.set(value)` instead")]
     pub fn assign<T>(self, value: T) -> Assign
     where
@@ -854,12 +832,20 @@ impl Path {
     /// See also: [`Key`]
     ///
     /// ```
-    /// use dynamodb_expression::{Num, Path};
-    /// # use pretty_assertions::assert_eq;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use dynamodb_expression::{key::KeyCondition, Expression, Num, Path};
     ///
-    /// let key_condition = Path::new_name("id").key().equal(Num::new(42))
-    ///     .and(Path::new_name("category").key().begins_with("hardware."));
-    /// assert_eq!(r#"id = 42 AND begins_with(category, "hardware.")"#, key_condition.to_string());
+    /// let key_condition: KeyCondition = "id"
+    ///     .parse::<Path>()?
+    ///     .key()
+    ///     .equal(Num::new(42))
+    ///     .and("category".parse::<Path>()?.key().begins_with("hardware."));
+    ///
+    /// let expression = Expression::builder().with_key_condition(key_condition).build();
+    /// # _ = expression;
+    /// #
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
@@ -883,13 +869,94 @@ impl fmt::Display for Path {
     }
 }
 
-impl From<Path> for String {
-    fn from(path: Path) -> Self {
-        path.elements
-            .into_iter()
-            .map(String::from)
-            .collect_vec()
-            .join(".")
+impl<T> ops::Add<T> for Path
+where
+    T: Into<Path>,
+{
+    type Output = Self;
+
+    /// Allows for using the `+` operator to combine two [`Path`]s.
+    ///
+    /// Notice that each of these examples produces the same path:
+    /// `foo[3][7].bar[2].baz`
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use dynamodb_expression::{path::{Element, Name}, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// # let expected: Path= "foo[3][7].bar[2].baz".parse()?;
+    /// #
+    /// let path: Path = "foo[3][7]".parse()?;
+    /// let path = path + "bar[2].baz".parse::<Path>()?;
+    /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
+    /// # assert_eq!(expected, path);
+    ///
+    /// // You can `+` anything that is `Into<Path>` (or `Into<Element>`)
+    ///
+    /// let path = Path::new_indexed_field("foo", [3, 7]) +
+    ///     Element::new_indexed_field("bar", 2) +
+    ///     Element::new_name("baz");
+    /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
+    /// # assert_eq!(expected, path);
+    ///
+    /// let path = Path::from(("foo", [3, 7])) +
+    ///     ("bar", 2) +
+    ///     Name::from("baz");
+    /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
+    /// # assert_eq!(expected, path);
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn add(mut self, rhs: T) -> Self::Output {
+        self.append(rhs.into());
+        self
+    }
+}
+
+impl<T> ops::AddAssign<T> for Path
+where
+    T: Into<Path>,
+{
+    /// Allows for using the `+=` operator to combine two [`Path`]s.
+    ///
+    /// Notice that each of these examples produces the same path:
+    /// `foo[3][7].bar[2].baz`
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use dynamodb_expression::{path::{Element, Name}, Path};
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// # let expected: Path= "foo[3][7].bar[2].baz".parse()?;
+    /// #
+    /// let mut path: Path = "foo[3][7]".parse()?;
+    /// path += "bar[2].baz".parse::<Path>()?;
+    /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
+    /// # assert_eq!(expected, path);
+    ///
+    /// // You can `+=` anything that is `Into<Path>` (or `Into<Element>`)
+    ///
+    /// let mut path = Path::default();
+    /// path += Path::new_indexed_field("foo", [3, 7]);
+    /// path += Element::new_indexed_field("bar", 2);
+    /// path += Element::new_name("baz");
+    /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
+    /// # assert_eq!(expected, path);
+    ///
+    /// let mut path = Path::default();
+    /// path += Path::from(("foo", [3, 7]));
+    /// path += ("bar", 2);
+    /// path += Name::from("baz");
+    /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
+    /// # assert_eq!(expected, path);
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn add_assign(&mut self, rhs: T) {
+        self.append(rhs.into());
     }
 }
 
@@ -908,6 +975,59 @@ impl<T> FromIterator<T> for Path
 where
     T: Into<Path>,
 {
+    /// Comines multiple items into a single [`Path`], with each element
+    /// separated by `.`. Items must be `Into<Path>`.
+    ///
+    /// Notice that each of these examples produces the same [`Path`]:
+    /// `foo[3][7].bar[2].baz`
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use dynamodb_expression::{path::Element, Path};
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// # let expected = Path::from_iter([
+    /// #     Element::new_indexed_field("foo", [3, 7]),
+    /// #     Element::new_indexed_field("bar", 2),
+    /// #     Element::new_name("baz"),
+    /// # ]);
+    ///
+    /// // `Path` items
+    /// let path: Path = [
+    ///         "foo[3][7]".parse::<Path>()?,
+    ///         "bar[2]".parse::<Path>()?,
+    ///         "baz".parse::<Path>()?,
+    ///     ]
+    ///     .into_iter()
+    ///     .collect();
+    /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
+    /// # assert_eq!(expected, path);
+    ///
+    /// // `Element` items
+    /// let path: Path = [
+    ///         Element::new_indexed_field("foo", [3, 7]),
+    ///         Element::new_indexed_field("bar", 2),
+    ///         Element::new_name("baz"),
+    ///     ]
+    ///     .into_iter()
+    ///     .collect();
+    /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
+    /// # assert_eq!(expected, path);
+    ///
+    /// // `Into<Element>` items
+    /// let path: Path = [
+    ///         ("foo", vec![3, 7]),
+    ///         ("bar", vec![2]),
+    ///         ("baz", vec![]),
+    ///     ]
+    ///     .into_iter()
+    ///     .collect();
+    /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
+    /// # assert_eq!(expected, path);
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = T>,
@@ -929,6 +1049,16 @@ impl FromStr for Path {
         Ok(Self {
             elements: s.split('.').map(Element::from_str).try_collect()?,
         })
+    }
+}
+
+impl From<Path> for String {
+    fn from(path: Path) -> Self {
+        path.elements
+            .into_iter()
+            .map(String::from)
+            .collect_vec()
+            .join(".")
     }
 }
 
@@ -996,8 +1126,9 @@ impl fmt::Display for PathParseError {
 mod test {
     use pretty_assertions::assert_eq;
 
-    use super::{Element, Name, Path, PathParseError};
     use crate::Num;
+
+    use super::{Element, Name, Path, PathParseError};
 
     #[test]
     fn parse_path() {
@@ -1260,5 +1391,139 @@ mod test {
             ],
             path.elements
         );
+    }
+
+    #[test]
+    fn add() -> Result<(), Box<dyn std::error::Error>> {
+        let path = "foo".parse::<Path>()? + Name::from("bar");
+        assert_eq!("foo.bar", path.to_string());
+        assert_eq!(
+            vec![Element::new_name("foo"), Element::new_name("bar")],
+            path.elements
+        );
+
+        let path = "foo[42]".parse::<Path>()? + ("bar", 37);
+        assert_eq!("foo[42].bar[37]", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_indexed_field("foo", 42),
+                Element::new_indexed_field("bar", 37),
+            ],
+            path.elements
+        );
+
+        let path = "foo[42][7]".parse::<Path>()? + ("bar", vec![37]);
+        assert_eq!("foo[42][7].bar[37]", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_indexed_field("foo", [42, 7]),
+                Element::new_indexed_field("bar", 37),
+            ],
+            path.elements
+        );
+
+        let path = "foo[42][7]".parse::<Path>()? + ("bar", [37, 9]);
+        assert_eq!("foo[42][7].bar[37][9]", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_indexed_field("foo", [42, 7]),
+                Element::new_indexed_field("bar", [37, 9]),
+            ],
+            path.elements
+        );
+
+        let path = "foo".parse::<Path>()? + Element::new_indexed_field("bar", 42);
+        assert_eq!("foo.bar[42]", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_name("foo"),
+                Element::new_indexed_field("bar", 42),
+            ],
+            path.elements
+        );
+
+        let path = "foo.bar[42]".parse::<Path>()? + "baz.quux".parse::<Path>()?;
+        assert_eq!("foo.bar[42].baz.quux", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_name("foo"),
+                Element::new_indexed_field("bar", 42),
+                Element::new_name("baz"),
+                Element::new_name("quux"),
+            ],
+            path.elements
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn add_assign() -> Result<(), Box<dyn std::error::Error>> {
+        let mut path = "foo".parse::<Path>()?;
+        path += Name::from("bar");
+        assert_eq!("foo.bar", path.to_string());
+        assert_eq!(
+            vec![Element::new_name("foo"), Element::new_name("bar")],
+            path.elements
+        );
+
+        let mut path = "foo[42]".parse::<Path>()?;
+        path += ("bar", 37);
+        assert_eq!("foo[42].bar[37]", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_indexed_field("foo", 42),
+                Element::new_indexed_field("bar", 37),
+            ],
+            path.elements
+        );
+
+        let mut path = "foo[42][7]".parse::<Path>()?;
+        path += ("bar", vec![37]);
+        assert_eq!("foo[42][7].bar[37]", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_indexed_field("foo", [42, 7]),
+                Element::new_indexed_field("bar", 37),
+            ],
+            path.elements
+        );
+
+        let mut path = "foo[42][7]".parse::<Path>()?;
+        path += ("bar", [37, 9]);
+        assert_eq!("foo[42][7].bar[37][9]", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_indexed_field("foo", [42, 7]),
+                Element::new_indexed_field("bar", [37, 9]),
+            ],
+            path.elements
+        );
+
+        let mut path = "foo".parse::<Path>()?;
+        path += Element::new_indexed_field("bar", 42);
+        assert_eq!("foo.bar[42]", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_name("foo"),
+                Element::new_indexed_field("bar", 42),
+            ],
+            path.elements
+        );
+
+        let mut path = "foo.bar[42]".parse::<Path>()?;
+        path += "baz.quux".parse::<Path>()?;
+        assert_eq!("foo.bar[42].baz.quux", path.to_string());
+        assert_eq!(
+            vec![
+                Element::new_name("foo"),
+                Element::new_indexed_field("bar", 42),
+                Element::new_name("baz"),
+                Element::new_name("quux"),
+            ],
+            path.elements
+        );
+
+        Ok(())
     }
 }
