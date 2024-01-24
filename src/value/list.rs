@@ -72,7 +72,7 @@ where
     where
         I: IntoIterator<Item = T>,
     {
-        List {
+        Self {
             list: iter.into_iter().map(Into::into).collect(),
         }
     }

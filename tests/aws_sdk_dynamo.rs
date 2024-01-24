@@ -10,7 +10,7 @@ use aws_sdk_dynamodb::{
 };
 use dynamodb_expression::{
     path::{Element, Name, Path},
-    update::{Add, Delete, Remove},
+    update::{Delete, Remove},
     value::{Num, Set, StringSet},
     Expression, Scalar,
 };
@@ -553,13 +553,13 @@ async fn test_update_add(config: &Config, client: &Client) {
     assert_eq!(None, item.get(ATTR_NEW_FIELD));
 
     let update = Expression::builder()
-        .with_update(Add::new(
+        .with_update(
             Path::from_iter([
                 Element::new_name(ATTR_MAP),
                 Element::new_indexed_field(ATTR_LIST, 1),
-            ]),
-            Set::new_string_set(["d", "e", "f"]),
-        ))
+            ])
+            .add(StringSet::from(["d", "e", "f"])),
+        )
         .build()
         .update_item(client)
         .table_name(&config.table_name)
@@ -570,13 +570,13 @@ async fn test_update_add(config: &Config, client: &Client) {
     update.send().await.expect("Failed to update item");
 
     let update = Expression::builder()
-        .with_update(Add::new(
+        .with_update(
             Path::from_iter([
                 Element::new_name(ATTR_MAP),
                 Element::new_indexed_field(ATTR_LIST, 2),
-            ]),
-            Num::new(-3.5),
-        ))
+            ])
+            .add(Num::new(-3.5)),
+        )
         .build()
         .update_item(client)
         .table_name(&config.table_name)

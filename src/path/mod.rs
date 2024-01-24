@@ -767,6 +767,10 @@ impl Path {
     ///
     /// > In general, we recommend using `SET` rather than `ADD`.
     ///
+    /// To increment or decrement a number value, use [`Path::math`].
+    ///
+    /// To append items to a list, use [`Path::list_append`].
+    ///
     /// See also: [`AddValue`], [`Update`], [`Set`]
     ///
     /// # Examples

@@ -2,7 +2,7 @@ use core::fmt::{self, Write};
 
 use crate::{
     path::Path,
-    value::{Num, Ref, Set, Value, ValueOrRef},
+    value::{BinarySet, Num, NumSet, Ref, Set, StringSet, Value, ValueOrRef},
 };
 
 /// Represents an [`ADD` statement][1] in a [DynamoDB update expression][2].
@@ -74,6 +74,24 @@ impl fmt::Display for AddValue {
 impl From<Set> for AddValue {
     fn from(value: Set) -> Self {
         Self::Set(value)
+    }
+}
+
+impl From<StringSet> for AddValue {
+    fn from(value: StringSet) -> Self {
+        Self::Set(value.into())
+    }
+}
+
+impl From<NumSet> for AddValue {
+    fn from(value: NumSet) -> Self {
+        Self::Set(value.into())
+    }
+}
+
+impl From<BinarySet> for AddValue {
+    fn from(value: BinarySet) -> Self {
+        Self::Set(value.into())
     }
 }
 
