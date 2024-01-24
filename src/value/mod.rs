@@ -24,7 +24,6 @@ use std::error::Error;
 
 use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue};
 use base64::{engine::general_purpose, Engine as _};
-use itermap::IterMap;
 use itertools::Itertools;
 
 /// A DynamoDB value
@@ -382,35 +381,6 @@ impl fmt::Display for UnknownAttributeValueError {
 
 impl Error for UnknownAttributeValueError {}
 
-impl From<serde_json::Value> for Value {
-    /// Converts a [`serde_json::Value`] into a [`Value`].
-    ///
-    /// A shortcoming of this is that [`serde_json::Value`] doesn't contain
-    /// variants to differentiate between a DynamoDB [list][1] and a [set][2].
-    /// The result is that a [`serde_json::Value::Array`] becomes a
-    /// [`Value::List`].
-    ///
-    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Document.List
-    /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
-    fn from(value: serde_json::Value) -> Self {
-        match value {
-            serde_json::Value::Null => Scalar::Null.into(),
-            serde_json::Value::Bool(value) => Scalar::Bool(value).into(),
-            serde_json::Value::Number(value) => Num {
-                n: value.to_string(),
-            }
-            .into(),
-            serde_json::Value::String(value) => Scalar::String(value).into(),
-            serde_json::Value::Array(value) => {
-                List::from_iter(value.into_iter().map(Value::from)).into()
-            }
-            serde_json::Value::Object(value) => {
-                Map::from_iter(value.into_iter().map_values(Value::from)).into()
-            }
-        }
-    }
-}
-
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -434,7 +404,6 @@ where
 mod test {
     use aws_sdk_dynamodb::types::AttributeValue;
     use pretty_assertions::assert_eq;
-    use serde_json::json;
 
     use crate::value::{List, Map, Num};
 
@@ -482,37 +451,6 @@ mod test {
                 (String::from("null"), Value::new_null()),
             ])
             .to_string()
-        );
-    }
-
-    #[test]
-    fn from_json() {
-        assert_eq!(
-            Value::new_map([
-                (String::from("s"), Value::new_string("a string")),
-                (String::from("int"), Value::new_num(8)),
-                (String::from("float"), Value::new_num(4.276)),
-                (String::from("null"), Value::new_null()),
-                (String::from("yes"), Value::new_bool(true)),
-                (String::from("no"), Value::new_bool(false)),
-                (
-                    String::from("list"),
-                    Value::new_list([
-                        Value::new_string("foo"),
-                        Value::new_num(42),
-                        Value::new_null(),
-                    ])
-                ),
-            ]),
-            Value::from(json!({
-                "s": "a string",
-                "int": 8,
-                "float": 4.276,
-                "null": null,
-                "yes": true,
-                "no": false,
-                "list": ["foo", 42, null],
-            })),
         );
     }
 

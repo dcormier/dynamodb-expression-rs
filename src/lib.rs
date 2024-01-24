@@ -128,7 +128,6 @@ fn convert_av(av: AwsAv) -> RusotoAv {
 // Re-export the crates publicly exposed in our API
 pub use ::aws_sdk_dynamodb;
 pub use ::num;
-pub use ::serde_json;
 
 pub mod condition;
 mod expression;
