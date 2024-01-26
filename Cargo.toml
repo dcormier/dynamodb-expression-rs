@@ -2,7 +2,7 @@
 name = "dynamodb-expression"
 description = "Types to build DynamoDB filter, condition, or update expressions"
 authors = ["Daniel Cormier"]
-version = "0.2.0-beta.8"
+version = "0.2.0-beta.9"
 edition = "2021"
 documentation = "https://docs.rs/dynamodb-expression/"
 repository = "https://github.com/dcormier/dynamodb-expression-rs"
