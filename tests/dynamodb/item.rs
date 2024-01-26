@@ -92,7 +92,7 @@ where
 
 /// The base64 encoding used by DynamoDB.
 /// Import `base64::engine::Engine` to use it to encode or decode base64.
-pub const DYNAMODB_BASE64: GeneralPurpose = general_purpose::STANDARD;
+const DYNAMODB_BASE64: GeneralPurpose = general_purpose::STANDARD;
 
 /// Produces base64 the way DynamoDB wants it.
 pub fn base64_encode<T>(b: T) -> String
@@ -112,6 +112,8 @@ where
 }
 
 #[test]
+#[ignore = "This only exists to help someone writing tests to see the overall \
+    structure of the item"]
 fn item() {
     let item = new_item("ITEM ID");
     println!("{:#?}", DebugItem(item));

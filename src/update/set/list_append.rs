@@ -2,13 +2,13 @@ use core::fmt::{self, Write};
 
 use crate::{
     path::Path,
-    update::{set_remove::SetRemove, Set},
+    update::Update,
     value::{List, ValueOrRef},
 };
 
 /// Represents an update expression to [append elements to a list][1].
 ///
-/// See also: [`Path::list_append`]
+/// Prefer [`Path::list_append`] over this.
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.UpdatingListElements
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -38,7 +38,7 @@ impl ListAppend {
         }
     }
 
-    /// Add an additional [`Set`] or [`Remove`] statement to this expression.
+    /// Add an additional [`Update`] statement to this expression.
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -55,13 +55,11 @@ impl ListAppend {
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// [`Remove`]: crate::update::Remove
-    pub fn and<T>(self, other: T) -> SetRemove
+    pub fn and<T>(self, other: T) -> Update
     where
-        T: Into<SetRemove>,
+        T: Into<Update>,
     {
-        Set::from(self).and(other)
+        Update::from(self).and(other)
     }
 }
 
@@ -88,7 +86,7 @@ impl fmt::Display for ListAppend {
 
 /// Builds an [`ListAppend`] instance.
 ///
-/// See also: [`Path::list_append`]
+/// Prefer [`Path::list_append`] over this.
 #[must_use = "Consume this `Builder` by using its `.list()` method"]
 #[derive(Debug, Clone)]
 pub struct Builder {
@@ -268,7 +266,7 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use crate::{
-        update::{set_remove::SetRemove, Assign, Set, SetAction},
+        update::{Assign, Set, SetAction},
         Num, Path,
     };
 
@@ -354,7 +352,7 @@ mod test {
 
         // Should be able to concatenate a SetRemove instance
 
-        let combined = list_append.and(SetRemove::from("quux".parse::<Path>()?.remove()));
+        let combined = list_append.and("quux".parse::<Path>()?.remove());
         assert_eq!(
             r#"SET foo = list_append(foo, ["d", "e", "f"]) REMOVE quux"#,
             combined.to_string()

@@ -12,7 +12,7 @@ pub use self::set_action::SetAction;
 
 use core::fmt;
 
-use super::set_remove::SetRemove;
+use super::Update;
 
 /// Represents a [`SET` statement for an update expression][1]. Most of the time
 /// you won't use this directly.
@@ -57,7 +57,7 @@ pub struct Set {
 }
 
 impl Set {
-    /// Add an additional [`Set`] or [`Remove`] statement to this expression.
+    /// Add an additional [`Update`] statement to this expression.
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -74,13 +74,11 @@ impl Set {
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// [`Remove`]: crate::update::Remove
-    pub fn and<T>(self, other: T) -> SetRemove
+    pub fn and<T>(self, other: T) -> Update
     where
-        T: Into<SetRemove>,
+        T: Into<Update>,
     {
-        SetRemove::from(self).and(other)
+        Update::from(self).and(other)
     }
 }
 
@@ -130,7 +128,7 @@ where
 mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::{update::set_remove::SetRemove, Num, Path};
+    use crate::{Num, Path};
 
     use super::{Assign, IfNotExists, ListAppend, Math, Set, SetAction};
 
@@ -189,7 +187,7 @@ mod test {
 
         // Should be able to concatenate a SetRemove instance
 
-        let combined = set.and(SetRemove::from("quux".parse::<Path>()?.remove()));
+        let combined = set.and("quux".parse::<Path>()?.remove());
         assert_eq!(r#"SET foo = "a value" REMOVE quux"#, combined.to_string());
 
         Ok(())

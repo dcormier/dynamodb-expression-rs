@@ -2,12 +2,14 @@ use core::fmt;
 
 use crate::path::Path;
 
-use super::set_remove::SetRemove;
+use super::Update;
 
 /// For use an in an update expression to [remove attributes from an
 /// item][1], or [elements from a list][2].
 ///
-/// See also: [`Path::remove`], [`SetRemove`], [`Update`]
+/// Prefer [`Path::remove`] over this.
+///
+/// See also: [`Update`]
 ///
 /// # Examples
 ///
@@ -42,7 +44,6 @@ use super::set_remove::SetRemove;
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.REMOVE.RemovingListElements
-/// [`SetRemove`]: crate::update::SetRemove
 /// [`Update`]: crate::update::Update
 #[must_use = "Use in an update expression with `Update::from(remove)`"]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -51,7 +52,7 @@ pub struct Remove {
 }
 
 impl Remove {
-    /// Add an additional [`Remove`] or [`Set`] statement to this expression.
+    /// Add an additional [`Update`] statement to this expression.
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -67,13 +68,11 @@ impl Remove {
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// [`Set`]: crate::update::Set
-    pub fn and<T>(self, other: T) -> SetRemove
+    pub fn and<T>(self, other: T) -> Update
     where
-        T: Into<SetRemove>,
+        T: Into<Update>,
     {
-        SetRemove::from(self).and(other)
+        Update::from(self).and(other)
     }
 }
 

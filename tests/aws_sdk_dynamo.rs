@@ -11,7 +11,7 @@ use aws_sdk_dynamodb::{
 use dynamodb_expression::{
     path::{Element, Name, Path},
     update::{Delete, Remove},
-    value::{Num, Set, StringSet},
+    value::{Num, NumSet, Set, StringSet},
     Expression, Scalar,
 };
 use itermap::IterMap;
@@ -20,7 +20,10 @@ use pretty_assertions::{assert_eq, assert_ne};
 
 use crate::dynamodb::{
     debug::DebugList,
-    item::{new_item, ATTR_ID, ATTR_LIST, ATTR_MAP, ATTR_NULL, ATTR_NUM, ATTR_STRING},
+    item::{
+        new_item, ATTR_ID, ATTR_LIST, ATTR_MAP, ATTR_NULL, ATTR_NUM, ATTR_NUMS, ATTR_STRING,
+        ATTR_STRINGS,
+    },
     setup::{clean_table, delete_table},
     Config, DebugItem,
 };
@@ -258,9 +261,9 @@ async fn test_update(config: &Config) {
 
     test_update_set(config, client).await;
     test_update_remove(config, client).await;
-    test_update_set_remove(config, client).await;
     test_update_add(config, client).await;
     test_update_delete(config, client).await;
+    test_update_combined(config, client).await;
 }
 
 async fn test_update_set(config: &Config, client: &Client) {
@@ -498,26 +501,90 @@ async fn test_update_remove(config: &Config, client: &Client) {
     );
 }
 
-async fn test_update_set_remove(config: &Config, client: &Client) {
+async fn test_update_combined(config: &Config, client: &Client) {
     let item = fresh_item(config).await;
-    assert_eq!(None, item.get(ATTR_NEW_FIELD));
+
+    let update_manual = client
+        .update_item()
+        .update_expression(
+            "SET #0 = :0, #1 = #1 - :1 \
+            REMOVE #2[0], #3.#4 \
+            ADD #3.#2[1] :2, #3.#1 :1 \
+            DELETE #3.#5 :3, #3.#6 :4",
+        )
+        .expression_attribute_names("#0", ATTR_STRING)
+        .expression_attribute_names("#1", ATTR_NUM)
+        .expression_attribute_names("#2", ATTR_LIST)
+        .expression_attribute_names("#3", ATTR_MAP)
+        .expression_attribute_names("#4", ATTR_NULL)
+        .expression_attribute_names("#5", ATTR_STRINGS)
+        .expression_attribute_names("#6", ATTR_NUMS)
+        .expression_attribute_values(":0", AttributeValue::S("xyz".into()))
+        .expression_attribute_values(":1", AttributeValue::N("3.5".into()))
+        .expression_attribute_values(
+            ":2",
+            AttributeValue::Ss(["x", "y", "z"].map(String::from).into()),
+        )
+        .expression_attribute_values(":3", AttributeValue::Ss(vec![String::from("b")]))
+        .expression_attribute_values(":4", AttributeValue::Ns(vec![String::from("1")]));
 
     let update = Expression::builder()
         .with_update(
+            // SET
             ATTR_STRING
                 .parse::<Path>()
                 .unwrap()
-                .set("abcdef")
-                .and(ATTR_NUM.parse::<Path>().unwrap().remove()),
+                .set("xyz")
+                .and(ATTR_NUM.parse::<Path>().unwrap().math().sub(3.5))
+                // REMOVE
+                .and(
+                    Path::new_indexed_field(ATTR_LIST, 0).remove().and(
+                        Path::from_iter([
+                            Element::new_name(ATTR_MAP),
+                            Element::new_name(ATTR_NULL),
+                        ])
+                        .remove(),
+                    ),
+                )
+                // ADD
+                .and(
+                    Path::from_iter([
+                        Element::new_name(ATTR_MAP),
+                        Element::new_indexed_field(ATTR_LIST, 1),
+                    ])
+                    .add(StringSet::new(["x", "y", "z"]))
+                    .and(
+                        Path::from_iter([Element::new_name(ATTR_MAP), Element::new_name(ATTR_NUM)])
+                            .add(Num::new(3.5)),
+                    ),
+                )
+                // DELETE
+                .and(
+                    Path::from_iter([Element::new_name(ATTR_MAP), Element::new_name(ATTR_STRINGS)])
+                        .delete(StringSet::new(["b"]))
+                        .and(
+                            Path::from_iter([
+                                Element::new_name(ATTR_MAP),
+                                Element::new_name(ATTR_NUMS),
+                            ])
+                            .delete(NumSet::new([1])),
+                        ),
+                ),
         )
         .build()
-        .update_item(client)
-        .table_name(&config.table_name)
-        .set_key(item_key(&item).into());
+        .update_item(client);
 
-    // println!("\n{:?}\n", update.as_input());
+    // println!("\n{:#?}\n", update.as_input());
+
+    assert_eq!(
+        update_manual.as_input(),
+        update.as_input(),
+        "The generated update expression is not the same as the one written by hand"
+    );
 
     let updated_item = update
+        .table_name(&config.table_name)
+        .set_key(item_key(&item).into())
         .return_values(ReturnValue::AllNew)
         .send()
         .await
@@ -527,13 +594,15 @@ async fn test_update_set_remove(config: &Config, client: &Client) {
 
     // println!("Got item: {:#?}", DebugItem(&updated_item));
 
+    // SET
+
     assert_ne!(
         item.get(ATTR_STRING),
         updated_item.get(ATTR_STRING),
         "Updated string should be different."
     );
     assert_eq!(
-        "abcdef",
+        "xyz",
         updated_item
             .get(ATTR_STRING)
             .map(AttributeValue::as_s)
@@ -541,11 +610,170 @@ async fn test_update_set_remove(config: &Config, client: &Client) {
             .expect("That field should be a String"),
         "Assigning a new value to the field didn't work"
     );
+
+    assert_ne!(
+        item.get(ATTR_NUM),
+        updated_item.get(ATTR_NUM),
+        "Updated number should be different"
+    );
+    assert_eq!(
+        "38.5",
+        updated_item
+            .get(ATTR_NUM)
+            .map(AttributeValue::as_n)
+            .expect("Field is missing")
+            .expect("That field should be a Number"),
+        "Subtraction didn't work"
+    );
+
+    // /SET
+
+    // REMOVE
+
+    let list = item
+        .get(ATTR_LIST)
+        .expect("List is missing")
+        .as_l()
+        .expect("List is not a list");
+
+    let list_updated = updated_item
+        .get(ATTR_LIST)
+        .expect("List is missing")
+        .as_l()
+        .expect("List is not a list");
+
+    assert_eq!(
+        list.len() - 1,
+        list_updated.len(),
+        "Should have removed one item",
+    );
+
+    let list_first = list.first().unwrap();
+    assert!(
+        !list_updated.iter().any(|elem| elem == list_first),
+        "The first item should have been removed"
+    );
+
+    let map_updated = updated_item
+        .get(ATTR_MAP)
+        .expect("Map attribute is missing")
+        .as_m()
+        .expect("Field is not a map");
+
     assert_eq!(
         None,
-        updated_item.get(ATTR_NUM),
-        "Updated number should be removed"
+        map_updated.get(ATTR_NULL),
+        "Sub-attribute should have been removed"
     );
+
+    // /REMOVE
+
+    // ADD
+
+    let map = item
+        .get(ATTR_MAP)
+        .expect("Map attribute is missing")
+        .as_m()
+        .expect("Field is not a map");
+
+    let map_list = map
+        .get(ATTR_LIST)
+        .expect("List is missing from the map")
+        .as_l()
+        .expect("Item is not a list");
+
+    let map_list_updated = map_updated
+        .get(ATTR_LIST)
+        .expect("List is missing from the map")
+        .as_l()
+        .expect("Item is not a list");
+
+    let map_list_ss = map_list
+        .get(1)
+        .expect("Item doesn't exist")
+        .as_ss()
+        .expect("Item is not a string set");
+
+    let map_list_ss_updated = map_list_updated
+        .get(1)
+        .expect("Item doesn't exist")
+        .as_ss()
+        .expect("Item is not a string set");
+
+    assert_eq!(3, map_list_ss.len());
+    assert_eq!(6, map_list_ss_updated.len());
+    assert_eq!(
+        ["a", "b", "c", "x", "y", "z"],
+        map_list_ss_updated.as_slice()
+    );
+
+    let map_num = map
+        .get(ATTR_NUM)
+        .expect("Item doesn't exist")
+        .as_n()
+        .expect("Item is not a number");
+
+    let map_num_updated = map_updated
+        .get(ATTR_NUM)
+        .expect("Item doesn't exist")
+        .as_n()
+        .expect("Item is not a number");
+
+    assert_ne!(
+        map_num, map_num_updated,
+        "Updated number should be different"
+    );
+    assert_eq!("45.5", map_num_updated, "Addition didn't work");
+
+    // /ADD
+
+    // DELETE
+
+    let map_strings = map
+        .get(ATTR_STRINGS)
+        .expect("Item doesn't exist")
+        .as_ss()
+        .expect("Item is not a string set");
+
+    let map_strings_updated = map_updated
+        .get(ATTR_STRINGS)
+        .expect("Item doesn't exist")
+        .as_ss()
+        .expect("Item is not a string set");
+
+    assert_ne!(
+        map_strings, map_strings_updated,
+        "Updated string set should be different."
+    );
+    assert_eq!(
+        ["a", "c"],
+        map_strings_updated.as_slice(),
+        "Deleting a value from the string set didn't work"
+    );
+
+    let map_nums = map
+        .get(ATTR_NUMS)
+        .expect("Item doesn't exist")
+        .as_ns()
+        .expect("Item is not a number set");
+
+    let map_nums_updated = map_updated
+        .get(ATTR_NUMS)
+        .expect("Item doesn't exist")
+        .as_ns()
+        .expect("Item is not a number set");
+
+    assert_ne!(
+        map_nums, map_nums_updated,
+        "Updated number set should be different."
+    );
+    assert_eq!(
+        ["2.0000000000000000000000000000000000001", "3"],
+        map_nums_updated.as_slice(),
+        "Deleting a value from the number set didn't work"
+    );
+
+    // /DELETE
 }
 
 async fn test_update_add(config: &Config, client: &Client) {

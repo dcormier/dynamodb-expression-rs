@@ -2,13 +2,13 @@ use core::fmt::{self, Write};
 
 use crate::{
     path::Path,
-    update::{set_remove::SetRemove, Set},
+    update::Update,
     value::{Num, ValueOrRef},
 };
 
 /// Represents a [DynamoDB math operation][1] used as a part of an update expression.
 ///
-/// See also: [`Path::math`]
+/// Prefer [`Path::math`] over this.
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,10 +22,11 @@ pub struct Math {
 /// A [math operation][1] to modify a field and assign the updated value
 /// to another (possibly different) field.
 ///
-/// See also: [`Path::math`]
+/// Prefer [`Path::math`] over this.
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.IncrementAndDecrement
 impl Math {
+    /// Prefer [`Path::math`] over this.
     pub fn builder<T>(dst: T) -> Builder
     where
         T: Into<Path>,
@@ -36,7 +37,7 @@ impl Math {
         }
     }
 
-    /// Add an additional [`Set`] or [`Remove`] statement to this expression.
+    /// Add an additional [`Update`] statement to this expression.
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -53,13 +54,11 @@ impl Math {
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// [`Remove`]: crate::update::Remove
-    pub fn and<T>(self, other: T) -> SetRemove
+    pub fn and<T>(self, other: T) -> Update
     where
-        T: Into<SetRemove>,
+        T: Into<Update>,
     {
-        Set::from(self).and(other)
+        Update::from(self).and(other)
     }
 }
 
@@ -97,7 +96,7 @@ impl fmt::Display for MathOp {
     }
 }
 
-/// See: [`Path::math`]
+/// Prefer [`Path::math`] over this.
 #[must_use = "Consume this `Builder` by using its `.add()` or `.sub()` methods"]
 #[derive(Debug, Clone)]
 pub struct Builder {
@@ -155,7 +154,7 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use crate::{
-        update::{set_remove::SetRemove, Assign, Set, SetAction},
+        update::{Assign, Set, SetAction},
         Num, Path,
     };
 
@@ -197,7 +196,7 @@ mod test {
 
         // Should be able to concatenate a SetRemove instance
 
-        let combined = math.and(SetRemove::from("quux".parse::<Path>()?.remove()));
+        let combined = math.and("quux".parse::<Path>()?.remove());
         assert_eq!(r#"SET foo = foo + 1 REMOVE quux"#, combined.to_string());
 
         Ok(())

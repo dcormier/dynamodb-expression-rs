@@ -288,7 +288,9 @@ impl Builder {
     }
 
     fn process_operand(&mut self, operand: Operand) -> Operand {
-        match operand.op {
+        let Operand { op } = operand;
+
+        match op {
             OperandType::Path(path) => self.process_path(path).into(),
             OperandType::Size(Size { path: name }) => Size {
                 path: self.process_path(name),
@@ -302,42 +304,77 @@ impl Builder {
     }
 
     fn process_update(&mut self, update: Update) -> Update {
-        match update {
-            Update::SetRemove(mut update) => {
-                if let Some(set) = update.set {
-                    update.set = Some(self.process_set(set));
-                }
+        let Update {
+            mut set,
+            mut remove,
+            mut add,
+            mut delete,
+        } = update;
 
-                if let Some(mut remove) = update.remove {
-                    remove.paths = remove
-                        .paths
-                        .into_iter()
-                        .map(|path| self.process_path(path))
-                        .collect();
+        set = set.map(|set| self.process_set(set));
 
-                    update.remove = Some(remove);
-                }
+        remove = remove.map(|mut remove| {
+            remove.paths = remove
+                .paths
+                .into_iter()
+                .map(|path| self.process_path(path))
+                .collect();
 
-                update.into()
-            }
-            Update::Add(mut update) => {
-                update.path = self.process_path(update.path);
-                update.value = self.process_value(update.value).into();
+            remove.paths.shrink_to_fit();
 
-                update.into()
-            }
-            Update::Delete(mut update) => {
-                update.path = self.process_path(update.path);
-                update.subset = self.process_value(update.subset).into();
+            remove
+        });
 
-                update.into()
-            }
+        add = add.map(|mut add| {
+            add.actions = add
+                .actions
+                .into_iter()
+                .map(|action| {
+                    let mut action = action;
+
+                    action.path = self.process_path(action.path);
+                    action.value = self.process_value(action.value).into();
+
+                    action
+                })
+                .collect();
+
+            add.actions.shrink_to_fit();
+
+            add
+        });
+
+        delete = delete.map(|mut delete| {
+            delete.actions = delete
+                .actions
+                .into_iter()
+                .map(|action| {
+                    let mut action = action;
+
+                    action.path = self.process_path(action.path);
+                    action.subset = self.process_value(action.subset).into();
+
+                    action
+                })
+                .collect();
+
+            delete.actions.shrink_to_fit();
+
+            delete
+        });
+
+        Update {
+            set,
+            remove,
+            add,
+            delete,
         }
     }
 
-    fn process_set(&mut self, mut set: Set) -> Set {
-        set.actions = set
-            .actions
+    fn process_set(&mut self, set: Set) -> Set {
+        let Set { mut actions } = set;
+
+        actions = actions
             .into_iter()
             .map(|action| match action {
                 SetAction::Assign(mut action) => {
@@ -370,12 +407,15 @@ impl Builder {
             })
             .collect();
 
-        set
+        actions.shrink_to_fit();
+
+        Set { actions }
     }
 
-    fn process_path(&mut self, mut path: Path) -> Path {
-        path.elements = path
-            .elements
+    fn process_path(&mut self, path: Path) -> Path {
+        let Path { mut elements } = path;
+
+        elements = elements
             .into_iter()
             .map(|elem| match elem {
                 Element::Name(name) => self.process_name(name).into(),
@@ -387,7 +427,7 @@ impl Builder {
             })
             .collect();
 
-        path
+        Path { elements }
     }
 
     fn process_name(&mut self, name: Name) -> Name {

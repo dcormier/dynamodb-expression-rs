@@ -1,14 +1,15 @@
 use core::fmt;
 
-use crate::update::set_remove::SetRemove;
+use crate::update::Update;
 
-use super::{Assign, IfNotExists, ListAppend, Math, Set};
+use super::{Assign, IfNotExists, ListAppend, Math};
 
 /// Represents an action to take in a [`SET` statement][1] for an update expression.
 ///
 /// See also: [`Set`], [`Update`]
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET
+/// [`Set`]: crate::update::Set
 /// [`Update`]: crate::update::Update
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SetAction {
@@ -40,7 +41,7 @@ pub enum SetAction {
 }
 
 impl SetAction {
-    /// Add an additional [`Set`] or [`Remove`] statement to this expression.
+    /// Add an additional [`Update`] statement to this expression.
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -57,13 +58,11 @@ impl SetAction {
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// [`Remove`]: crate::update::Remove
-    pub fn and<T>(self, other: T) -> SetRemove
+    pub fn and<T>(self, other: T) -> Update
     where
-        T: Into<SetRemove>,
+        T: Into<Update>,
     {
-        Set::from(self).and(other)
+        Update::from(self).and(other)
     }
 }
 
@@ -109,7 +108,7 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use crate::{
-        update::{set_remove::SetRemove, Assign, IfNotExists, ListAppend, Math, Set},
+        update::{Assign, IfNotExists, ListAppend, Math, Set},
         Num, Path,
     };
 
@@ -168,7 +167,7 @@ mod test {
 
         // Should be able to concatenate a SetRemove instance
 
-        let combined = set_action.and(SetRemove::from("quux".parse::<Path>()?.remove()));
+        let combined = set_action.and("quux".parse::<Path>()?.remove());
         assert_eq!(r#"SET foo = "a value" REMOVE quux"#, combined.to_string());
 
         Ok(())

@@ -2,16 +2,14 @@ use core::fmt;
 
 use crate::{
     path::Path,
-    update::set_remove::SetRemove,
+    update::Update,
     value::{Value, ValueOrRef},
 };
-
-use super::Set;
 
 /// Represents assigning a value of an [attribute][1], [list][2], or [map][3]
 /// for a DynamoDB update expression.
 ///
-/// See also: [`Path::set`]
+/// Prefer [`Path::set`] over this.
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.ModifyingAttributes
 /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET.AddingListElements
@@ -26,7 +24,7 @@ pub struct Assign {
 impl Assign {
     /// Allows for manual creation of an [`Assign`] statement.
     ///
-    /// See also: [`Path::set`]
+    /// Prefer [`Path::set`] over this.
     pub fn new<P, V>(path: P, value: V) -> Self
     where
         P: Into<Path>,
@@ -38,7 +36,7 @@ impl Assign {
         }
     }
 
-    /// Add an additional [`Set`] or [`Remove`] to this expression.
+    /// Add an additional [`Update`] to this expression.
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -55,13 +53,11 @@ impl Assign {
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// [`Remove`]: crate::update::Remove
-    pub fn and<T>(self, other: T) -> SetRemove
+    pub fn and<T>(self, other: T) -> Update
     where
-        T: Into<SetRemove>,
+        T: Into<Update>,
     {
-        Set::from(self).and(other)
+        Update::from(self).and(other)
     }
 }
 
@@ -78,7 +74,7 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use crate::{
-        update::{set_remove::SetRemove, IfNotExists, Set, SetAction},
+        update::{IfNotExists, Set, SetAction},
         Num, Path,
     };
 
@@ -126,7 +122,7 @@ mod test {
 
         // Should be able to concatenate a SetRemove instance
 
-        let combined = assign.and(SetRemove::from("quux".parse::<Path>()?.remove()));
+        let combined = assign.and("quux".parse::<Path>()?.remove());
         assert_eq!(r#"SET foo = "a value" REMOVE quux"#, combined.to_string());
 
         Ok(())
