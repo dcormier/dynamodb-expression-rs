@@ -285,12 +285,12 @@ async fn test_update_set(config: &Config, client: &Client) {
                         .before()
                         .list(["A new value at the beginning"]),
                 )
-                // DynamoDB won't let you append to the same list twice in the same update expression.
-                // .and(
-                //     ATTR_LIST.parse::<Path>().unwrap()
-                //         .list_append()
-                //         .list(["A new value at the end"]),
-                // )
+                .and(
+                    // Append to a list that's a nested attribute.
+                    Path::from_iter([ATTR_MAP, ATTR_LIST].map(Element::new_name))
+                        .list_append()
+                        .list(["A new value at the end"]),
+                )
                 .and(
                     ATTR_NEW_FIELD
                         .parse::<Path>()
@@ -395,6 +395,38 @@ async fn test_update_set(config: &Config, client: &Client) {
         updated_list.last(),
         "List is missing the new item at th end: {:#?}",
         DebugList(updated_list)
+    );
+
+    let map_list = item
+        .get(ATTR_MAP)
+        .expect("Map attribute is missing")
+        .as_m()
+        .expect("Field is not a map")
+        .get(ATTR_LIST)
+        .expect("List is missing from the map")
+        .as_l()
+        .expect("Item is not a list");
+
+    let updated_map_list = updated_item
+        .get(ATTR_MAP)
+        .expect("Map attribute is missing")
+        .as_m()
+        .expect("Field is not a map")
+        .get(ATTR_LIST)
+        .expect("List is missing from the map")
+        .as_l()
+        .expect("Item is not a list");
+
+    assert_eq!(
+        map_list.len() + 1,
+        updated_map_list.len(),
+        "The nested list should have had an item added to it"
+    );
+    assert_eq!(
+        Some(&AttributeValue::S("A new value at the end".into())),
+        updated_map_list.last(),
+        "Nested list is missing the new item at th end: {:#?}",
+        DebugList(updated_map_list)
     );
 }
 
