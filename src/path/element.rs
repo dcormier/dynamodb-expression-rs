@@ -313,9 +313,6 @@ mod test {
         ]);
         assert_eq!("foo.bar[42]", path.to_string());
 
-        // TODO: I'm not sure this is a legal path based on these examples:
-        //       https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
-        //       Test whether it's valid and remove this comment or handle it appropriately.
         let path = Path::from_iter([
             Element::new_indexed_field("foo", 42),
             Element::new_name("bar"),

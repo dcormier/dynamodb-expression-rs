@@ -569,7 +569,7 @@ impl Expression {
 #[cfg(test)]
 mod test {
     /// Exists to format the doc examples
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_put_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::{Expression, Path};
         use aws_config::BehaviorVersion;
@@ -592,7 +592,7 @@ mod test {
     }
 
     /// Exists to format the doc examples
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_get_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::Expression;
         use aws_config::BehaviorVersion;
@@ -614,7 +614,7 @@ mod test {
     }
 
     /// Exists to format the doc examples
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_to_keys_and_attributes_builder(
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use std::collections::HashMap;
@@ -658,7 +658,7 @@ mod test {
     }
 
     /// Exists to format the doc examples
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_scan() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::{Expression, Num, Path};
         use aws_config::BehaviorVersion;
@@ -680,7 +680,7 @@ mod test {
     }
 
     /// Exists to format the doc examples
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_query() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use crate::{Expression, Num, Path};
         use aws_config::BehaviorVersion;
@@ -708,7 +708,7 @@ mod test {
     }
 
     /// Exists to format the doc examples
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_update_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
     {
         use crate::{Expression, Num, Path};
@@ -733,7 +733,7 @@ mod test {
     }
 
     /// Exists to format the doc examples
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_delete_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
     {
         use crate::{Expression, Num, Path};

@@ -36,7 +36,7 @@ pub enum Value {
 }
 
 impl Value {
-    /// Use when you need a [string][1] value for DynamoDB.
+    /// Use when you need a [string value][1] for DynamoDB.
     ///
     /// See also: [`Scalar::new_string`]
     ///
@@ -48,23 +48,10 @@ impl Value {
         value.into().into()
     }
 
-    /// Use when you need a [numeric][1] value for DynamoDB.
+    /// Use when you need a [numeric value][1] for DynamoDB.
     ///
-    /// See also:, [`Value::new_num_lower_exp`], [`Value::new_num_upper_exp`],
-    /// [`Scalar::new_num`], [`Num::new`]
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use dynamodb_expression::Value;
-    /// # use pretty_assertions::assert_eq;
-    ///
-    /// let value = Value::new_num(2600);
-    /// assert_eq!("2600", value.to_string());
-    ///
-    /// let value = Value::new_num(2600.0);
-    /// assert_eq!("2600", value.to_string());
-    /// ```
+    /// See also: [`Num::new`], [`Scalar::new_num`],
+    /// [`Value::new_num_lower_exp`], [`Value::new_num_upper_exp`]
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-N
     pub fn new_num<N>(value: N) -> Self
@@ -74,24 +61,11 @@ impl Value {
         Num::new(value).into()
     }
 
-    /// Use when you need a [numeric][1] value for DynamoDB in exponent form
+    /// Use when you need a [numeric value][1] for DynamoDB in exponent form
     /// (with a lowercase `e`).
     ///
-    /// See also:, [`Value::new_num`], [`Value::new_num_upper_exp`],
-    /// [`Scalar::new_num_lower_exp`], [`Num::new_lower_exp`]
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use dynamodb_expression::Value;
-    /// # use pretty_assertions::assert_eq;
-    ///
-    /// let value = Value::new_num_lower_exp(2600);
-    /// assert_eq!("2.6e3", value.to_string());
-    ///
-    /// let value = Value::new_num_lower_exp(2600.0);
-    /// assert_eq!("2.6e3", value.to_string());
-    /// ```
+    /// See also: [`Num::new_lower_exp`], [`Scalar::new_num_lower_exp`],
+    /// [`Value::new_num_upper_exp`], [`Value::new_num`]
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-N
     pub fn new_num_lower_exp<N>(value: N) -> Self
@@ -101,24 +75,11 @@ impl Value {
         Num::new_lower_exp(value).into()
     }
 
-    /// Use when you need a [numeric][1] value for DynamoDB in exponent form
-    /// (with an uppercase `e`).
+    /// Use when you need a [numeric value][1] for DynamoDB in exponent form
+    /// (with an uppercase `E`).
     ///
-    /// See also:, [`Value::new_num`], [`Value::new_num_lower_exp`],
-    /// [`Scalar::new_num_upper_exp`], [`Num::new_upper_exp`]
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use dynamodb_expression::Value;
-    /// # use pretty_assertions::assert_eq;
-    ///
-    /// let value = Value::new_num_upper_exp(2600);
-    /// assert_eq!("2.6E3", value.to_string());
-    ///
-    /// let value = Value::new_num_upper_exp(2600.0);
-    /// assert_eq!("2.6E3", value.to_string());
-    /// ```
+    /// See also: [`Num::new_upper_exp`], [`Scalar::new_num_upper_exp`],
+    /// [`Value::new_num_lower_exp`], [`Value::new_num`]
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-N
     pub fn new_num_upper_exp<N>(value: N) -> Self
@@ -128,7 +89,7 @@ impl Value {
         Num::new_upper_exp(value).into()
     }
 
-    /// Use when you need a [boolean][1] value for DynamoDB.
+    /// Use when you need a [boolean value][1] for DynamoDB.
     ///
     /// See also: [`Scalar::new_bool`]
     ///
@@ -137,7 +98,7 @@ impl Value {
         b.into()
     }
 
-    /// Use when you need a [binary][1] value for DynamoDB.
+    /// Use when you need a [binary value][1] for DynamoDB.
     ///
     /// See also: [`Scalar::new_binary`]
     ///
@@ -149,17 +110,20 @@ impl Value {
         binary.into().into()
     }
 
-    /// Use when you need a [null][1] value for DynamoDB.
+    /// Use when you need a [null value][1] for DynamoDB.
     ///
     /// See also: [`Scalar::new_null`]
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-NULL
     pub fn new_null() -> Self {
-        Self::Scalar(Scalar::Null)
+        Scalar::new_null().into()
     }
 
-    // TODO:
-    /// See also: [`Set::new_string_set`], [`StringSet::new`]
+    /// Creates a value to use as a [DynamoDB string set][1].
+    ///
+    /// See also: [`StringSet::new`], [`Set::new_string_set`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
     pub fn new_string_set<T>(string_set: T) -> Self
     where
         T: Into<StringSet>,
@@ -167,8 +131,11 @@ impl Value {
         string_set.into().into()
     }
 
-    // TODO:
-    /// See also: [`Set::new_num_set`], [`NumSet::new`]
+    /// Creates a value to use as a [DynamoDB number set][1].
+    ///
+    /// See also: [`NumSet::new`], [`Set::new_num_set`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
     pub fn new_num_set<T>(num_set: T) -> Self
     where
         T: Into<NumSet>,
@@ -176,8 +143,11 @@ impl Value {
         num_set.into().into()
     }
 
-    // TODO:
-    /// See also: [`Set::new_binary_set`], [`BinarySet::new`]
+    /// Creates a value to use as a [DynamoDB binary set][1].
+    ///
+    /// See also: [`BinarySet::new`], [`Set::new_binary_set`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
     pub fn new_binary_set<T>(binary_set: T) -> Self
     where
         T: Into<BinarySet>,
@@ -185,8 +155,11 @@ impl Value {
         binary_set.into().into()
     }
 
-    // TODO:
+    /// Creates a value to use as a [DynamoDB map][1].
+    ///
     /// See also: [`Map::new`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Document.Map
     pub fn new_map<T>(map: T) -> Self
     where
         T: Into<Map>,
@@ -194,8 +167,11 @@ impl Value {
         map.into().into()
     }
 
-    // TODO:
+    /// Creates a value to use as a [DynamoDB list][1].
+    ///
     /// See also: [`List::new`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Document.List
     pub fn new_list<T>(list: T) -> Self
     where
         T: Into<List>,
@@ -326,46 +302,53 @@ impl TryFrom<AttributeValue> for Value {
     type Error = UnknownAttributeValueError;
 
     /// This will only return an error if a new [`AttributeValue`] variant is
-    /// added to the AWS DynamoDB SDK and isn't supported yet.
+    /// added to the AWS DynamoDB SDK and isn't supported here, yet.
     ///
     /// See: [`UnknownAttributeValueError`], [`AttributeValue::Unknown`]
     fn try_from(value: AttributeValue) -> Result<Self, Self::Error> {
         Ok(match value {
-            AttributeValue::B(value) => Scalar::Binary(value.into_inner()).into(),
-            AttributeValue::Bool(value) => Scalar::Bool(value).into(),
-            AttributeValue::Bs(value) => {
-                BinarySet::from_iter(value.into_iter().map(Blob::into_inner)).into()
+            AttributeValue::B(b) => Scalar::Binary(b.into_inner()).into(),
+            AttributeValue::Bool(b) => Scalar::Bool(b).into(),
+            AttributeValue::Bs(bs) => {
+                BinarySet::from_iter(bs.into_iter().map(Blob::into_inner)).into()
             }
-            AttributeValue::L(value) => List::from(
-                value
-                    .into_iter()
+            AttributeValue::L(l) => List::from(
+                l.into_iter()
                     .map(Self::try_from)
                     .try_collect::<_, Vec<_>, _>()?,
             )
             .into(),
-            AttributeValue::M(value) => Map::from(
-                value
-                    .into_iter()
+            AttributeValue::M(m) => Map::from(
+                m.into_iter()
                     .map(|(k, v)| Self::try_from(v).map(|v| (k, v)))
                     .try_collect::<_, Vec<_>, _>()?,
             )
             .into(),
             AttributeValue::N(n) => Num { n }.into(),
-            AttributeValue::Ns(value) => {
-                NumSet::from_iter(value.into_iter().map(|n| Num { n })).into()
-            }
-            AttributeValue::Null(_value) => Scalar::Null.into(),
-            AttributeValue::S(value) => Scalar::String(value).into(),
-            AttributeValue::Ss(value) => StringSet::from(value).into(),
+            AttributeValue::Ns(ns) => NumSet::from_iter(ns.into_iter().map(|n| Num { n })).into(),
+            AttributeValue::Null(_null) => Scalar::Null.into(),
+            AttributeValue::S(s) => Scalar::String(s).into(),
+            AttributeValue::Ss(ss) => StringSet::from(ss).into(),
             _ => return Err(UnknownAttributeValueError(value)),
         })
+    }
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Scalar(value) => value.fmt(f),
+            Self::Set(value) => value.fmt(f),
+            Self::Map(value) => value.fmt(f),
+            Self::List(value) => value.fmt(f),
+        }
     }
 }
 
 /// An error that may occur when converting an [`AttributeValue`] into a
 /// [`Value`] (via `.try_from()`/`.try_into()`). This will only occur if a new
 /// `AttributeValue` variant is added to the AWS DynamoDB SDK and isn't
-/// supported yet.
+/// supported here, yet.
 ///
 /// The [`AttributeValue`] with the unknown variant is included in this error.
 ///
@@ -381,17 +364,6 @@ impl fmt::Display for UnknownAttributeValueError {
 
 impl Error for UnknownAttributeValueError {}
 
-impl fmt::Display for Value {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Scalar(value) => value.fmt(f),
-            Self::Set(value) => value.fmt(f),
-            Self::Map(value) => value.fmt(f),
-            Self::List(value) => value.fmt(f),
-        }
-    }
-}
-
 /// Produces base64 the way DynamoDB wants it.
 pub(crate) fn base64<T>(b: T) -> String
 where
@@ -402,10 +374,10 @@ where
 
 #[cfg(test)]
 mod test {
-    use aws_sdk_dynamodb::types::AttributeValue;
+    use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue};
     use pretty_assertions::assert_eq;
 
-    use crate::value::{List, Map, Num};
+    use crate::value::{BinarySet, List, Map, Num, NumSet, StringSet};
 
     use super::Value;
 
@@ -456,16 +428,11 @@ mod test {
 
     #[test]
     fn from_attribute_value() {
-        // TODO: Test all of the variants. Currently missing:
-        // AttributeValue::B
-        // AttributeValue::Bs
-        // AttributeValue::Ns
-        // AttributeValue::Ss
-
         assert_eq!(
             Value::from(Map::from([
                 ("s", Value::from("a string")),
                 ("int", Value::from(Num::from(8))),
+                ("b", Value::from(b"foo".to_vec())),
                 ("null", Value::from(())),
                 ("yes", Value::from(true)),
                 ("no", Value::from(false)),
@@ -478,11 +445,18 @@ mod test {
                     ])
                     .into(),
                 ),
+                ("ss", StringSet::from(["foo"]).into()),
+                ("ns", NumSet::from([Num::from(42)]).into()),
+                (
+                    "bs",
+                    BinarySet::from([b"foo".to_vec(), b"bar".to_vec(), b"baz".to_vec()]).into()
+                ),
             ])),
             Value::try_from(AttributeValue::M(
                 [
                     ("s".to_string(), AttributeValue::S("a string".to_string())),
                     ("int".to_string(), AttributeValue::N("8".to_string())),
+                    ("b".to_string(), AttributeValue::B(Blob::new(b"foo"))),
                     ("null".to_string(), AttributeValue::Null(true)),
                     ("yes".to_string(), AttributeValue::Bool(true)),
                     ("no".to_string(), AttributeValue::Bool(false)),
@@ -493,6 +467,19 @@ mod test {
                             AttributeValue::N("42".to_string()),
                             AttributeValue::Null(true),
                         ]),
+                    ),
+                    (
+                        "ss".to_string(),
+                        AttributeValue::Ss(vec!["foo".to_string()])
+                    ),
+                    ("ns".to_string(), AttributeValue::Ns(vec!["42".to_string()])),
+                    (
+                        "bs".to_string(),
+                        AttributeValue::Bs(vec![
+                            Blob::new(b"foo"),
+                            Blob::new(b"bar"),
+                            Blob::new(b"baz"),
+                        ])
                     ),
                 ]
                 .into_iter()

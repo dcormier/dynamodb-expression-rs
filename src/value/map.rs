@@ -24,6 +24,28 @@ pub struct Map {
 }
 
 impl Map {
+    /// Creates a value to use as a [DynamoDB map][1].
+    ///
+    /// See also: [`Value::new_map`]
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use std::collections::HashMap;
+    /// #
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// use dynamodb_expression::value::{Map, Num};
+    ///
+    /// let map = HashMap::from([("a", Num::from(1)), ("b", Num::from(2)), ("c", Num::from(3))]);
+    ///
+    /// assert_eq!(
+    ///     Map::new(map),
+    ///     Map::new([("a", Num::from(1)), ("b", Num::from(2)), ("c", Num::from(3))]),
+    /// );
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Document.Map
     pub fn new<T>(map: T) -> Self
     where
         T: Into<Map>,

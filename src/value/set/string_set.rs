@@ -10,9 +10,26 @@ use aws_sdk_dynamodb::types::AttributeValue;
 pub struct StringSet(BTreeSet<String>);
 
 impl StringSet {
-    /// Creates a value to use as a [DynamoDB string set][1].
+    /// Creates a value to use as a [DynamoDB string set][1]. A collection of unique strings.
+    ///
+    /// See also: [`Set::new_string_set`], [`Value::new_string_set`]
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// use dynamodb_expression::value::StringSet;
+    ///
+    /// assert_eq!(
+    ///     StringSet::new([String::from("a"), String::from("b"), String::from("c")]),
+    ///     StringSet::new(["a", "b", "b", "c"]),
+    /// );
+    /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
+    /// [`Set::new_string_set`]: crate::Set::new_string_set
+    /// [`Value::new_string_set`]: crate::Value::new_string_set
     pub fn new<T>(set: T) -> Self
     where
         T: Into<StringSet>,

@@ -2,31 +2,31 @@ use core::fmt::{self, LowerExp, UpperExp};
 
 use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue};
 
-use super::base64;
-use super::Num;
+use super::{base64, Num};
 
-/// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes>
+/// Represents a DynamoDB [scalar value][1].
+///
+/// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Scalar
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Scalar {
-    /// DynamoDB [string](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-S)
-    /// value
+    /// DynamoDB [string value](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-S)
     String(String),
-    /// DynamoDB [numeric](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-N)
-    /// value
+
+    /// DynamoDB [numeric value](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-N)
     Num(Num),
-    /// DynamoDB [boolean](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-BOOL)
-    /// value
+
+    /// DynamoDB [boolean value](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-BOOL)
     Bool(bool),
-    /// DynamoDB [binary](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-B)
-    /// value
+
+    /// DynamoDB [binary value](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-B)
     Binary(Vec<u8>),
-    /// DynamoDB [null](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-NULL)
-    /// value
+
+    /// DynamoDB [null value](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html#DDB-Type-AttributeValue-NULL)
     Null,
 }
 
 impl Scalar {
-    /// Use when you need a [string][1] value for DynamoDB.
+    /// Use when you need a [string value][1] for DynamoDB.
     ///
     /// See also: [`Value::new_string`]
     ///
@@ -39,7 +39,7 @@ impl Scalar {
         Self::String(value.into())
     }
 
-    /// Use when you need a [numeric][1] value for DynamoDB.
+    /// Use when you need a [numeric value][1] for DynamoDB.
     ///
     /// See also: [`Scalar::new_num_lower_exp`], [`Scalar::new_num_upper_exp`],
     /// [`Value::new_num`], [`Num`]
@@ -66,7 +66,7 @@ impl Scalar {
         Self::Num(Num::new(value))
     }
 
-    /// Use when you need a [numeric][1] value for DynamoDB in exponent form
+    /// Use when you need a [numeric value][1] for DynamoDB in exponent form
     /// (with a lowercase `e`).
     ///
     /// See also: [`Scalar::new_num`], [`Scalar::new_num_upper_exp`],
@@ -94,8 +94,8 @@ impl Scalar {
         Self::Num(Num::new_lower_exp(value))
     }
 
-    /// Use when you need a [numeric][1] value for DynamoDB in exponent form
-    /// (with an uppercase `e`).
+    /// Use when you need a [numeric value][1] for DynamoDB in exponent form
+    /// (with an uppercase `E`).
     ///
     /// See also: [`Scalar::new_num`], [`Scalar::new_num_lower_exp`],
     /// [`Value::new_num_upper_exp`], [`Num`]
@@ -122,7 +122,7 @@ impl Scalar {
         Self::Num(Num::new_upper_exp(value))
     }
 
-    /// Use when you need a [boolean][1] value for DynamoDB.
+    /// Use when you need a [boolean value][1] for DynamoDB.
     ///
     /// See also: [`Value::new_bool`]
     ///
@@ -132,7 +132,7 @@ impl Scalar {
         Self::Bool(b)
     }
 
-    /// Use when you need a [binary][1] value for DynamoDB.
+    /// Use when you need a [binary value][1] for DynamoDB.
     ///
     /// See also: [`Value::new_binary`]
     ///
@@ -145,7 +145,7 @@ impl Scalar {
         Self::Binary(binary.into())
     }
 
-    /// Use when you need a [null][1] value for DynamoDB.
+    /// Use when you need a [null value][1] for DynamoDB.
     ///
     /// See also: [`Value::new_null`]
     ///
@@ -173,7 +173,7 @@ impl Scalar {
 impl fmt::Display for Scalar {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::String(s) => serde_json::to_string(s).unwrap().fmt(f),
+            Self::String(s) => serde_json::to_string(s).map_err(|_err| fmt::Error)?.fmt(f),
             Self::Num(n) => n.fmt(f),
             Self::Bool(b) => serde_json::Value::Bool(*b).to_string().fmt(f),
             Self::Binary(b) => serde_json::Value::String(base64(b)).to_string().fmt(f),
@@ -338,7 +338,6 @@ mod test {
     fn binary_array_ref() {
         let bytes: &[u8; 4] = b"fish";
 
-        #[allow(clippy::needless_borrows_for_generic_args)]
         let actual = Scalar::new_binary(bytes);
         assert_eq!(r#""ZmlzaA==""#, actual.to_string());
 
@@ -359,6 +358,7 @@ mod test {
 
     #[test]
     fn null() {
+        assert_eq!("NULL", Scalar::Null.to_string());
         assert_eq!("NULL", Scalar::new_null().to_string());
         assert_eq!("NULL", Scalar::from(()).to_string());
     }

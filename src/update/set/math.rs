@@ -117,7 +117,14 @@ impl Builder {
     }
 
     /// Sets addition as the operation to perform.
-    #[allow(clippy::should_implement_trait)]
+    #[rustversion::attr(before(1.81), allow(clippy::should_implement_trait))]
+    #[rustversion::attr(
+        since(1.81),
+        expect(
+            clippy::should_implement_trait,
+            reason = "This is for the DynamoDB `+` operator, not the Rust `+` operator."
+        )
+    )]
     pub fn add<T>(self, num: T) -> Math
     where
         T: Into<Num>,
@@ -126,7 +133,14 @@ impl Builder {
     }
 
     /// Sets subtraction as the operation to perform.
-    #[allow(clippy::should_implement_trait)]
+    #[rustversion::attr(before(1.81), allow(clippy::should_implement_trait))]
+    #[rustversion::attr(
+        since(1.81),
+        expect(
+            clippy::should_implement_trait,
+            reason = "This is for the DynamoDB `-` operator, not the Rust `-` operator."
+        )
+    )]
     pub fn sub<T>(self, num: T) -> Math
     where
         T: Into<Num>,

@@ -56,11 +56,11 @@ use crate::{
 ///
 /// For creating a new [`Path`]:
 /// * Parse from a string, as seen [below](#parsing). This is the preferred way. The only
-/// time when other constructors are needed is when you have an attribute name
-/// with a `.` in it that must not be treated as a separator for sub-attributes.
+///   time when other constructors are needed is when you have an attribute name
+///   with a `.` in it that must not be treated as a separator for sub-attributes.
 /// * [`Path::new_name`] and [`Path::new_indexed_field`] constructors
 /// * [`Path::from`] for converting anything that's `Into<Element>` into a [`Path`]
-/// (see also: [`Element`])
+///   (see also: [`Element`])
 ///
 /// For building a [`Path`] one step at a time:
 /// * Use the [`+=`] operator
@@ -790,7 +790,14 @@ impl Path {
     /// [2]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
     /// [`Update`]: crate::update::Update
     /// [`Set`]: crate::update::Set
-    #[allow(clippy::should_implement_trait)]
+    #[rustversion::attr(before(1.81), allow(clippy::should_implement_trait))]
+    #[rustversion::attr(
+        since(1.81),
+        expect(
+            clippy::should_implement_trait,
+            reason = "This is for the DynamoDB `ADD` operation, not the Rust `+` operator."
+        )
+    )]
     pub fn add<T>(self, value: T) -> Add
     where
         T: Into<AddValue>,
@@ -1218,29 +1225,6 @@ mod test {
     }
 
     #[test]
-    fn display_name() {
-        let path = Element::new_name("foo");
-        assert_eq!("foo", path.to_string());
-    }
-
-    #[test]
-    fn display_indexed() {
-        // Also tests that `Element::new_indexed_field()` can accept a few different types of input.
-
-        // From a usize
-        let path = Element::new_indexed_field("foo", 42);
-        assert_eq!("foo[42]", path.to_string());
-
-        // From an array of usize
-        let path = Element::new_indexed_field("foo", [42]);
-        assert_eq!("foo[42]", path.to_string());
-
-        // From a slice of usize
-        let path = Element::new_indexed_field("foo", &([42, 37, 9])[..]);
-        assert_eq!("foo[42][37][9]", path.to_string());
-    }
-
-    #[test]
     fn display_path() {
         let path: Path = ["foo", "bar"].into_iter().map(Name::from).collect();
         assert_eq!("foo.bar", path.to_string());
@@ -1251,9 +1235,6 @@ mod test {
         ]);
         assert_eq!("foo.bar[42]", path.to_string());
 
-        // TODO: I'm not sure this is a legal path based on these examples:
-        //       https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples
-        //       Test whether it's valid and remove this comment or handle it appropriately.
         let path = Path::from_iter([
             Element::new_indexed_field("foo", 42),
             Element::new_name("bar"),
@@ -1325,8 +1306,7 @@ mod test {
     fn empty() {
         assert!(Path::default().is_empty());
         assert!(Path::from_iter(Vec::<Element>::new()).is_empty());
-        // TODO: Uncomment this when `Path::from_iter(Vec<Path>)` works.
-        // assert!(Path::from_iter(Vec::<Path>::new()).is_empty());
+        assert!(Path::from_iter(Vec::<Path>::new()).is_empty());
     }
 
     #[test]

@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use pretty_assertions::assert_eq;
+
 #[test]
 fn scan_input() -> Result<(), Box<dyn Error>> {
     use aws_sdk_dynamodb::{operation::scan::ScanInput, types::AttributeValue};
@@ -149,7 +151,7 @@ fn query() -> Result<(), Box<dyn Error>> {
 
 // This is here as the basis for the example in the readme and the top-level crate docs.
 // Intentionally not marked as a test because this isn't expected to run on its own.
-#[allow(dead_code)]
+#[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
 async fn query_example() -> Result<(), Box<dyn Error>> {
     use aws_config::BehaviorVersion;
     use aws_sdk_dynamodb::Client;

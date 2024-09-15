@@ -2,10 +2,10 @@ use core::fmt::{self, Write};
 
 use aws_sdk_dynamodb::types::AttributeValue;
 
-use super::{Scalar, Value};
+use super::Value;
 
 /// A collection of DynamoDB values that may not all be of the same type.
-/// Represents a [DynamoDB list][1].
+/// Represents a DynamoDB [list][1].
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Document.List
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -14,6 +14,28 @@ pub struct List {
 }
 
 impl List {
+    /// Creates a value to use as a DynamoDB [list value][1].
+    ///
+    /// See also: [`Value::new_list`]
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use pretty_assertions::assert_eq;
+    /// #
+    /// use dynamodb_expression::value::{List, Num, Value};
+    ///
+    /// let list = List::from(["a"]);
+    /// assert_eq!(r#"["a"]"#, list.to_string());
+    ///
+    /// let list = List::from([Num::new(1), Num::new(2)]);
+    /// assert_eq!("[1, 2]", list.to_string());
+    ///
+    /// let list = List::from([Value::new_string("a"), Value::new_num(42)]);
+    /// assert_eq!(r#"["a", 42]"#, list.to_string());
+    /// ```
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Document.List
     pub fn new<T>(list: T) -> Self
     where
         T: Into<List>,
@@ -53,11 +75,7 @@ impl fmt::Display for List {
                 f.write_str(", ")?;
             }
 
-            if let Value::Scalar(Scalar::String(s)) = v {
-                serde_json::to_string(s).unwrap().fmt(f)
-            } else {
-                v.fmt(f)
-            }
+            v.fmt(f)
         })?;
 
         f.write_char(']')
@@ -90,17 +108,20 @@ where
 
 #[cfg(test)]
 mod test {
-    use pretty_assertions::assert_str_eq;
+    use pretty_assertions::assert_eq;
 
     use super::List;
-    use crate::value::Value;
+    use crate::value::{Num, Value};
 
     #[test]
     fn display() {
         let list = List::from(["a"]);
-        assert_str_eq!(r#"["a"]"#, list.to_string());
+        assert_eq!(r#"["a"]"#, list.to_string());
+
+        let list = List::from([Num::new(1), Num::new(2)]);
+        assert_eq!("[1, 2]", list.to_string());
 
         let list = List::from([Value::new_string("a"), Value::new_num(42)]);
-        assert_str_eq!(r#"["a", 42]"#, list.to_string());
+        assert_eq!(r#"["a", 42]"#, list.to_string());
     }
 }

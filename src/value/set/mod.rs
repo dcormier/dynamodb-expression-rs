@@ -23,9 +23,12 @@ pub enum Set {
 }
 
 impl Set {
-    /// A set of unique string values for DynamoDB
+    /// Creates a value to use as a [DynamoDB string set][1].
     ///
-    /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
+    /// See also: [`StringSet::new`], [`Value::new_string_set`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
+    /// [`Value::new_string_set`]: crate::Value::new_string_set
     pub fn new_string_set<T>(string_set: T) -> Self
     where
         T: Into<StringSet>,
@@ -33,9 +36,12 @@ impl Set {
         string_set.into().into()
     }
 
-    /// A set of unique numeric values for DynamoDB
+    /// Creates a value to use as a [DynamoDB number set][1].
     ///
-    /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
+    /// See also: [`NumSet::new`], [`Value::new_num_set`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
+    /// [`Value::new_num_set`]: crate::Value::new_num_set
     pub fn new_num_set<T>(num_set: T) -> Self
     where
         T: Into<NumSet>,
@@ -43,9 +49,12 @@ impl Set {
         num_set.into().into()
     }
 
-    /// A set of unique binary values for DynamoDB
+    /// Creates a value to use as a [DynamoDB binary set][1].
     ///
-    /// <https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes>
+    /// See also: [`BinarySet::new`], [`Value::new_binary_set`]
+    ///
+    /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
+    /// [`Value::new_binary_set`]: crate::Value::new_binary_set
     pub fn new_binary_set<T>(binary_set: T) -> Self
     where
         T: Into<BinarySet>,
@@ -123,7 +132,6 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::approx_constant)]
     fn num_set_display() {
         let set = Set::new_num_set([-1, 0, 1, 42]);
         assert_eq!("[-1, 0, 1, 42]", set.to_string());
@@ -135,24 +143,24 @@ mod test {
         let set = Set::new_num_set([
             Num::new_lower_exp(f32::MIN),
             Num::new(0.0),
-            Num::new(3.14),
             Num::new(1000),
             Num::new_upper_exp(f32::MAX),
+            Num::new(9.2),
         ]);
         assert_eq!(
             "[\
                 -3.4028235e38, \
                 0, \
                 1000, \
-                3.14, \
-                3.4028235E38\
+                3.4028235E38, \
+                9.2\
             ]",
             set.to_string()
         );
 
         let deserialized: Vec<f32> =
             serde_json::from_str(&set.to_string()).expect("Must be valid JSON");
-        assert_eq!(vec![f32::MIN, 0.0, 1000.0, 3.14, f32::MAX], deserialized);
+        assert_eq!(vec![f32::MIN, 0.0, 1000.0, f32::MAX, 9.2], deserialized);
     }
 
     #[test]
@@ -173,7 +181,7 @@ mod test {
     fn find_tricky_base64() {
         /// Visible ASCII characters
         fn charset(
-        ) -> impl Iterator<Item = char> + ExactSizeIterator + DoubleEndedIterator + FusedIterator + Clone
+        ) -> impl ExactSizeIterator<Item = char> + DoubleEndedIterator + FusedIterator + Clone
         {
             (32..127).map(char::from_u32).map(Option::unwrap)
         }

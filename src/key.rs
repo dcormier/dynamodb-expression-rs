@@ -263,13 +263,19 @@ mod test {
         assert_eq!(r#"begins_with(foo, "foo")"#, begins_with.to_string());
 
         // Begins with &String
-        #[allow(clippy::needless_borrows_for_generic_args)]
+        #[expect(
+            clippy::needless_borrows_for_generic_args,
+            reason = "Explicitly testing &String"
+        )]
         let begins_with =
             Key::from("foo".parse::<Path>().unwrap()).begins_with(&String::from("foo"));
         assert_eq!(r#"begins_with(foo, "foo")"#, begins_with.to_string());
 
         // Begins with &&str
-        #[allow(clippy::needless_borrows_for_generic_args)]
+        #[expect(
+            clippy::needless_borrows_for_generic_args,
+            reason = "Explicitly testing &&str"
+        )]
         let begins_with = Key::from("foo".parse::<Path>().unwrap()).begins_with(&"foo");
         assert_eq!(r#"begins_with(foo, "foo")"#, begins_with.to_string());
     }

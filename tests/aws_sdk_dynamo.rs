@@ -57,7 +57,7 @@ async fn test_get_item(config: &Config) {
         .expect("Where is the item?");
 
     let expect: HashMap<_, _> = item
-        .get_key_value(&ATTR_ID.to_string())
+        .get_key_value(ATTR_ID)
         .into_iter()
         .map_keys(Clone::clone)
         .map_values(Clone::clone)
@@ -112,7 +112,7 @@ async fn test_batch_get_item(config: &Config) {
         .collect_vec();
 
     let expect = vec![DebugItem(
-        item.get_key_value(&ATTR_ID.to_string())
+        item.get_key_value(ATTR_ID)
             .into_iter()
             .map_keys(Clone::clone)
             .map_values(Clone::clone)

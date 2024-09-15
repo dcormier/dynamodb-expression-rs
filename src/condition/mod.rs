@@ -143,7 +143,14 @@ impl Condition {
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.LogicalEvaluations
-    #[allow(clippy::should_implement_trait)]
+    #[rustversion::attr(before(1.81), allow(clippy::should_implement_trait))]
+    #[rustversion::attr(
+        since(1.81),
+        expect(
+            clippy::should_implement_trait,
+            reason = "This is for the DynamoDB `NOT` operator, not the Rust `!` operator."
+        )
+    )]
     pub fn not(self) -> Self {
         Self::Not(Not::from(self))
     }

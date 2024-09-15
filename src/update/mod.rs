@@ -26,7 +26,7 @@ pub use self::{
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use dynamodb_expression::{update::Update, Expression, Path};
+/// use dynamodb_expression::{update::Update, value::StringSet, Expression, Path};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let update = Update::from("foo".parse::<Path>()?.math().add(7));
@@ -40,8 +40,19 @@ pub use self::{
 ///
 /// let update = Update::from("foo".parse::<Path>()?.remove());
 /// assert_eq!(r#"REMOVE foo"#, update.to_string());
-/// #
-/// # // TODO: Examples for `Add` and `Delete`.
+///
+/// let update = Update::from(
+///     "foo"
+///         .parse::<Path>()?
+///         .add(StringSet::from(["a value", "another value"])),
+/// );
+/// assert_eq!(
+///     r#"ADD foo ["a value", "another value"]"#,
+///     update.to_string()
+/// );
+///
+/// let update = Update::from("foo".parse::<Path>()?.delete(StringSet::from(["a value"])));
+/// assert_eq!(r#"DELETE foo ["a value"]"#, update.to_string());
 ///
 /// // To use an `Update`, build an `Expression`.
 /// let expression = Expression::builder().with_update(update).build();
@@ -303,7 +314,7 @@ impl From<DeleteAction> for Update {
 mod examples {
     #[test]
     fn example() -> Result<(), Box<dyn std::error::Error>> {
-        use crate::{update::Update, Path};
+        use crate::{update::Update, value::StringSet, Expression, Path};
         use pretty_assertions::assert_eq;
 
         let update = Update::from("foo".parse::<Path>()?.math().add(7));
@@ -318,7 +329,22 @@ mod examples {
         let update = Update::from("foo".parse::<Path>()?.remove());
         assert_eq!(r#"REMOVE foo"#, update.to_string());
 
-        // TODO: Examples for `Add` and `Delete`.
+        let update = Update::from(
+            "foo"
+                .parse::<Path>()?
+                .add(StringSet::from(["a value", "another value"])),
+        );
+        assert_eq!(
+            r#"ADD foo ["a value", "another value"]"#,
+            update.to_string()
+        );
+
+        let update = Update::from("foo".parse::<Path>()?.delete(StringSet::from(["a value"])));
+        assert_eq!(r#"DELETE foo ["a value"]"#, update.to_string());
+
+        // To use an `Update`, build an `Expression`.
+        let expression = Expression::builder().with_update(update).build();
+        _ = expression;
 
         Ok(())
     }

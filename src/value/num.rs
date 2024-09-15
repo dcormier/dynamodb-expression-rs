@@ -2,11 +2,15 @@ use core::fmt::{self, LowerExp, UpperExp};
 
 use aws_sdk_dynamodb::types::AttributeValue;
 
-/// A DynamoDB [numeric][1] value.
+/// Represents a DynamoDB [numeric value][1].
 ///
-/// See also: [`Scalar::new_num`], [`Value::new_num`],
-/// [`Scalar::new_num_lower_exp`], [`Value::new_num_lower_exp`],
-/// [`Scalar::new_num_upper_exp`], [`Value::new_num_upper_exp`]
+/// See also:
+/// * [`Scalar::new_num`]
+/// * [`Value::new_num`]
+/// * [`Scalar::new_num_lower_exp`]
+/// * [`Value::new_num_lower_exp`]
+/// * [`Scalar::new_num_upper_exp`]
+/// * [`Value::new_num_upper_exp`]
 ///
 /// # Examples
 ///
@@ -46,7 +50,7 @@ pub struct Num {
 }
 
 impl Num {
-    /// Creates a DynamoDB [numeric][1] value.
+    /// Creates a DynamoDB [numeric value][1].
     ///
     /// See also: [`Num::new_lower_exp`], [`Num::new_upper_exp`], [`Scalar::new_num`],
     /// [`Value::new_num`]
@@ -76,7 +80,7 @@ impl Num {
         }
     }
 
-    /// Creates a DynamoDB [numeric][1] value.
+    /// Creates a DynamoDB [numeric value][1].
     ///
     /// See also: [`Num::new`], [`Num::new_upper_exp`], [`Scalar::new_num_lower_exp`],
     /// [`Value::new_num_lower_exp`]
@@ -106,7 +110,7 @@ impl Num {
         }
     }
 
-    /// Creates a DynamoDB [numeric][1] value.
+    /// Creates a DynamoDB [numeric value][1].
     ///
     /// See also: [`Num::new`], [`Num::new_lower_exp`], [`Scalar::new_num_upper_exp`],
     /// [`Value::new_num_upper_exp`]

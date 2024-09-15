@@ -141,10 +141,10 @@ pub use expression::{Builder, Expression};
 pub use path::Path;
 pub use value::{Map, Num, Scalar, Set, Value};
 
-/// This exists just for formatting the doc examples.
+/// Exists to assist with formatting doc examples
 #[cfg(test)]
 mod examples {
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_query() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         use crate::{Expression, Num, Path};
         use aws_config::BehaviorVersion;
@@ -171,7 +171,7 @@ mod examples {
         Ok(())
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_rusoto() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         use crate::{Expression, Num, Path};
         use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue as AwsAv};

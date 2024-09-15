@@ -15,7 +15,10 @@ impl BinarySet {
     /// Creates a value to use as a [DynamoDB binary set][1].
     ///
     /// It can be created from `IntoIterator<T>` where `T` is `Into<Vec<u8>>`.
-    /// Some examples:
+    ///
+    /// See also: [`Set::new_binary_set`], [`Value::new_binary_set`]
+    ///
+    /// # Examples
     /// ```
     /// use dynamodb_expression::value::BinarySet;
     /// # use pretty_assertions::assert_eq;
@@ -58,6 +61,8 @@ impl BinarySet {
     /// ```
     ///
     /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.SetTypes
+    /// [`Set::new_binary_set`]: crate::Set::new_binary_set
+    /// [`Value::new_binary_set`]: crate::Value::new_binary_set
     pub fn new<T>(set: T) -> Self
     where
         T: Into<BinarySet>,
