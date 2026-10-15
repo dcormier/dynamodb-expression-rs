@@ -1,0 +1,46 @@
+tests/dynamodb/setup.rs
+  h_990a4fb62faea9 1-2,6
+tests/dynamodb/item.rs
+  h_990a4fb62faea9 5,7
+src/expression/to_aws.rs
+  h_990a4fb62faea9 2,6,10,14,18,22,26,30,507,575-577,599-601,625,627,669-670,692-693,720,722,746,748,769-770,810,849
+src/value/set/binary_set.rs
+  h_990a4fb62faea9 54,56,58,149,151,153
+tests/dynamodb/debug.rs
+  h_990a4fb62faea9 11,18-19,140-141
+check.sh
+  h_990a4fb62faea9 8
+src/value/mod.rs
+  h_990a4fb62faea9 17,20-29,383
+tests/aws_sdk_dynamo.rs
+  h_990a4fb62faea9 1024
+src/value/scalar.rs
+  h_990a4fb62faea9 5,268
+src/update/set/if_not_exists.rs
+  h_990a4fb62faea9 46-48,74,112,165,168
+src/operand/mod.rs
+  h_990a4fb62faea9 11,15-16,104
+src/lib.rs
+  h_990a4fb62faea9 73-74
+src/condition/mod.rs
+  h_990a4fb62faea9 18-19,27,173-175,323,325,353,368,383-384,396
+src/path/element.rs
+  h_990a4fb62faea9 52-54,56-58,61-63,65-67,69-71,186-187,295
+src/value/set/mod.rs
+  h_990a4fb62faea9 9,113
+src/update/set/mod.rs
+  h_990a4fb62faea9 11-14,35-40,42-44,53-58,60-62,90-92,152
+Cargo.toml
+  h_990a4fb62faea9 5-6,38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "b2ae997c659168d2cbeacfcaf465d2c5dbc8056a",
+  "prompts": {},
+  "humans": {
+    "h_990a4fb62faea9": {
+      "author": "Daniel Cormier <dcormier@users.noreply.github.com>"
+    }
+  }
+}
