@@ -2,7 +2,7 @@ use core::fmt::{self, LowerExp, UpperExp};
 
 use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue};
 
-use super::{base64, Num};
+use super::{Num, base64};
 
 /// Represents a DynamoDB [scalar value][1].
 ///
@@ -264,9 +264,8 @@ impl FromIterator<u8> for Scalar {
 mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::Num;
-
     use super::Scalar;
+    use crate::Num;
 
     #[test]
     fn string() {

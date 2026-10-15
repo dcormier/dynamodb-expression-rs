@@ -5,11 +5,10 @@
 mod builder;
 mod to_aws;
 
-pub use builder::Builder;
-
 use std::collections::HashMap;
 
 use aws_sdk_dynamodb::types::AttributeValue;
+pub use builder::Builder;
 
 /// The data needed for various [`aws_sdk_dynamodb`] input types.
 ///

@@ -15,6 +15,8 @@ mod not;
 mod or;
 mod parenthetical;
 
+use core::{fmt, ops};
+
 pub use and::And;
 pub use attribute_exists::AttributeExists;
 pub use attribute_not_exists::AttributeNotExists;
@@ -22,16 +24,14 @@ pub use attribute_type::AttributeType;
 pub use begins_with::BeginsWith;
 pub use between::Between;
 pub use comparison::{
-    equal, greater_than, greater_than_or_equal, less_than, less_than_or_equal, not_equal,
-    Comparator, Comparison,
+    Comparator, Comparison, equal, greater_than, greater_than_or_equal, less_than,
+    less_than_or_equal, not_equal,
 };
 pub use contains::Contains;
 pub use in_::In;
 pub use not::Not;
 pub use or::Or;
 pub use parenthetical::Parenthetical;
-
-use core::{fmt, ops};
 
 /// Represents a logical condition in a [DynamoDB expression][1].
 ///
@@ -169,7 +169,10 @@ impl Condition {
     /// let c = "c".parse::<Path>()?;
     /// let d = "d".parse::<Path>()?;
     ///
-    /// let condition = a.greater_than(b).parenthesize().and(c.less_than(d).parenthesize());
+    /// let condition = a
+    ///     .greater_than(b)
+    ///     .parenthesize()
+    ///     .and(c.less_than(d).parenthesize());
     /// assert_eq!("(a > b) AND (c < d)", condition.to_string());
     /// #
     /// # Ok(())
@@ -315,12 +318,11 @@ impl From<Condition> for String {
 pub(crate) mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::path::Path;
-
     use super::{
-        comparison::{greater_than, less_than},
         Condition,
+        comparison::{greater_than, less_than},
     };
+    use crate::path::Path;
 
     /// `a > b`
     pub fn cmp_a_gt_b() -> Condition {
@@ -346,8 +348,9 @@ pub(crate) mod test {
 
     #[test]
     fn and() {
-        use crate::Path;
         use pretty_assertions::assert_eq;
+
+        use crate::Path;
 
         let a = "a".parse::<Path>().unwrap();
         let b = "b".parse::<Path>().unwrap();
@@ -360,8 +363,9 @@ pub(crate) mod test {
 
     #[test]
     fn or() {
-        use crate::Path;
         use pretty_assertions::assert_eq;
+
+        use crate::Path;
 
         let a = "a".parse::<Path>().unwrap();
         let b = "b".parse::<Path>().unwrap();
@@ -374,8 +378,9 @@ pub(crate) mod test {
 
     #[test]
     fn not() {
-        use crate::Path;
         use pretty_assertions::assert_eq;
+
+        use crate::Path;
 
         let a = "a".parse::<Path>().unwrap();
         let b = "b".parse::<Path>().unwrap();
@@ -386,8 +391,9 @@ pub(crate) mod test {
 
     #[test]
     fn not_operator() {
-        use crate::Path;
         use pretty_assertions::assert_eq;
+
+        use crate::Path;
 
         let a = "a".parse::<Path>().unwrap();
         let b = "b".parse::<Path>().unwrap();

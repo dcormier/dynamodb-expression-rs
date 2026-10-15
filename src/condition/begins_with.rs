@@ -12,7 +12,7 @@ use crate::{
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use dynamodb_expression::{condition::BeginsWith, Path};
+/// use dynamodb_expression::{Path, condition::BeginsWith};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let begins_with = "foo".parse::<Path>()?.begins_with("T");
@@ -46,7 +46,7 @@ impl BeginsWith {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
+    /// use dynamodb_expression::{Path, condition::BeginsWith, value::Ref};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let begins_with = BeginsWith::new("foo".parse::<Path>()?, "T");
@@ -100,9 +100,8 @@ mod test {
 
     use pretty_assertions::assert_eq;
 
-    use crate::{value::Ref, Path};
-
     use super::BeginsWith;
+    use crate::{Path, value::Ref};
 
     #[test]
     fn string() -> Result<(), Box<dyn Error>> {

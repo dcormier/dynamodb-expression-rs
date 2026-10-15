@@ -85,9 +85,8 @@ mod test {
 
     use pretty_assertions::assert_str_eq;
 
-    use crate::condition::{test::cmp_a_gt_b, Condition};
-
     use super::Not;
+    use crate::condition::{Condition, test::cmp_a_gt_b};
 
     #[test]
     fn display() {
@@ -261,8 +260,9 @@ mod examples {
     // This is really for formatting of the doc tests
     #[test]
     fn not() -> Result<(), Box<dyn std::error::Error>> {
-        use crate::Path;
         use pretty_assertions::assert_eq;
+
+        use crate::Path;
 
         let a = "a".parse::<Path>()?;
         let b = "b".parse::<Path>()?;

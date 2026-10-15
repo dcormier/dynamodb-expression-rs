@@ -3,29 +3,29 @@ mod dynamodb;
 use std::{collections::HashMap, error::Error, future::Future, pin::Pin};
 
 use aws_sdk_dynamodb::{
+    Client,
     error::SdkError,
     operation::query::QueryError,
     types::{AttributeValue, ReturnValue},
-    Client,
 };
 use dynamodb_expression::{
+    Expression, Scalar,
     path::{Element, Name, Path},
     update::{Delete, Remove},
     value::{Num, NumSet, Set, StringSet},
-    Expression, Scalar,
 };
 use itermap::IterMap;
 use itertools::Itertools;
 use pretty_assertions::{assert_eq, assert_ne};
 
 use crate::dynamodb::{
+    Config, DebugItem,
     debug::DebugList,
     item::{
-        new_item, ATTR_ID, ATTR_LIST, ATTR_MAP, ATTR_NULL, ATTR_NUM, ATTR_NUMS, ATTR_STRING,
-        ATTR_STRINGS,
+        ATTR_ID, ATTR_LIST, ATTR_MAP, ATTR_NULL, ATTR_NUM, ATTR_NUMS, ATTR_STRING, ATTR_STRINGS,
+        new_item,
     },
     setup::{clean_table, delete_table},
-    Config, DebugItem,
 };
 
 const ITEM_ID: &str = "sanity item";
@@ -1021,6 +1021,7 @@ fn item_key(item: &HashMap<String, AttributeValue>) -> HashMap<String, Attribute
 }
 
 /// Gets the one item from the configured table
+#[expect(clippy::result_large_err)]
 async fn query_known_item(
     config: &Config,
 ) -> Result<Option<HashMap<String, AttributeValue>>, SdkError<QueryError>> {

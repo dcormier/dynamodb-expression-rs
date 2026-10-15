@@ -5,15 +5,15 @@
 mod operand_type;
 mod size;
 
-pub(crate) use self::operand_type::OperandType;
-pub use self::size::Size;
-
 use core::fmt;
 
 use crate::condition::{
-    equal, greater_than, greater_than_or_equal, less_than, less_than_or_equal, not_equal, Between,
-    Condition, In,
+    Between, Condition, In, equal, greater_than, greater_than_or_equal, less_than,
+    less_than_or_equal, not_equal,
 };
+
+pub(crate) use self::operand_type::OperandType;
+pub use self::size::Size;
 
 /// Represents a [part of a DynamoDB comparison][1].
 ///
@@ -100,7 +100,8 @@ impl Operand {
         less_than_or_equal(self, right).into()
     }
 
-    /// `self BETWEEN b AND c` - true if `self` is greater than or equal to `b`, and less than or equal to `c`.
+    /// `self BETWEEN b AND c` - true if `self` is greater than or equal to `b`,
+    /// and less than or equal to `c`.
     ///
     /// [DynamoDB documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html#Expressions.OperatorsAndFunctions.Comparators)
     pub fn between<L, U>(self, lower: L, upper: U) -> Condition

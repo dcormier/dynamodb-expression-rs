@@ -98,7 +98,7 @@ impl From<Ref> for String {
 /// already in the expression attribute values.
 ///
 /// ```
-/// use dynamodb_expression::value::{StringOrRef, Ref};
+/// use dynamodb_expression::value::{Ref, StringOrRef};
 ///
 /// let value: StringOrRef = "a string value".into();
 /// let value: StringOrRef = Ref::new("expression_value").into();
@@ -109,7 +109,7 @@ impl From<Ref> for String {
 ///
 /// ```
 /// # fn string_or_ref() -> Result<(), Box<dyn std::error::Error>> {
-/// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
+/// use dynamodb_expression::{Path, condition::BeginsWith, value::Ref};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let begins_with = BeginsWith::new("foo".parse::<Path>()?, "T");
@@ -173,9 +173,8 @@ impl From<StringOrRef> for ValueOrRef {
 mod test {
     use pretty_assertions::assert_str_eq;
 
-    use crate::Scalar;
-
     use super::{Ref, ValueOrRef};
+    use crate::Scalar;
 
     #[test]
     fn display_value() {
@@ -195,8 +194,9 @@ mod examples {
     #[ignore = "This is just here for formatting."]
     #[test]
     fn string_or_ref() -> Result<(), Box<dyn std::error::Error>> {
-        use crate::{condition::BeginsWith, value::Ref, Path};
         use pretty_assertions::assert_eq;
+
+        use crate::{Path, condition::BeginsWith, value::Ref};
 
         let begins_with = BeginsWith::new("foo".parse::<Path>()?, "T");
         assert_eq!(r#"begins_with(foo, "T")"#, begins_with.to_string());

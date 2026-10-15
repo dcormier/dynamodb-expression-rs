@@ -50,7 +50,10 @@ impl ListAppend {
     ///     .list_append()
     ///     .list([7, 8, 9].map(Num::new))
     ///     .and("bar".parse::<Path>()?.set("a value"));
-    /// assert_eq!(r#"SET foo = list_append(foo, [7, 8, 9]), bar = "a value""#, set.to_string());
+    /// assert_eq!(
+    ///     r#"SET foo = list_append(foo, [7, 8, 9]), bar = "a value""#,
+    ///     set.to_string()
+    /// );
     /// #
     /// # Ok(())
     /// # }
@@ -150,7 +153,11 @@ impl Builder {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = "foo".parse::<Path>()?.list_append().after().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo"
+    ///     .parse::<Path>()?
+    ///     .list_append()
+    ///     .after()
+    ///     .list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
     /// #
     /// # Ok(())
@@ -164,7 +171,11 @@ impl Builder {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = "foo".parse::<Path>()?.list_append().before().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo"
+    ///     .parse::<Path>()?
+    ///     .list_append()
+    ///     .before()
+    ///     .list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append([1, 2, 3], foo)", list_append.to_string());
     /// #
     /// # Ok(())
@@ -178,7 +189,10 @@ impl Builder {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = "foo".parse::<Path>()?.list_append().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo"
+    ///     .parse::<Path>()?
+    ///     .list_append()
+    ///     .list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
     /// #
     /// # Ok(())
@@ -201,7 +215,11 @@ impl Builder {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = "foo".parse::<Path>()?.list_append().before().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo"
+    ///     .parse::<Path>()?
+    ///     .list_append()
+    ///     .before()
+    ///     .list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append([1, 2, 3], foo)", list_append.to_string());
     /// #
     /// # Ok(())
@@ -215,7 +233,11 @@ impl Builder {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = "foo".parse::<Path>()?.list_append().after().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo"
+    ///     .parse::<Path>()?
+    ///     .list_append()
+    ///     .after()
+    ///     .list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
     /// #
     /// # Ok(())
@@ -229,7 +251,10 @@ impl Builder {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let list_append = "foo".parse::<Path>()?.list_append().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo"
+    ///     .parse::<Path>()?
+    ///     .list_append()
+    ///     .list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append(foo, [1, 2, 3])", list_append.to_string());
     /// #
     /// # Ok(())
@@ -265,12 +290,11 @@ impl Builder {
 mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::{
-        update::{Assign, Set, SetAction},
-        Num, Path,
-    };
-
     use super::ListAppend;
+    use crate::{
+        Num, Path,
+        update::{Assign, Set, SetAction},
+    };
 
     #[test]
     fn display() -> Result<(), Box<dyn std::error::Error>> {

@@ -2,13 +2,11 @@ mod binary_set;
 mod num_set;
 mod string_set;
 
-pub use binary_set::BinarySet;
-pub use num_set::NumSet;
-pub use string_set::StringSet;
-
 use core::fmt;
 
 use aws_sdk_dynamodb::types::AttributeValue;
+
+pub use self::{binary_set::BinarySet, num_set::NumSet, string_set::StringSet};
 
 use super::base64;
 
@@ -111,8 +109,8 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use crate::{
-        value::{base64, Set},
         Num,
+        value::{Set, base64},
     };
 
     #[test]
@@ -180,8 +178,8 @@ mod test {
     #[ignore = "Just used to find more base64 for JSON encoding testing"]
     fn find_tricky_base64() {
         /// Visible ASCII characters
-        fn charset(
-        ) -> impl ExactSizeIterator<Item = char> + DoubleEndedIterator + FusedIterator + Clone
+        fn charset()
+        -> impl ExactSizeIterator<Item = char> + DoubleEndedIterator + FusedIterator + Clone
         {
             (32..127).map(char::from_u32).map(Option::unwrap)
         }

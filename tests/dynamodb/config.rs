@@ -1,5 +1,5 @@
 use aws_config::{BehaviorVersion, SdkConfig};
-use aws_sdk_dynamodb::{config::Region, Client};
+use aws_sdk_dynamodb::{Client, config::Region};
 use tokio::sync::OnceCell;
 
 #[derive(Debug, Clone)]

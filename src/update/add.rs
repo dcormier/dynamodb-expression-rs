@@ -1,11 +1,10 @@
 use core::fmt::{self, Write};
 
+use super::Update;
 use crate::{
     path::Path,
     value::{BinarySet, Num, NumSet, Ref, Set, StringSet, Value, ValueOrRef},
 };
-
-use super::Update;
 
 /// Represents an [`ADD` statement][1] in a [DynamoDB update expression][2].
 ///
@@ -45,7 +44,10 @@ impl Add {
     ///     .add(Num::new(7))
     ///     .and("bar".parse::<Path>()?.set("a value"))
     ///     .and("baz".parse::<Path>()?.remove());
-    /// assert_eq!(r#"SET bar = "a value" REMOVE baz ADD foo 7"#, update.to_string());
+    /// assert_eq!(
+    ///     r#"SET bar = "a value" REMOVE baz ADD foo 7"#,
+    ///     update.to_string()
+    /// );
     /// #
     /// # Ok(())
     /// # }
@@ -121,13 +123,16 @@ impl AddAction {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    /// use dynamodb_expression::{update::AddAction, Num, Path};
+    /// use dynamodb_expression::{Num, Path, update::AddAction};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let update = AddAction::new("foo".parse::<Path>()?, Num::new(7))
     ///     .and("bar".parse::<Path>()?.set("a value"))
     ///     .and("baz".parse::<Path>()?.remove());
-    /// assert_eq!(r#"SET bar = "a value" REMOVE baz ADD foo 7"#, update.to_string());
+    /// assert_eq!(
+    ///     r#"SET bar = "a value" REMOVE baz ADD foo 7"#,
+    ///     update.to_string()
+    /// );
     /// #
     /// # Ok(())
     /// # }

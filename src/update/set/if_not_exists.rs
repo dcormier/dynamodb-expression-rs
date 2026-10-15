@@ -42,7 +42,10 @@ impl IfNotExists {
     ///     .if_not_exists()
     ///     .set(Num::new(7))
     ///     .and("bar".parse::<Path>()?.set("a value"));
-    /// assert_eq!(r#"SET foo = if_not_exists(foo, 7), bar = "a value""#, set.to_string());
+    /// assert_eq!(
+    ///     r#"SET foo = if_not_exists(foo, 7), bar = "a value""#,
+    ///     set.to_string()
+    /// );
     /// #
     /// # Ok(())
     /// # }
@@ -67,7 +70,8 @@ impl fmt::Display for IfNotExists {
     }
 }
 
-/// Builds an [`IfNotExists`] instance. Create an instance of this by using [`IfNotExists::builder`].
+/// Builds an [`IfNotExists`] instance.
+/// Create an instance of this by using [`IfNotExists::builder`].
 ///
 /// Prefer [`Path::if_not_exists`] over this.
 #[must_use = "Consume this `Builder` by using its `.value()` method"]
@@ -105,10 +109,7 @@ impl Builder {
     /// # use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     /// #
-    /// let if_not_exists = "foo"
-    ///     .parse::<Path>()?
-    ///     .if_not_exists()
-    ///     .set(Num::new(42));
+    /// let if_not_exists = "foo".parse::<Path>()?.if_not_exists().set(Num::new(42));
     /// assert_eq!("foo = if_not_exists(foo, 42)", if_not_exists.to_string());
     /// #
     /// # Ok(())
@@ -161,12 +162,11 @@ mod test {
 
     use pretty_assertions::assert_eq;
 
-    use crate::{
-        update::{Assign, Set, SetAction},
-        Num, Path,
-    };
-
     use super::IfNotExists;
+    use crate::{
+        Num, Path,
+        update::{Assign, Set, SetAction},
+    };
 
     #[test]
     fn and() -> Result<(), Box<dyn Error>> {

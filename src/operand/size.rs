@@ -2,8 +2,8 @@ use core::fmt::{self, Write};
 
 use crate::{
     condition::{
-        equal, greater_than, greater_than_or_equal, less_than, less_than_or_equal, not_equal,
-        Between, Comparison, In,
+        Between, Comparison, In, equal, greater_than, greater_than_or_equal, less_than,
+        less_than_or_equal, not_equal,
     },
     operand::Operand,
     path::Path,
@@ -92,7 +92,10 @@ impl Size {
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let condition = "foo".parse::<Path>()?.size().between(Num::new(512), Num::new(1024));
+    /// let condition = "foo"
+    ///     .parse::<Path>()?
+    ///     .size()
+    ///     .between(Num::new(512), Num::new(1024));
     /// assert_eq!(r#"size(foo) BETWEEN 512 AND 1024"#, condition.to_string());
     /// #
     /// # Ok(())
@@ -125,7 +128,10 @@ impl Size {
     /// use dynamodb_expression::{Num, Path};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let condition = "foo".parse::<Path>()?.size().in_([10, 20, 30, 40, 50].map(Num::new));
+    /// let condition = "foo"
+    ///     .parse::<Path>()?
+    ///     .size()
+    ///     .in_([10, 20, 30, 40, 50].map(Num::new));
     /// assert_eq!(r#"size(foo) IN (10,20,30,40,50)"#, condition.to_string());
     /// #
     /// # Ok(())

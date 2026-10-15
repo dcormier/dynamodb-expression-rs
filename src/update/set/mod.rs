@@ -4,15 +4,14 @@ pub mod list_append;
 pub mod math;
 mod set_action;
 
-pub use self::assign::Assign;
-pub use self::if_not_exists::IfNotExists;
-pub use self::list_append::ListAppend;
-pub use self::math::Math;
-pub use self::set_action::SetAction;
-
 use core::fmt;
 
 use super::Update;
+
+pub use self::{
+    assign::Assign, if_not_exists::IfNotExists, list_append::ListAppend, math::Math,
+    set_action::SetAction,
+};
 
 /// Represents a [`SET` statement for an update expression][1]. Most of the time
 /// you won't use this directly.
@@ -32,8 +31,17 @@ use super::Update;
 /// let set_foo = Set::from("foo".parse::<Path>().unwrap().math().add(1));
 /// assert_eq!("SET foo = foo + 1", set_foo.to_string());
 ///
-/// let set_bar = Set::from("bar".parse::<Path>().unwrap().if_not_exists().set("a value"));
-/// assert_eq!(r#"SET bar = if_not_exists(bar, "a value")"#, set_bar.to_string());
+/// let set_bar = Set::from(
+///     "bar"
+///         .parse::<Path>()
+///         .unwrap()
+///         .if_not_exists()
+///         .set("a value"),
+/// );
+/// assert_eq!(
+///     r#"SET bar = if_not_exists(bar, "a value")"#,
+///     set_bar.to_string()
+/// );
 ///
 /// let set = set_foo.and(set_bar);
 /// assert_eq!(
@@ -41,8 +49,17 @@ use super::Update;
 ///     set.to_string(),
 /// );
 ///
-/// let set = Set::from("foo".parse::<Path>().unwrap().list_append().list(["a", "b", "c"]));
-/// assert_eq!(r#"SET foo = list_append(foo, ["a", "b", "c"])"#, set.to_string());
+/// let set = Set::from(
+///     "foo"
+///         .parse::<Path>()
+///         .unwrap()
+///         .list_append()
+///         .list(["a", "b", "c"]),
+/// );
+/// assert_eq!(
+///     r#"SET foo = list_append(foo, ["a", "b", "c"])"#,
+///     set.to_string()
+/// );
 /// ```
 ///
 /// [1]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.SET
@@ -69,7 +86,10 @@ impl Set {
     ///     .set(Num::new(7))
     ///     .and("bar".parse::<Path>()?.set("a value"))
     ///     .and("baz".parse::<Path>()?.remove());
-    /// assert_eq!(r#"SET foo = 7, bar = "a value" REMOVE baz"#, set.to_string());
+    /// assert_eq!(
+    ///     r#"SET foo = 7, bar = "a value" REMOVE baz"#,
+    ///     set.to_string()
+    /// );
     /// #
     /// # Ok(())
     /// # }
@@ -128,9 +148,8 @@ where
 mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::{Num, Path};
-
     use super::{Assign, IfNotExists, ListAppend, Math, Set, SetAction};
+    use crate::{Num, Path};
 
     #[test]
     fn from() -> Result<(), Box<dyn std::error::Error>> {

@@ -16,7 +16,10 @@ use super::Condition;
 /// let c = "c".parse::<Path>()?;
 /// let d = "d".parse::<Path>()?;
 ///
-/// let condition = a.greater_than(b).parenthesize().and(c.less_than(d).parenthesize());
+/// let condition = a
+///     .greater_than(b)
+///     .parenthesize()
+///     .and(c.less_than(d).parenthesize());
 /// assert_eq!("(a > b) AND (c < d)", condition.to_string());
 /// #
 /// # Ok(())

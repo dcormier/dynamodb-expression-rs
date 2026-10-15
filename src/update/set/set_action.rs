@@ -1,8 +1,7 @@
 use core::fmt;
 
-use crate::update::Update;
-
 use super::{Assign, IfNotExists, ListAppend, Math};
+use crate::update::Update;
 
 /// Represents an action to take in a [`SET` statement][1] for an update expression.
 ///
@@ -53,7 +52,10 @@ impl SetAction {
     ///     .set(Num::new(7))
     ///     .and("bar".parse::<Path>()?.set("a value"))
     ///     .and("baz".parse::<Path>()?.remove());
-    /// assert_eq!(r#"SET foo = 7, bar = "a value" REMOVE baz"#, set.to_string());
+    /// assert_eq!(
+    ///     r#"SET foo = 7, bar = "a value" REMOVE baz"#,
+    ///     set.to_string()
+    /// );
     /// #
     /// # Ok(())
     /// # }
@@ -107,12 +109,11 @@ mod test {
 
     use pretty_assertions::assert_eq;
 
-    use crate::{
-        update::{Assign, IfNotExists, ListAppend, Math, Set},
-        Num, Path,
-    };
-
     use super::SetAction;
+    use crate::{
+        Num, Path,
+        update::{Assign, IfNotExists, ListAppend, Math, Set},
+    };
 
     #[test]
     fn from() -> Result<(), Box<dyn Error>> {

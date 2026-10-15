@@ -10,21 +10,23 @@ mod scalar;
 mod set;
 mod value_or_ref;
 
-pub use list::List;
-pub use map::Map;
-pub use num::Num;
-pub use scalar::Scalar;
-pub use set::{BinarySet, NumSet, Set, StringSet};
-pub use value_or_ref::{Ref, StringOrRef};
-
-pub(crate) use value_or_ref::ValueOrRef;
-
 use core::fmt::{self, LowerExp, UpperExp};
 use std::error::Error;
 
 use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue};
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 use itertools::Itertools;
+
+pub(crate) use self::value_or_ref::ValueOrRef;
+
+pub use self::{
+    list::List,
+    map::Map,
+    num::Num,
+    scalar::Scalar,
+    set::{BinarySet, NumSet, Set, StringSet},
+    value_or_ref::{Ref, StringOrRef},
+};
 
 /// A DynamoDB value
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -377,9 +379,8 @@ mod test {
     use aws_sdk_dynamodb::{primitives::Blob, types::AttributeValue};
     use pretty_assertions::assert_eq;
 
-    use crate::value::{BinarySet, List, Map, Num, NumSet, StringSet};
-
     use super::Value;
+    use crate::value::{BinarySet, List, Map, Num, NumSet, StringSet};
 
     #[test]
     fn display() {

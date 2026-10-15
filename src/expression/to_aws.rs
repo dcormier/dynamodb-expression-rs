@@ -1,38 +1,38 @@
 use aws_sdk_dynamodb::{
+    Client,
     operation::{
         delete_item::{
-            builders::{DeleteItemFluentBuilder, DeleteItemInputBuilder},
             DeleteItemInput,
+            builders::{DeleteItemFluentBuilder, DeleteItemInputBuilder},
         },
         get_item::{
-            builders::{GetItemFluentBuilder, GetItemInputBuilder},
             GetItemInput,
+            builders::{GetItemFluentBuilder, GetItemInputBuilder},
         },
         put_item::{
-            builders::{PutItemFluentBuilder, PutItemInputBuilder},
             PutItemInput,
+            builders::{PutItemFluentBuilder, PutItemInputBuilder},
         },
         query::{
-            builders::{QueryFluentBuilder, QueryInputBuilder},
             QueryInput,
+            builders::{QueryFluentBuilder, QueryInputBuilder},
         },
         scan::{
-            builders::{ScanFluentBuilder, ScanInputBuilder},
             ScanInput,
+            builders::{ScanFluentBuilder, ScanInputBuilder},
         },
         update_item::{
-            builders::{UpdateItemFluentBuilder, UpdateItemInputBuilder},
             UpdateItemInput,
+            builders::{UpdateItemFluentBuilder, UpdateItemInputBuilder},
         },
     },
     types::{
+        ConditionCheck, Delete, Get, KeysAndAttributes, Put, Update,
         builders::{
             ConditionCheckBuilder, DeleteBuilder, GetBuilder, KeysAndAttributesBuilder, PutBuilder,
             UpdateBuilder,
         },
-        ConditionCheck, Delete, Get, KeysAndAttributes, Put, Update,
     },
-    Client,
 };
 
 use super::Expression;
@@ -504,7 +504,7 @@ impl Expression {
     /// use std::collections::HashMap;
     ///
     /// use aws_config::BehaviorVersion;
-    /// use aws_sdk_dynamodb::{types::AttributeValue, Client};
+    /// use aws_sdk_dynamodb::{Client, types::AttributeValue};
     /// use dynamodb_expression::Expression;
     ///
     /// let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
@@ -571,9 +571,10 @@ mod test {
     /// Exists to format the doc examples
     #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_put_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-        use crate::{Expression, Path};
         use aws_config::BehaviorVersion;
-        use aws_sdk_dynamodb::{types::AttributeValue, Client};
+        use aws_sdk_dynamodb::{Client, types::AttributeValue};
+
+        use crate::{Expression, Path};
 
         let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
@@ -594,9 +595,10 @@ mod test {
     /// Exists to format the doc examples
     #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_get_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-        use crate::Expression;
         use aws_config::BehaviorVersion;
-        use aws_sdk_dynamodb::{types::AttributeValue, Client};
+        use aws_sdk_dynamodb::{Client, types::AttributeValue};
+
+        use crate::Expression;
 
         let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
@@ -615,13 +617,14 @@ mod test {
 
     /// Exists to format the doc examples
     #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
-    async fn example_to_keys_and_attributes_builder(
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    async fn example_to_keys_and_attributes_builder()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         use std::collections::HashMap;
 
-        use crate::Expression;
         use aws_config::BehaviorVersion;
-        use aws_sdk_dynamodb::{types::AttributeValue, Client};
+        use aws_sdk_dynamodb::{Client, types::AttributeValue};
+
+        use crate::Expression;
 
         let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
@@ -660,9 +663,10 @@ mod test {
     /// Exists to format the doc examples
     #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_scan() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-        use crate::{Expression, Num, Path};
         use aws_config::BehaviorVersion;
         use aws_sdk_dynamodb::Client;
+
+        use crate::{Expression, Num, Path};
 
         let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
@@ -682,9 +686,10 @@ mod test {
     /// Exists to format the doc examples
     #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_query() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-        use crate::{Expression, Num, Path};
         use aws_config::BehaviorVersion;
         use aws_sdk_dynamodb::Client;
+
+        use crate::{Expression, Num, Path};
 
         let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
@@ -711,9 +716,10 @@ mod test {
     #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_update_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
     {
-        use crate::{Expression, Num, Path};
         use aws_config::BehaviorVersion;
-        use aws_sdk_dynamodb::{types::AttributeValue, Client};
+        use aws_sdk_dynamodb::{Client, types::AttributeValue};
+
+        use crate::{Expression, Num, Path};
 
         let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
@@ -736,9 +742,10 @@ mod test {
     #[expect(dead_code, reason = "Exists to assist with formatting doc examples")]
     async fn example_delete_item() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
     {
-        use crate::{Expression, Num, Path};
         use aws_config::BehaviorVersion;
-        use aws_sdk_dynamodb::{types::AttributeValue, Client};
+        use aws_sdk_dynamodb::{Client, types::AttributeValue};
+
+        use crate::{Expression, Num, Path};
 
         let client = Client::new(&aws_config::load_defaults(BehaviorVersion::latest()).await);
 
@@ -757,8 +764,9 @@ mod test {
 
     #[test]
     fn scan_input() {
-        use crate::{Expression, Num, Path};
         use pretty_assertions::assert_eq;
+
+        use crate::{Expression, Num, Path};
 
         let expression = Expression::builder()
             .with_filter(
@@ -797,8 +805,9 @@ mod test {
 
     #[test]
     fn query_input() {
-        use crate::{key::Key, path::Name, Expression, Num, Path};
         use pretty_assertions::{assert_eq, assert_ne};
+
+        use crate::{Expression, Num, Path, key::Key, path::Name};
 
         let expression = Expression::builder()
             .with_filter(
@@ -835,8 +844,9 @@ mod test {
 
     #[test]
     fn update() {
-        use crate::{Expression, Num, Path};
         use pretty_assertions::assert_ne;
+
+        use crate::{Expression, Num, Path};
 
         let expression = Expression::builder()
             .with_condition(

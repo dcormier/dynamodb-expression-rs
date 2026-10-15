@@ -167,12 +167,11 @@ impl Builder {
 mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::{
-        update::{Assign, Set, SetAction},
-        Num, Path,
-    };
-
     use super::Math;
+    use crate::{
+        Num, Path,
+        update::{Assign, Set, SetAction},
+    };
 
     #[test]
     fn and() -> Result<(), Box<dyn std::error::Error>> {

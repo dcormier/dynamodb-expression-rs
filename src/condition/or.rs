@@ -40,8 +40,9 @@ impl fmt::Display for Or {
 
 #[cfg(test)]
 mod test {
-    use crate::{condition::Or, Path};
     use pretty_assertions::assert_eq;
+
+    use crate::{Path, condition::Or};
 
     #[test]
     fn or() {

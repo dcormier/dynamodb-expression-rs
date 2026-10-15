@@ -12,7 +12,7 @@ use crate::operand::Operand;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use dynamodb_expression::{condition::In, operand::Operand, Path};
+/// use dynamodb_expression::{Path, condition::In, operand::Operand};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let condition = "name".parse::<Path>()?.in_(["Jack", "Jill"]);
@@ -37,7 +37,7 @@ impl In {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use dynamodb_expression::{condition::In, operand::Operand, Path};
+    /// use dynamodb_expression::{Path, condition::In, operand::Operand};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let condition = In::new("name".parse::<Path>()?, ["Jack", "Jill"]);

@@ -51,9 +51,11 @@ impl BinarySet {
     /// assert_eq!(
     ///     r#"["YQ==", "Yg==", "Yw=="]"#,
     ///     BinarySet::new(
-    ///         [[b'a'], [b'b'], [b'c']]
-    ///             // In this case you need to turn the `Iterator<Item = u8>` items into a `Vec<u8>`.
-    ///             // If, one day, `impl<T> From<impl IntoIterator<Item = T>> for Vec<T>` exists, this won't be needed.
+    ///         [*b"a", *b"b", *b"c"]
+    ///             // In this case you need to turn the `Iterator<Item = u8>`
+    ///             // items into a `Vec<u8>`.
+    ///             // If, one day, `impl<T> From<impl IntoIterator<Item = T>> for Vec<T>` exists,
+    ///             // this won't be needed.
     ///             .map(Vec::from_iter)
     ///     )
     ///     .to_string()
@@ -144,9 +146,11 @@ mod test {
         assert_eq!(
             r#"["YQ==", "Yg==", "Yw=="]"#,
             BinarySet::new(
-                [[b'a'], [b'b'], [b'c']]
-                    // In this case you need to turn the `Iterator<Item = u8>` items into a `Vec<u8>`.
-                    // If, one day, `impl<T> From<impl IntoIterator<Item = T>> for Vec<T>` exists, this won't be needed.
+                [*b"a", *b"b", *b"c"]
+                    // In this case you need to turn the `Iterator<Item = u8>`
+                    // items into a `Vec<u8>`.
+                    // If, one day, `impl<T> From<impl IntoIterator<Item = T>> for Vec<T>` exists,
+                    // this won't be needed.
                     .map(Vec::from_iter)
             )
             .to_string()

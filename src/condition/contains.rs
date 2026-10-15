@@ -53,10 +53,10 @@ impl Contains {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use dynamodb_expression::{condition::Contains, Num, Path};
+    /// use dynamodb_expression::{Num, Path, condition::Contains};
     ///
     /// // String
-    /// let condition =  Contains::new("foo".parse::<Path>()?, "Quinn");
+    /// let condition = Contains::new("foo".parse::<Path>()?, "Quinn");
     /// assert_eq!(r#"contains(foo, "Quinn")"#, condition.to_string());
     ///
     /// // Number

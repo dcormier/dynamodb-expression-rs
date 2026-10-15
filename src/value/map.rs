@@ -6,9 +6,8 @@ use core::{
 use aws_sdk_dynamodb::types::AttributeValue;
 use itermap::IterMap;
 
-use crate::path::Name;
-
 use super::Value;
+use crate::path::Name;
 
 type MapType<K, V> = std::collections::BTreeMap<K, V>;
 // TODO: Allow this to be configured via feature to switch between HashMap and BTreeMap
@@ -37,11 +36,19 @@ impl Map {
     /// #
     /// use dynamodb_expression::value::{Map, Num};
     ///
-    /// let map = HashMap::from([("a", Num::from(1)), ("b", Num::from(2)), ("c", Num::from(3))]);
+    /// let map = HashMap::from([
+    ///     ("a", Num::from(1)),
+    ///     ("b", Num::from(2)),
+    ///     ("c", Num::from(3)),
+    /// ]);
     ///
     /// assert_eq!(
     ///     Map::new(map),
-    ///     Map::new([("a", Num::from(1)), ("b", Num::from(2)), ("c", Num::from(3))]),
+    ///     Map::new([
+    ///         ("a", Num::from(1)),
+    ///         ("b", Num::from(2)),
+    ///         ("c", Num::from(3))
+    ///     ]),
     /// );
     /// ```
     ///

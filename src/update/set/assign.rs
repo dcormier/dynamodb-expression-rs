@@ -48,7 +48,10 @@ impl Assign {
     ///     .set(Num::new(7))
     ///     .and("bar".parse::<Path>()?.set("a value"))
     ///     .and("baz".parse::<Path>()?.remove());
-    /// assert_eq!(r#"SET foo = 7, bar = "a value" REMOVE baz"#, set.to_string());
+    /// assert_eq!(
+    ///     r#"SET foo = 7, bar = "a value" REMOVE baz"#,
+    ///     set.to_string()
+    /// );
     /// #
     /// # Ok(())
     /// # }
@@ -73,12 +76,11 @@ impl fmt::Display for Assign {
 mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::{
-        update::{IfNotExists, Set, SetAction},
-        Num, Path,
-    };
-
     use super::Assign;
+    use crate::{
+        Num, Path,
+        update::{IfNotExists, Set, SetAction},
+    };
 
     #[test]
     fn and() -> Result<(), Box<dyn std::error::Error>> {

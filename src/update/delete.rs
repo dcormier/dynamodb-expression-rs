@@ -1,11 +1,10 @@
 use core::fmt::{self, Write};
 
+use super::Update;
 use crate::{
     path::Path,
     value::{self, ValueOrRef},
 };
-
-use super::Update;
 
 /// Represents a [`DELETE` statement for an update expression][1], for removing
 /// one or more items from a value that is a [set][2].
@@ -43,7 +42,7 @@ impl Delete {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    /// use dynamodb_expression::{value::NumSet, Num, Path};
+    /// use dynamodb_expression::{Num, Path, value::NumSet};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let update = "foo"
@@ -51,7 +50,10 @@ impl Delete {
     ///     .delete(NumSet::from([7]))
     ///     .and("bar".parse::<Path>()?.set("a value"))
     ///     .and("baz".parse::<Path>()?.remove());
-    /// assert_eq!(r#"SET bar = "a value" REMOVE baz DELETE foo [7]"#, update.to_string());
+    /// assert_eq!(
+    ///     r#"SET bar = "a value" REMOVE baz DELETE foo [7]"#,
+    ///     update.to_string()
+    /// );
     /// #
     /// # Ok(())
     /// # }
@@ -117,13 +119,16 @@ impl DeleteAction {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    /// use dynamodb_expression::{update::DeleteAction, value::NumSet, Num, Path};
+    /// use dynamodb_expression::{Num, Path, update::DeleteAction, value::NumSet};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let update = DeleteAction::new("foo".parse::<Path>()?, NumSet::from([7]))
     ///     .and("bar".parse::<Path>()?.set("a value"))
     ///     .and("baz".parse::<Path>()?.remove());
-    /// assert_eq!(r#"SET bar = "a value" REMOVE baz DELETE foo [7]"#, update.to_string());
+    /// assert_eq!(
+    ///     r#"SET bar = "a value" REMOVE baz DELETE foo [7]"#,
+    ///     update.to_string()
+    /// );
     /// #
     /// # Ok(())
     /// # }

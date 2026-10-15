@@ -6,7 +6,7 @@ use core::fmt;
 
 use crate::{
     condition::{
-        equal, greater_than, greater_than_or_equal, less_than, less_than_or_equal, Condition,
+        Condition, equal, greater_than, greater_than_or_equal, less_than, less_than_or_equal,
     },
     operand::Operand,
     path::Path,
@@ -22,7 +22,7 @@ use crate::{
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use dynamodb_expression::{key::Key, Path};
+/// use dynamodb_expression::{Path, key::Key};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let key: Key = "foo".parse::<Path>()?.key();
@@ -55,7 +55,7 @@ impl Key {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
+    /// use dynamodb_expression::{Path, condition::BeginsWith, value::Ref};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let key_condition = "foo".parse::<Path>()?.key().begins_with("T");
@@ -192,7 +192,9 @@ where
 ///     .equal(Num::new(42))
 ///     .and("category".parse::<Path>()?.key().begins_with("hardware."));
 ///
-/// let expression = Expression::builder().with_key_condition(key_condition).build();
+/// let expression = Expression::builder()
+///     .with_key_condition(key_condition)
+///     .build();
 /// # _ = expression;
 /// #
 /// # Ok(())
@@ -221,7 +223,10 @@ impl KeyCondition {
     ///     .key()
     ///     .equal(Num::new(42))
     ///     .and("category".parse::<Path>()?.key().begins_with("hardware."));
-    /// assert_eq!(r#"id = 42 AND begins_with(category, "hardware.")"#, key_condition.to_string());
+    /// assert_eq!(
+    ///     r#"id = 42 AND begins_with(category, "hardware.")"#,
+    ///     key_condition.to_string()
+    /// );
     /// #
     /// # Ok(())
     /// # }
@@ -247,9 +252,8 @@ impl From<KeyCondition> for String {
 
 #[cfg(test)]
 mod test {
-    use crate::{value::Ref, Path};
-
     use super::Key;
+    use crate::{Path, value::Ref};
 
     #[test]
     fn begins_with_string() {

@@ -60,7 +60,9 @@ impl Builder {
     ///     .equal(Num::new(42))
     ///     .and("category".parse::<Path>()?.key().begins_with("hardware."));
     ///
-    /// let expression = Expression::builder().with_key_condition(key_condition).build();
+    /// let expression = Expression::builder()
+    ///     .with_key_condition(key_condition)
+    ///     .build();
     /// # _ = expression;
     /// #
     /// # Ok(())
@@ -462,9 +464,8 @@ mod test {
     use aws_sdk_dynamodb::operation::query::builders::QueryInputBuilder;
     use pretty_assertions::assert_eq;
 
-    use crate::path::Name;
-
     use super::Expression;
+    use crate::path::Name;
 
     #[test]
     fn empty_projection() {
@@ -494,8 +495,9 @@ mod test {
 mod doc_examples {
     #[test]
     fn example_with_projection() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        use crate::{path::Name, Expression};
         use pretty_assertions::assert_eq;
+
+        use crate::{Expression, path::Name};
 
         let expected = Expression {
             condition_expression: None,

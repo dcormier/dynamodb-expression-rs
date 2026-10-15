@@ -42,7 +42,7 @@ impl fmt::Display for And {
 mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::{condition::And, Path};
+    use crate::{Path, condition::And};
 
     #[test]
     fn and() {

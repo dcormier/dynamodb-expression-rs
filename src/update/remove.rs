@@ -1,8 +1,7 @@
 use core::fmt;
 
-use crate::path::Path;
-
 use super::Update;
+use crate::path::Path;
 
 /// For use an in an update expression to [remove attributes from an
 /// item][1], or [elements from a list][2].
@@ -15,7 +14,10 @@ use super::Update;
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-/// use dynamodb_expression::{Expression, Path, update::{Remove, Update}};
+/// use dynamodb_expression::{
+///     Expression, Path,
+///     update::{Remove, Update},
+/// };
 /// # use pretty_assertions::assert_eq;
 ///
 /// let remove = "foo".parse::<Path>()?.remove();
@@ -24,7 +26,10 @@ use super::Update;
 /// let remove = Remove::from("foo[8]".parse::<Path>()?);
 /// assert_eq!("REMOVE foo[8]", remove.to_string());
 ///
-/// let remove: Remove = ["foo", "bar", "baz"].into_iter().map(Path::new_name).collect();
+/// let remove: Remove = ["foo", "bar", "baz"]
+///     .into_iter()
+///     .map(Path::new_name)
+///     .collect();
 /// assert_eq!("REMOVE foo, bar, baz", remove.to_string());
 ///
 /// let remove = remove.and("quux".parse::<Path>()?.remove());
@@ -59,11 +64,17 @@ impl Remove {
     /// use dynamodb_expression::Path;
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let remove = "foo".parse::<Path>()?.remove().and("bar".parse::<Path>()?.remove());
+    /// let remove = "foo"
+    ///     .parse::<Path>()?
+    ///     .remove()
+    ///     .and("bar".parse::<Path>()?.remove());
     /// assert_eq!("REMOVE foo, bar", remove.to_string());
     ///
     /// let set_remove = remove.and("baz".parse::<Path>()?.set("a value"));
-    /// assert_eq!(r#"SET baz = "a value" REMOVE foo, bar"#, set_remove.to_string());
+    /// assert_eq!(
+    ///     r#"SET baz = "a value" REMOVE foo, bar"#,
+    ///     set_remove.to_string()
+    /// );
     /// #
     /// # Ok(())
     /// # }

@@ -5,4 +5,4 @@ cargo clippy -- -Dwarnings &&
 cargo clippy --tests -- -Dwarnings &&
 # cargo test --doc &&
 cargo test &&
-cargo doc
+cargo doc --no-deps --document-private-items

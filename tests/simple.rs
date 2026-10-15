@@ -1,11 +1,9 @@
 use std::error::Error;
 
-use pretty_assertions::assert_eq;
-
 #[test]
 fn scan_input() -> Result<(), Box<dyn Error>> {
     use aws_sdk_dynamodb::{operation::scan::ScanInput, types::AttributeValue};
-    use dynamodb_expression::{value::Ref, Path};
+    use dynamodb_expression::{Path, value::Ref};
     use pretty_assertions::assert_eq;
 
     let scan_input = ScanInput::builder()
@@ -37,7 +35,7 @@ fn scan_input() -> Result<(), Box<dyn Error>> {
 #[test]
 fn put() -> Result<(), Box<dyn Error>> {
     use aws_sdk_dynamodb::types::{AttributeValue, Put};
-    use dynamodb_expression::{value::Ref, Expression, Path, Scalar};
+    use dynamodb_expression::{Expression, Path, Scalar, value::Ref};
     use pretty_assertions::assert_eq;
 
     let put_1 = Put::builder()
@@ -85,7 +83,7 @@ fn put() -> Result<(), Box<dyn Error>> {
 #[test]
 fn query() -> Result<(), Box<dyn Error>> {
     use aws_sdk_dynamodb::{operation::query::QueryInput, types::AttributeValue};
-    use dynamodb_expression::{value::Ref, Expression, Num, Path};
+    use dynamodb_expression::{Expression, Num, Path, value::Ref};
     use pretty_assertions::assert_eq;
 
     // Building the `QueryInput` manually.

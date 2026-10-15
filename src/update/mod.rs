@@ -14,7 +14,7 @@ pub use self::{
     delete::{Delete, DeleteAction},
     remove::Remove,
     set::{
-        if_not_exists, list_append, math, Assign, IfNotExists, ListAppend, Math, Set, SetAction,
+        Assign, IfNotExists, ListAppend, Math, Set, SetAction, if_not_exists, list_append, math,
     },
 };
 
@@ -26,7 +26,7 @@ pub use self::{
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use dynamodb_expression::{update::Update, value::StringSet, Expression, Path};
+/// use dynamodb_expression::{Expression, Path, update::Update, value::StringSet};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let update = Update::from("foo".parse::<Path>()?.math().add(7));
@@ -314,8 +314,9 @@ impl From<DeleteAction> for Update {
 mod examples {
     #[test]
     fn example() -> Result<(), Box<dyn std::error::Error>> {
-        use crate::{update::Update, value::StringSet, Expression, Path};
         use pretty_assertions::assert_eq;
+
+        use crate::{Expression, Path, update::Update, value::StringSet};
 
         let update = Update::from("foo".parse::<Path>()?.math().add(7));
         assert_eq!("SET foo = foo + 7", update.to_string());

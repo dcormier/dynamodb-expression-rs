@@ -5,11 +5,6 @@
 mod element;
 mod name;
 
-pub use self::{
-    element::{Element, IndexedField, Indexes},
-    name::Name,
-};
-
 use core::{
     fmt::{self, Write},
     ops,
@@ -18,17 +13,21 @@ use core::{
 
 use itertools::Itertools;
 
+pub use self::{
+    element::{Element, IndexedField, Indexes},
+    name::Name,
+};
 use crate::{
     condition::{
-        attribute_type::Type, equal, greater_than, greater_than_or_equal, less_than,
-        less_than_or_equal, not_equal, AttributeType, BeginsWith, Between, Condition, Contains, In,
+        AttributeType, BeginsWith, Between, Condition, Contains, In, attribute_type::Type, equal,
+        greater_than, greater_than_or_equal, less_than, less_than_or_equal, not_equal,
     },
     key::Key,
     operand::{Operand, Size},
     update::{
+        Add, AddValue, Assign, Delete, IfNotExists, ListAppend, Math, Remove,
         if_not_exists::Builder as IfNotExistsBuilder, list_append::Builder as ListAppendBuilder,
-        math::Builder as MathBuilder, Add, AddValue, Assign, Delete, IfNotExists, ListAppend, Math,
-        Remove,
+        math::Builder as MathBuilder,
     },
     value::{self, StringOrRef, Value},
 };
@@ -79,30 +78,21 @@ use crate::{
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use dynamodb_expression::{path::Element, Path};
+/// use dynamodb_expression::{Path, path::Element};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let path: Path = "foo".parse()?;
-/// assert_eq!(
-///     Path::from_iter([
-///         Element::new_name("foo"),
-///     ]),
-///     path,
-/// );
+/// assert_eq!(Path::from_iter([Element::new_name("foo"),]), path,);
 ///
 /// let path: Path = "foo[3]".parse()?;
 /// assert_eq!(
-///     Path::from_iter([
-///         Element::new_indexed_field("foo", 3),
-///     ]),
+///     Path::from_iter([Element::new_indexed_field("foo", 3),]),
 ///     path,
 /// );
 ///
 /// let path: Path = "foo[3][7]".parse()?;
 /// assert_eq!(
-///     Path::from_iter([
-///         Element::new_indexed_field("foo", [3, 7]),
-///     ]),
+///     Path::from_iter([Element::new_indexed_field("foo", [3, 7]),]),
 ///     path,
 /// );
 ///
@@ -116,10 +106,8 @@ use crate::{
 /// );
 ///
 /// let path: Path = "bar.baz".parse()?;
-/// assert_eq!(Path::from_iter([
-///         Element::new_name("bar"),
-///         Element::new_name("baz"),
-///     ]),
+/// assert_eq!(
+///     Path::from_iter([Element::new_name("bar"), Element::new_name("baz"),]),
 ///     path,
 /// );
 ///
@@ -145,23 +133,15 @@ use crate::{
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use dynamodb_expression::{path::Element, Path};
+/// use dynamodb_expression::{Path, path::Element};
 /// # use pretty_assertions::assert_eq;
 ///
 /// let path = Path::new_name("example.com");
-/// assert_eq!(
-///     Path::from_iter([
-///         Element::new_name("example.com"),
-///     ]),
-///     path,
-/// );
+/// assert_eq!(Path::from_iter([Element::new_name("example.com"),]), path,);
 ///
 /// let path = "foo".parse::<Path>()? + Path::new_name("example.com");
 /// assert_eq!(
-///     Path::from_iter([
-///         Element::new_name("foo"),
-///         Element::new_name("example.com"),
-///     ]),
+///     Path::from_iter([Element::new_name("foo"), Element::new_name("example.com"),]),
 ///     path,
 /// );
 ///
@@ -214,24 +194,14 @@ impl Path {
     /// # Examples
     ///
     /// ```
-    /// use dynamodb_expression::path::{Path, Element};
+    /// use dynamodb_expression::path::{Element, Path};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let path = Path::new_name("foo");
-    /// assert_eq!(
-    ///     Path::from_iter([
-    ///         Element::new_name("foo"),
-    ///     ]),
-    ///     path,
-    /// );
+    /// assert_eq!(Path::from_iter([Element::new_name("foo"),]), path,);
     ///
     /// let path = Path::new_name("foo.bar");
-    /// assert_eq!(
-    ///     Path::from_iter([
-    ///         Element::new_name("foo.bar"),
-    ///     ]),
-    ///     path,
-    /// );
+    /// assert_eq!(Path::from_iter([Element::new_name("foo.bar"),]), path,);
     /// ```
     ///
     /// Contrast the above result of `Path::new_name("foo.bar")` with parsing,
@@ -242,10 +212,7 @@ impl Path {
     /// #
     /// let path = "foo.bar".parse().unwrap();
     /// assert_eq!(
-    ///     Path::from_iter([
-    ///         Element::new_name("foo"),
-    ///         Element::new_name("bar"),
-    ///     ]),
+    ///     Path::from_iter([Element::new_name("foo"), Element::new_name("bar"),]),
     ///     path,
     /// );
     /// ```
@@ -281,11 +248,23 @@ impl Path {
     /// assert_eq!("foo[3]", Path::new_indexed_field("foo", 3).to_string());
     /// assert_eq!("foo[3]", Path::new_indexed_field("foo", [3]).to_string());
     /// assert_eq!("foo[3]", Path::new_indexed_field("foo", &[3]).to_string());
-    /// assert_eq!("foo[3]", Path::new_indexed_field("foo", vec![3]).to_string());
+    /// assert_eq!(
+    ///     "foo[3]",
+    ///     Path::new_indexed_field("foo", vec![3]).to_string()
+    /// );
     ///
-    /// assert_eq!("foo[7][4]", Path::new_indexed_field("foo", [7, 4]).to_string());
-    /// assert_eq!("foo[7][4]", Path::new_indexed_field("foo", &[7, 4]).to_string());
-    /// assert_eq!("foo[7][4]", Path::new_indexed_field("foo", vec![7, 4]).to_string());
+    /// assert_eq!(
+    ///     "foo[7][4]",
+    ///     Path::new_indexed_field("foo", [7, 4]).to_string()
+    /// );
+    /// assert_eq!(
+    ///     "foo[7][4]",
+    ///     Path::new_indexed_field("foo", &[7, 4]).to_string()
+    /// );
+    /// assert_eq!(
+    ///     "foo[7][4]",
+    ///     Path::new_indexed_field("foo", vec![7, 4]).to_string()
+    /// );
     ///
     /// assert_eq!("foo", Path::new_indexed_field("foo", []).to_string());
     /// assert_eq!("foo", Path::new_indexed_field("foo", &[]).to_string());
@@ -311,7 +290,10 @@ impl Path {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use dynamodb_expression::{path::{Element, Name}, Path};
+    /// use dynamodb_expression::{
+    ///     Path,
+    ///     path::{Element, Name},
+    /// };
     /// # use pretty_assertions::assert_eq;
     /// #
     /// # let expected = Path::from_iter([
@@ -454,7 +436,7 @@ impl Path {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use dynamodb_expression::{condition::In, operand::Operand, Path};
+    /// use dynamodb_expression::{Path, condition::In, operand::Operand};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let condition = "name".parse::<Path>()?.in_(["Jack", "Jill"]);
@@ -509,7 +491,7 @@ impl Path {
     /// the specified [`Path`] is of the specified data type.
     ///
     /// ```
-    /// use dynamodb_expression::{condition::attribute_type::Type, Path};
+    /// use dynamodb_expression::{Path, condition::attribute_type::Type};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let condition = Path::new_name("foo").attribute_type(Type::String);
@@ -530,7 +512,7 @@ impl Path {
     /// See also: [`Ref`]
     ///
     /// ```
-    /// use dynamodb_expression::{condition::BeginsWith, value::Ref, Path};
+    /// use dynamodb_expression::{Path, condition::BeginsWith, value::Ref};
     /// # use pretty_assertions::assert_eq;
     ///
     /// let begins_with = Path::new_name("foo").begins_with("T");
@@ -660,7 +642,10 @@ impl Path {
     /// let math = Path::new_name("foo").math().add(4);
     /// assert_eq!("foo = foo + 4", math.to_string());
     ///
-    /// let math = Path::new_name("foo").math().src(Path::new_name("bar")).sub(7);
+    /// let math = Path::new_name("foo")
+    ///     .math()
+    ///     .src(Path::new_name("bar"))
+    ///     .sub(7);
     /// assert_eq!("foo = bar - 7", math.to_string());
     ///
     /// let update = Update::from(math);
@@ -683,7 +668,11 @@ impl Path {
     /// use dynamodb_expression::{Num, Path, update::Update};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let list_append = "foo".parse::<Path>().unwrap().list_append().list([7, 8, 9].map(Num::new));
+    /// let list_append = "foo"
+    ///     .parse::<Path>()
+    ///     .unwrap()
+    ///     .list_append()
+    ///     .list([7, 8, 9].map(Num::new));
     /// assert_eq!("foo = list_append(foo, [7, 8, 9])", list_append.to_string());
     ///
     /// let update = Update::from(list_append);
@@ -696,7 +685,12 @@ impl Path {
     /// use dynamodb_expression::{Num, Path, update::Update};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let list_append = "foo".parse::<Path>().unwrap().list_append().before().list([1, 2, 3].map(Num::new));
+    /// let list_append = "foo"
+    ///     .parse::<Path>()
+    ///     .unwrap()
+    ///     .list_append()
+    ///     .before()
+    ///     .list([1, 2, 3].map(Num::new));
     /// assert_eq!("foo = list_append([1, 2, 3], foo)", list_append.to_string());
     ///
     /// let update = Update::from(list_append);
@@ -720,7 +714,11 @@ impl Path {
     /// use dynamodb_expression::{Num, Path, update::Update};
     /// # use pretty_assertions::assert_eq;
     ///
-    /// let if_not_exists = "foo".parse::<Path>().unwrap().if_not_exists().set(Num::new(7));
+    /// let if_not_exists = "foo"
+    ///     .parse::<Path>()
+    ///     .unwrap()
+    ///     .if_not_exists()
+    ///     .set(Num::new(7));
     /// assert_eq!("foo = if_not_exists(foo, 7)", if_not_exists.to_string());
     ///
     /// let update = Update::from(if_not_exists);
@@ -844,7 +842,7 @@ impl Path {
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use dynamodb_expression::{key::KeyCondition, Expression, Num, Path};
+    /// use dynamodb_expression::{Expression, Num, Path, key::KeyCondition};
     ///
     /// let key_condition: KeyCondition = "id"
     ///     .parse::<Path>()?
@@ -852,7 +850,9 @@ impl Path {
     ///     .equal(Num::new(42))
     ///     .and("category".parse::<Path>()?.key().begins_with("hardware."));
     ///
-    /// let expression = Expression::builder().with_key_condition(key_condition).build();
+    /// let expression = Expression::builder()
+    ///     .with_key_condition(key_condition)
+    ///     .build();
     /// # _ = expression;
     /// #
     /// # Ok(())
@@ -893,7 +893,10 @@ where
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use dynamodb_expression::{path::{Element, Name}, Path};
+    /// use dynamodb_expression::{
+    ///     Path,
+    ///     path::{Element, Name},
+    /// };
     /// # use pretty_assertions::assert_eq;
     ///
     /// # let expected: Path= "foo[3][7].bar[2].baz".parse()?;
@@ -905,15 +908,13 @@ where
     ///
     /// // You can `+` anything that is `Into<Path>` (or `Into<Element>`)
     ///
-    /// let path = Path::new_indexed_field("foo", [3, 7]) +
-    ///     Element::new_indexed_field("bar", 2) +
-    ///     Element::new_name("baz");
+    /// let path = Path::new_indexed_field("foo", [3, 7])
+    ///     + Element::new_indexed_field("bar", 2)
+    ///     + Element::new_name("baz");
     /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
     /// # assert_eq!(expected, path);
     ///
-    /// let path = Path::from(("foo", [3, 7])) +
-    ///     ("bar", 2) +
-    ///     Name::from("baz");
+    /// let path = Path::from(("foo", [3, 7])) + ("bar", 2) + Name::from("baz");
     /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
     /// # assert_eq!(expected, path);
     /// #
@@ -937,7 +938,10 @@ where
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use dynamodb_expression::{path::{Element, Name}, Path};
+    /// use dynamodb_expression::{
+    ///     Path,
+    ///     path::{Element, Name},
+    /// };
     /// # use pretty_assertions::assert_eq;
     ///
     /// # let expected: Path= "foo[3][7].bar[2].baz".parse()?;
@@ -994,7 +998,7 @@ where
     ///
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use dynamodb_expression::{path::Element, Path};
+    /// use dynamodb_expression::{Path, path::Element};
     /// # use pretty_assertions::assert_eq;
     /// #
     /// # let expected = Path::from_iter([
@@ -1005,32 +1009,28 @@ where
     ///
     /// // `Path` items
     /// let path: Path = [
-    ///         "foo[3][7]".parse::<Path>()?,
-    ///         "bar[2]".parse::<Path>()?,
-    ///         "baz".parse::<Path>()?,
-    ///     ]
-    ///     .into_iter()
-    ///     .collect();
+    ///     "foo[3][7]".parse::<Path>()?,
+    ///     "bar[2]".parse::<Path>()?,
+    ///     "baz".parse::<Path>()?,
+    /// ]
+    /// .into_iter()
+    /// .collect();
     /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
     /// # assert_eq!(expected, path);
     ///
     /// // `Element` items
     /// let path: Path = [
-    ///         Element::new_indexed_field("foo", [3, 7]),
-    ///         Element::new_indexed_field("bar", 2),
-    ///         Element::new_name("baz"),
-    ///     ]
-    ///     .into_iter()
-    ///     .collect();
+    ///     Element::new_indexed_field("foo", [3, 7]),
+    ///     Element::new_indexed_field("bar", 2),
+    ///     Element::new_name("baz"),
+    /// ]
+    /// .into_iter()
+    /// .collect();
     /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
     /// # assert_eq!(expected, path);
     ///
     /// // `Into<Element>` items
-    /// let path: Path = [
-    ///         ("foo", vec![3, 7]),
-    ///         ("bar", vec![2]),
-    ///         ("baz", vec![]),
-    ///     ]
+    /// let path: Path = [("foo", vec![3, 7]), ("bar", vec![2]), ("baz", vec![])]
     ///     .into_iter()
     ///     .collect();
     /// assert_eq!("foo[3][7].bar[2].baz", path.to_string());
@@ -1137,9 +1137,8 @@ impl fmt::Display for PathParseError {
 mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::Num;
-
     use super::{Element, Name, Path, PathParseError};
+    use crate::Num;
 
     #[test]
     fn parse_path() {

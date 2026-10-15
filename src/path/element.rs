@@ -48,12 +48,27 @@ impl Element {
     /// #
     /// assert_eq!("foo[3]", Element::new_indexed_field("foo", 3).to_string());
     /// assert_eq!("foo[3]", Element::new_indexed_field("foo", [3]).to_string());
-    /// assert_eq!("foo[3]", Element::new_indexed_field("foo", &[3]).to_string());
-    /// assert_eq!("foo[3]", Element::new_indexed_field("foo", vec![3]).to_string());
+    /// assert_eq!(
+    ///     "foo[3]",
+    ///     Element::new_indexed_field("foo", &[3]).to_string()
+    /// );
+    /// assert_eq!(
+    ///     "foo[3]",
+    ///     Element::new_indexed_field("foo", vec![3]).to_string()
+    /// );
     ///
-    /// assert_eq!("foo[7][4]", Element::new_indexed_field("foo", [7, 4]).to_string());
-    /// assert_eq!("foo[7][4]", Element::new_indexed_field("foo", &[7, 4]).to_string());
-    /// assert_eq!("foo[7][4]", Element::new_indexed_field("foo", vec![7, 4]).to_string());
+    /// assert_eq!(
+    ///     "foo[7][4]",
+    ///     Element::new_indexed_field("foo", [7, 4]).to_string()
+    /// );
+    /// assert_eq!(
+    ///     "foo[7][4]",
+    ///     Element::new_indexed_field("foo", &[7, 4]).to_string()
+    /// );
+    /// assert_eq!(
+    ///     "foo[7][4]",
+    ///     Element::new_indexed_field("foo", vec![7, 4]).to_string()
+    /// );
     ///
     /// assert_eq!("foo", Element::new_indexed_field("foo", []).to_string());
     /// assert_eq!("foo", Element::new_indexed_field("foo", &[]).to_string());
@@ -168,7 +183,8 @@ impl FromStr for Element {
                             return Err(PathParseError);
                         }
                     } else if open > 0 {
-                        // We've already got the name but we just found another after a closing bracket.
+                        // We've already got the name
+                        // but we just found another after a closing bracket.
                         // E.g, `bar[0]` in `foo[7]bar[0]`
                         return Err(PathParseError);
                     }
@@ -275,9 +291,8 @@ impl<const N: usize> Indexes for &[usize; N] {
 mod test {
     use pretty_assertions::assert_eq;
 
-    use crate::{Num, Path};
-
     use super::{Element, Name};
+    use crate::{Num, Path};
 
     #[test]
     fn display_name() {

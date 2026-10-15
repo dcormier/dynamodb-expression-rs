@@ -6,17 +6,17 @@ use std::{
     fmt,
 };
 
-// Re-export the AWS SDK we're using
-pub use aws_sdk_dynamodb::types::AttributeValue;
-
 use aws_sdk_dynamodb::{
     primitives::Blob,
-    types::AttributeValue::{Bs, Ns, Ss, B, L, M},
+    types::AttributeValue::{B, Bs, L, M, Ns, Ss},
 };
 use itermap::IterMap;
 use itertools::Itertools;
 
 use super::item::base64_encode;
+
+// Re-export the AWS SDK we're using
+pub use aws_sdk_dynamodb::types::AttributeValue;
 
 /// Provides a nicer debug view of a DynamoDB item
 /// (`HashMap<String, AttributeValue>`), owned or borrowed.
@@ -137,7 +137,8 @@ where
                 .map(DebugAttributeValue)
                 .eq(other.iter().map(DebugAttributeValue)),
             (M(this), M(other)) => DebugItem(this) == DebugItem(other),
-            // Other types don't have nested `Vec`s that should be `Set`s and can safely be compared directly
+            // Other types don't have nested `Vec`s that should be `Set`s and
+            // can safely be compared directly
             (this, other) => this == other,
         }
     }

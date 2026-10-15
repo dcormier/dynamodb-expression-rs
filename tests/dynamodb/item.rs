@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use aws_sdk_dynamodb::{
     primitives::Blob,
-    types::AttributeValue::{self, Bool, Bs, Ns, Null, Ss, B, L, M, N, S},
+    types::AttributeValue::{self, B, Bool, Bs, L, M, N, Ns, Null, S, Ss},
 };
-use base64::engine::{general_purpose, Engine, GeneralPurpose};
+use base64::engine::{Engine, GeneralPurpose, general_purpose};
 use itermap::IterMap;
 use itertools::Itertools;
 

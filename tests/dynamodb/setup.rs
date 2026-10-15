@@ -1,12 +1,14 @@
+#![expect(clippy::result_large_err)]
+
 use std::error::Error;
 
 use aws_sdk_dynamodb::{
+    Client,
     error::SdkError,
     operation::{create_table::CreateTableError, delete_table::DeleteTableError},
     types::{
         AttributeDefinition, KeySchemaElement, KeyType, ProvisionedThroughput, ScalarAttributeType,
     },
-    Client,
 };
 use easy_error::ErrorExt;
 use itertools::Itertools;

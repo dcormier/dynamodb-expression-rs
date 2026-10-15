@@ -182,9 +182,8 @@ where
 mod test {
     use pretty_assertions::assert_str_eq;
 
-    use crate::path::Name;
-
     use super::{Comparator::*, *};
+    use crate::path::Name;
 
     #[test]
     fn display() {
