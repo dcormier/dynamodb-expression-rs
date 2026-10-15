@@ -42,10 +42,10 @@ choose the SDK features you need, either through this crate's pass-through
 features or on your own `aws-sdk-dynamodb` dependency:
 
 ```toml
-dynamodb-expression = { version = "0.2.0-beta.10", default-features = false }
+dynamodb-expression = { version = "0.2.0-beta.11", default-features = false }
 aws-sdk-dynamodb = { version = "1", default-features = false, features = ["default-https-client", "rt-tokio"] }
 ```
 
 Pass-through features: `aws-sdk-dynamodb-default` (on by default),
-`behavior-version-latest`, `default-https-client`, `legacy-https-client`,
-`rt-tokio`, and `rustls`.
+`aws-sdk-dynamodb-behavior-version-latest`, `aws-sdk-dynamodb-default-https-client`, `aws-sdk-dynamodb-legacy-https-client`,
+`aws-sdk-dynamodb-rt-tokio`, and `aws-sdk-dynamodb-rustls`.
