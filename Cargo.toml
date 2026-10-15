@@ -2,7 +2,7 @@
 name = "dynamodb-expression"
 description = "Types to build DynamoDB filter, condition, or update expressions"
 authors = ["Daniel Cormier"]
-version = "0.2.0-beta.10"
+version = "0.2.0-beta.11"
 edition = "2021"
 documentation = "https://docs.rs/dynamodb-expression/"
 repository = "https://github.com/dcormier/dynamodb-expression-rs"
@@ -10,11 +10,22 @@ license = "Apache-2.0"
 keywords = ["dynamodb", "expression"]
 include = ["/src", "/LICENSE.txt", "/NOTICE.txt"]
 
+[features]
+# Pass-throughs for `aws-sdk-dynamodb`, which this crate only uses for its types.
+# https://github.com/awslabs/aws-sdk-rust/releases/tag/release-2026-09-22
+default = ["aws-sdk-dynamodb-default"]
+aws-sdk-dynamodb-default = ["aws-sdk-dynamodb/default"]
+behavior-version-latest = ["aws-sdk-dynamodb/behavior-version-latest"]
+default-https-client = ["aws-sdk-dynamodb/default-https-client"]
+legacy-https-client = ["aws-sdk-dynamodb/legacy-https-client"]
+rt-tokio = ["aws-sdk-dynamodb/rt-tokio"]
+rustls = ["aws-sdk-dynamodb/rustls"]
+
 [dependencies]
-aws-sdk-dynamodb = "1"
-base64 = "0.22"
+aws-sdk-dynamodb = { version = "1", default-features = false }
+base64 = "0.23"
 itermap = "0"
-itertools = "0.13"
+itertools = "0.15"
 num = "0"
 optempty = "0"
 rustversion = "1"
@@ -22,6 +33,7 @@ serde_json = "1"
 
 [dev-dependencies]
 aws-config = "1"
+aws-sdk-dynamodb = { version = "1", default-features = false, features = ["default-https-client", "rt-tokio"] }
 easy-error = "1"
 pretty_assertions = "1"
 rusoto_core = "0"
